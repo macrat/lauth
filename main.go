@@ -91,9 +91,9 @@ func main() {
 			},
 			Scopes: ScopeConfig{
 				"profile": []ClaimConfig{
-					{Claim: "name", Attribute: "DisplayName", Type: "string"},
-					{Claim: "given_name", Attribute: "GivenName", Type: "string"},
-					{Claim: "family_name", Attribute: "surName", Type: "string"},
+					{Claim: "name", Attribute: "displayName", Type: "string"},
+					{Claim: "given_name", Attribute: "givenName", Type: "string"},
+					{Claim: "family_name", Attribute: "sn", Type: "string"},
 				},
 				"email": []ClaimConfig{
 					{Claim: "email", Attribute: "mail", Type: "string"},

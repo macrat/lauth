@@ -427,7 +427,7 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 	defer conn.Close()
 
 	scope := ParseStringSet(token.Scope)
-	attrs, err := conn.GetUserAttributes(token.Subject, api.Config.Scopes.ClaimNamesFor(scope))
+	attrs, err := conn.GetUserAttributes(token.Subject, api.Config.Scopes.AttributesFor(scope))
 	if err == UserNotFoundError {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
 		c.JSON(http.StatusForbidden, ErrorMessage{

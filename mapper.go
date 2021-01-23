@@ -7,9 +7,7 @@ func MappingClaims(attrs map[string][]string, maps map[string]ClaimConfig) map[s
 		conf := maps[name]
 		switch conf.Type {
 		case "string", "":
-			if len(values) == 0 {
-				result[conf.Claim] = ""
-			} else {
+			if len(values) != 0 {
 				result[conf.Claim] = values[0]
 			}
 		case "[]string":

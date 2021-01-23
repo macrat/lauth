@@ -21,7 +21,7 @@ func (sc ScopeConfig) ScopeNames() []string {
 	return ss
 }
 
-func (sc ScopeConfig) AllClaimNames() []string {
+func (sc ScopeConfig) AllClaims() []string {
 	var claims []string
 	for _, scope := range sc {
 		for _, claim := range scope {
@@ -31,13 +31,13 @@ func (sc ScopeConfig) AllClaimNames() []string {
 	return claims
 }
 
-func (sc ScopeConfig) ClaimNamesFor(scopes *StringSet) []string {
+func (sc ScopeConfig) AttributesFor(scopes *StringSet) []string {
 	var claims []string
 
 	for _, scopeName := range scopes.List() {
 		if scope, ok := sc[scopeName]; ok {
 			for _, x := range scope {
-				claims = append(claims, x.Claim)
+				claims = append(claims, x.Attribute)
 			}
 		}
 	}
@@ -51,7 +51,7 @@ func (sc ScopeConfig) ClaimMapFor(scopes *StringSet) map[string]ClaimConfig {
 	for _, scopeName := range scopes.List() {
 		if scope, ok := sc[scopeName]; ok {
 			for _, x := range scope {
-				claims[x.Claim] = x
+				claims[x.Attribute] = x
 			}
 		}
 	}
@@ -88,6 +88,6 @@ func (c LdapinConfig) OpenIDConfiguration() map[string]interface{} {
 		"subject_types_supported":               []string{"public"},
 		"id_token_signing_alg_values_supported": []string{"RS256"},
 		"display_values_supported":              []string{"page"},
-		"claims_supported":                      append(c.Scopes.AllClaimNames(), "iss", "sub", "aud", "exp", "iat", "typ", "auth_time"),
+		"claims_supported":                      append(c.Scopes.AllClaims(), "iss", "sub", "aud", "exp", "iat", "typ", "auth_time"),
 	}
 }
