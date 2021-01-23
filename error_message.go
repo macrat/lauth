@@ -32,7 +32,7 @@ func (msg ErrorMessage) Error() string {
 
 func (msg ErrorMessage) Redirect(c *gin.Context) {
 	if msg.RedirectURI == nil || msg.RedirectURI.String() == "" {
-		c.HTML(http.StatusBadRequest, "/error.tmpl", gin.H{
+		c.HTML(http.StatusBadRequest, "error.tmpl", gin.H{
 			"error": msg,
 		})
 		return
@@ -44,7 +44,9 @@ func (msg ErrorMessage) Redirect(c *gin.Context) {
 	}
 
 	resp.Set("error", msg.Reason)
-	resp.Set("error_description", msg.Description)
+	if msg.Description != "" {
+		resp.Set("error_description", msg.Description)
+	}
 
 	if msg.ResponseType != "code" {
 		msg.RedirectURI.Fragment = resp.Encode()

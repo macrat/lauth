@@ -47,7 +47,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 	req.Scope = scope.String()
 
 	if req.User == "" || req.Password == "" {
-		c.HTML(http.StatusForbidden, "/login.tmpl", gin.H{
+		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,
 			"request":          req.GetAuthnRequest,
 			"initial_username": req.User,
@@ -65,7 +65,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 	defer conn.Close()
 
 	if err := conn.LoginTest(req.User, req.Password); err != nil {
-		c.HTML(http.StatusForbidden, "/login.tmpl", gin.H{
+		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,
 			"request":          req.GetAuthnRequest,
 			"initial_username": req.User,

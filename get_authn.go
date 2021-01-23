@@ -92,7 +92,7 @@ func (api *LdapinAPI) GetAuthn(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "/login.tmpl", gin.H{
+	c.HTML(http.StatusOK, "login.tmpl", gin.H{
 		"config":  api.Config,
 		"request": req,
 	})

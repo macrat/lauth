@@ -35,7 +35,7 @@ func loadPageTemplate(loginPage, errorPage *os.File) (*template.Template, error)
 			return err
 		}
 
-		_, err = t.New(path).Parse(string(raw))
+		_, err = t.New(path[1:]).Parse(string(raw))
 		return err
 	})
 	if err != nil {
@@ -47,7 +47,7 @@ func loadPageTemplate(loginPage, errorPage *os.File) (*template.Template, error)
 		if err != nil {
 			return nil, err
 		}
-		_, err = t.Lookup("/login.tmpl").Parse(string(raw))
+		_, err = t.Lookup("login.tmpl").Parse(string(raw))
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +58,7 @@ func loadPageTemplate(loginPage, errorPage *os.File) (*template.Template, error)
 		if err != nil {
 			return nil, err
 		}
-		_, err = t.Lookup("/error.tmpl").Parse(string(raw))
+		_, err = t.Lookup("error.tmpl").Parse(string(raw))
 		if err != nil {
 			return nil, err
 		}
