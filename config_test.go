@@ -2,8 +2,8 @@ package main_test
 
 import (
 	"reflect"
-	"testing"
 	"sort"
+	"testing"
 
 	"github.com/macrat/ldapin"
 )
