@@ -3,9 +3,16 @@ package main_test
 import (
 	"reflect"
 	"testing"
+	"sort"
 
 	"github.com/macrat/ldapin"
 )
+
+func SameStringSet(xs []string, ys []string) bool {
+	sort.Strings(xs)
+	sort.Strings(ys)
+	return reflect.DeepEqual(xs, ys)
+}
 
 func TestScopeConfig(t *testing.T) {
 	conf := main.ScopeConfig{
@@ -19,22 +26,22 @@ func TestScopeConfig(t *testing.T) {
 	}
 
 	ss := conf.ScopeNames()
-	if !reflect.DeepEqual(ss, []string{"profile", "email"}) {
+	if !SameStringSet(ss, []string{"profile", "email"}) {
 		t.Errorf("ScopeNames returns unexpected value: %#v", ss)
 	}
 
 	ss = conf.AllClaims()
-	if !reflect.DeepEqual(ss, []string{"name", "given_name", "email"}) {
+	if !SameStringSet(ss, []string{"name", "given_name", "email"}) {
 		t.Errorf("AllClaims returns unexpected value: %#v", ss)
 	}
 
 	ss = conf.AttributesFor(main.ParseStringSet("profile"))
-	if !reflect.DeepEqual(ss, []string{"DisplayName", "GivenName"}) {
+	if !SameStringSet(ss, []string{"DisplayName", "GivenName"}) {
 		t.Errorf("AttributesFor returns unexpected value: %#v", ss)
 	}
 
 	ss = conf.AttributesFor(main.ParseStringSet("profile email"))
-	if !reflect.DeepEqual(ss, []string{"mail", "DisplayName", "GivenName"}) {
+	if !SameStringSet(ss, []string{"mail", "DisplayName", "GivenName"}) {
 		t.Errorf("AttributesFor returns unexpected value: %#v", ss)
 	}
 
