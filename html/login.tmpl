@@ -1,0 +1,31 @@
+{{ template "header" }}
+    <form action="{{ .config.Endpoints.Authn }}" method="POST">
+        <input type="hidden" name="response_type" value="{{ .request.ResponseType }}" />
+        <input type="hidden" name="client_id" value="{{ .request.ClientID }}" />
+        <input type="hidden" name="redirect_uri" value="{{ .request.RedirectURI }}" />
+
+        {{ if .request.Scope }}
+            <input type="hidden" name="scope" value="{{ .request.Scope }}" />
+        {{ end }}
+
+        {{ if .request.Nonce }}
+            <input type="hidden" name="nonce" value="{{ .request.Nonce }}" />
+        {{ end }}
+
+        <input class="form-control" placeholder="username" name="username" value="{{ .initial_username }}" required style="border-bottom-left-radius: 0; border-bottom-right-radius: 0;" />
+        <input class="form-control mb-2" placeholder="password" type="password" name="password" required style="border-top-left-radius: 0; border-top-right-radius: 0;" />
+
+        <button class="btn btn-primary btn-block mb-2" type="submit">Login</button>
+
+        {{ if .error }}{{ if eq .error "invalid_username_or_password" }}
+            <div class="alert alert-danger" role="alert">Invalid username or password</div>
+        {{ end }}{{ end }}
+
+        <style>
+            .form-control:focus {
+                z-index: 1;
+                position: relative;
+            }
+        </style>
+    </form>
+{{ template "footer" }}

@@ -1,0 +1,11 @@
+{{ template "header" }}
+    <div class="card" style="padding: .5rem 1rem">
+        <div class="card-body">
+            <h1 class="card-title">Bad Request</h1>
+
+            <p class="card-text"><b>Reason:</b> <pre>{{ .error.Reason }}</pre></p>
+
+            <p class="card-text"><b>Description:</b> <pre>{{ .error.Description }}</pre></p>
+        </div>
+    </div>
+{{ template "footer" }}

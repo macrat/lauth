@@ -1,0 +1,123 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/alecthomas/kingpin"
+	"github.com/gin-gonic/gin"
+	"github.com/xhit/go-str2duration/v2"
+)
+
+var (
+	app = kingpin.New("Ldapin", "The simple OpenID Provider for LDAP like a ActiveDirectory.")
+
+	Issuer     = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").Default("http://localhost:8000").URL()
+	PrivateKey = app.Flag("private-key", "RSA private key for signing to token. If omit this, automate generate key for one time use.").Envar("LDAPIN_PRIVATE_KEY").PlaceHolder("FILE").File()
+
+	AuthnEndpoint    = app.Flag("authn-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHN_ENDPOINT").Default("/login").String()
+	TokenEndpoint    = app.Flag("token-endpoint", "Path to token endpoint.").Envar("LDAPIN_TOKEN_ENDPOINT").Default("/login/token").String()
+	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").Default("/login/userinfo").String()
+	JwksEndpoint     = app.Flag("jwks-uri", "Path to jwks uri.").Envar("LDAPIN_JWKS_URI").Default("/login/certs").String()
+
+	CodeTTL  = app.Flag("code-ttl", "TTL for code.").Envar("LDAPIN_CODE_TTL").Default("10m").String()
+	TokenTTL = app.Flag("token-ttl", "TTL for access_token and id_token.").Envar("LDAPIN_TOKEN_TTL").Default("14d").String()
+
+	LdapAddress     = app.Flag("ldap", "URL of LDAP server like \"ldap://USER_DN:PASSWORD@ldap.example.com\".").Envar("LDAP_ADDRESS").PlaceHolder("ADDRESS").Required().URL()
+	LdapBaseDN      = app.Flag("ldap-base-dn", "The base DN for search user account in LDAP like \"OU=somewhere,DC=example,DC=local\".").Envar("LDAP_BASE_DN").PlaceHolder("DN").Required().String() // TODO: make it automate set same OU as bind user if omit.
+	LdapIDAttribute = app.Flag("ldap-id-attribute", "ID attribute name in LDAP.").Envar("LDAP_ID_ATTRIBUTE").Default("sAMAccountName").String()
+
+	LoginPage = app.Flag("login-page", "Templte file for login page.").Envar("LDAPIN_LOGIN_PAGE").PlaceHolder("FILE").File()
+	ErrorPage = app.Flag("error-page", "Templte file for error page.").Envar("LDAPIN_ERROR_PAGE").PlaceHolder("FILE").File()
+
+	// TODO: implement configuration file.
+	//ConfigFile = app.Flag("config", "Path to configuration file.").Envar("LDAPIN_CONFIG").File()
+
+	Verbose = app.Flag("verbose", "Enable debug mode.").Envar("LDAP_VERBOSE").Bool()
+)
+
+func main() {
+	kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	codeExpiresIn, err := str2duration.ParseDuration(*CodeTTL)
+	app.FatalIfError(err, "--code-ttl")
+	tokenExpiresIn, err := str2duration.ParseDuration(*TokenTTL)
+	app.FatalIfError(err, "--token-ttl")
+
+	if *Verbose {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	router := gin.Default()
+
+	ldapUser := (*LdapAddress).User.Username()
+	ldapPassword, _ := (*LdapAddress).User.Password()
+	if ldapUser == "" && ldapPassword == "" {
+		app.Fatalf("--ldap is must be has user and password information.")
+		return
+	}
+
+	connector := SimpleLDAPConnector{
+		ServerURL:   *LdapAddress,
+		User:        ldapUser,
+		Password:    ldapPassword,
+		IDAttribute: *LdapIDAttribute,
+		BaseDN:      *LdapBaseDN,
+	}
+
+	var jwt JWTManager
+	if *PrivateKey != nil {
+		jwt, err = NewJWTManagerFromFile(*PrivateKey)
+		app.FatalIfError(err, "failed to read private key")
+	} else {
+		jwt, err = GenerateJWTManager()
+		app.FatalIfError(err, "failed to generate private key")
+	}
+
+	api := &LdapinAPI{
+		Connector:  connector,
+		JWTManager: jwt,
+		Config: LdapinConfig{
+			Issuer:         (*Issuer).String(),
+			CodeExpiresIn:  codeExpiresIn,
+			TokenExpiresIn: tokenExpiresIn,
+			Endpoints: EndpointConfig{
+				Authn:    *AuthnEndpoint,
+				Token:    *TokenEndpoint,
+				Userinfo: *UserinfoEndpoint,
+				Jwks:     *JwksEndpoint,
+			},
+			Scopes: ScopeConfig{
+				"profile": []ClaimConfig{
+					{Claim: "name", Attribute: "DisplayName", Type: "string"},
+					{Claim: "given_name", Attribute: "GivenName", Type: "string"},
+					{Claim: "family_name", Attribute: "surName", Type: "string"},
+				},
+				"email": []ClaimConfig{
+					{Claim: "email", Attribute: "mail", Type: "string"},
+				},
+				"phone": []ClaimConfig{
+					{Claim: "phone_number", Attribute: "telephoneNumber", Type: "string"},
+				},
+				"groups": []ClaimConfig{
+					{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
+				},
+			},
+		},
+	}
+
+	tmpl, err := loadPageTemplate(*LoginPage, *ErrorPage)
+	app.FatalIfError(err, "failed to load template")
+	router.SetHTMLTemplate(tmpl)
+
+	router.GET("/.well-known/openid-configuration", api.GetConfiguration)
+	router.GET("/login", api.GetAuthn)
+	router.POST("/login", api.PostAuthn)
+	router.POST("/login/token", api.PostToken)
+	router.GET("/login/userinfo", api.GetUserInfo)
+	router.GET("/login/certs", api.GetCerts)
+
+	router.Run(fmt.Sprintf("0.0.0.0:%s", (*Issuer).Port()))
+}
