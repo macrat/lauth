@@ -17,6 +17,7 @@ func TestPostToken(t *testing.T) {
 		"macrat",
 		"some_client_id",
 		"openid profile",
+		"something-nonce",
 		time.Now(),
 		time.Duration(env.API.Config.TTL.Code),
 	)
@@ -29,6 +30,7 @@ func TestPostToken(t *testing.T) {
 		"macrat",
 		"some_client_id",
 		"openid profile",
+		"",
 		time.Now(),
 		time.Duration(env.API.Config.TTL.Code),
 	)
@@ -107,6 +109,9 @@ func TestPostToken(t *testing.T) {
 				}
 				if err = idToken.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
 					t.Errorf("failed to validate id token: %s", err)
+				}
+				if idToken.Nonce != "something-nonce" {
+					t.Errorf("nonce must be \"something-nonce\" but got %#v", idToken.Nonce)
 				}
 			},
 		},

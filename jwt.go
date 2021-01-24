@@ -47,6 +47,7 @@ type CodeClaims struct {
 	OIDCClaims
 
 	ClientID string `json:"client_id"`
+	Nonce    string `json:"nonce"`
 	Scope    string `json:"scope,omitempty"`
 }
 
@@ -84,10 +85,14 @@ func (claims AccessTokenClaims) Validate(issuer *URL) error {
 	return nil
 }
 
-type IDTokenClaims OIDCClaims
+type IDTokenClaims struct {
+	OIDCClaims
+
+	Nonce string `json:"nonce,omitempty"`
+}
 
 func (claims IDTokenClaims) Validate(issuer *URL, audience string) error {
-	if err := OIDCClaims(claims).Validate(issuer, audience); err != nil {
+	if err := claims.OIDCClaims.Validate(issuer, audience); err != nil {
 		return err
 	}
 
@@ -144,7 +149,7 @@ func (m JWTManager) create(claims jwt.Claims) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(m.private)
 }
 
-func (m JWTManager) CreateCode(issuer *URL, subject, clientID, scope string, authTime time.Time, expiresIn time.Duration) (string, error) {
+func (m JWTManager) CreateCode(issuer *URL, subject, clientID, scope, nonce string, authTime time.Time, expiresIn time.Duration) (string, error) {
 	return m.create(CodeClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
@@ -159,6 +164,7 @@ func (m JWTManager) CreateCode(issuer *URL, subject, clientID, scope string, aut
 		},
 		ClientID: clientID,
 		Scope:    scope,
+		Nonce:    nonce,
 	})
 }
 
@@ -179,17 +185,20 @@ func (m JWTManager) CreateAccessToken(issuer *URL, subject, scope string, authTi
 	})
 }
 
-func (m JWTManager) CreateIDToken(issuer *URL, subject, audience string, authTime time.Time, expiresIn time.Duration) (string, error) {
-	return m.create(OIDCClaims{
-		StandardClaims: jwt.StandardClaims{
-			Issuer:    issuer.String(),
-			Subject:   subject,
-			Audience:  audience,
-			ExpiresAt: time.Now().Add(expiresIn).Unix(),
-			IssuedAt:  time.Now().Unix(),
+func (m JWTManager) CreateIDToken(issuer *URL, subject, audience, nonce string, authTime time.Time, expiresIn time.Duration) (string, error) {
+	return m.create(IDTokenClaims{
+		OIDCClaims: OIDCClaims{
+			StandardClaims: jwt.StandardClaims{
+				Issuer:    issuer.String(),
+				Subject:   subject,
+				Audience:  audience,
+				ExpiresAt: time.Now().Add(expiresIn).Unix(),
+				IssuedAt:  time.Now().Unix(),
+			},
+			Type:     "ID_TOKEN",
+			AuthTime: authTime.Unix(),
 		},
-		Type:     "ID_TOKEN",
-		AuthTime: authTime.Unix(),
+		Nonce: nonce,
 	})
 }
 

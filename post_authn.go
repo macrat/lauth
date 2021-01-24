@@ -87,6 +87,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 			req.User,
 			req.ClientID,
 			req.Scope,
+			req.Nonce,
 			time.Now(),
 			time.Duration(api.Config.TTL.Code),
 		)
@@ -118,6 +119,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 			api.Config.Issuer,
 			req.User,
 			req.ClientID,
+			req.Nonce,
 			time.Now(),
 			time.Duration(api.Config.TTL.Token),
 		)

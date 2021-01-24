@@ -25,7 +25,7 @@ func TestCodeToken(t *testing.T) {
 
 	issuer := &main.URL{Scheme: "http", Host: "localhost:8000"}
 
-	code, err := jwtManager.CreateCode(issuer, "someone", "something", "openid profile", time.Now(), 10*time.Minute)
+	code, err := jwtManager.CreateCode(issuer, "someone", "something", "openid profile", "", time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate code: %s", err)
 	}
@@ -97,7 +97,7 @@ func TestIDToken(t *testing.T) {
 
 	issuer := &main.URL{Scheme: "http", Host: "localhost:8000"}
 
-	_, err = jwtManager.CreateIDToken(issuer, "someone", "something", time.Now(), 10*time.Minute)
+	_, err = jwtManager.CreateIDToken(issuer, "someone", "something", "", time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate token: %s", err)
 	}
