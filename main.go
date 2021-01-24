@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 
 	"github.com/alecthomas/kingpin"
@@ -13,6 +15,7 @@ var (
 	app = kingpin.New("Ldapin", "The simple OpenID Provider for LDAP like a ActiveDirectory.")
 
 	Issuer     = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").Default("http://localhost:8000").URL()
+	Listen     = app.Flag("listen", "Listen address and port. In default, use same port as Issuer URL.").Envar("LDAPIN_LISTEN").TCP()
 	PrivateKey = app.Flag("private-key", "RSA private key for signing to token. If omit this, automate generate key for one time use.").Envar("LDAPIN_PRIVATE_KEY").PlaceHolder("FILE").File()
 
 	BasePath         = app.Flag("base-path", "Path prefix for endpoints.").Envar("LDAPIN_BASE_PATH").Default("/").String()
@@ -36,6 +39,21 @@ var (
 
 	Verbose = app.Flag("verbose", "Enable debug mode.").Envar("LDAP_VERBOSE").Bool()
 )
+
+func DecideListenAddress(issuer *url.URL, listen *net.TCPAddr) string {
+	if listen != nil {
+		return listen.String()
+	}
+
+	if issuer.Port() != "" {
+		return fmt.Sprintf(":%s", issuer.Port())
+	}
+
+	if issuer.Scheme == "https" {
+		return ":443"
+	}
+	return ":80"
+}
 
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
@@ -116,5 +134,5 @@ func main() {
 
 	api.SetRoutes(router)
 
-	router.Run(fmt.Sprintf("0.0.0.0:%s", (*Issuer).Port()))
+	router.Run(DecideListenAddress(*Issuer, *Listen))
 }

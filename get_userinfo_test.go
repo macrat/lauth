@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-
 func TestGetUserinfo(t *testing.T) {
 	env := NewAPITestEnvironment(t)
 
@@ -15,7 +14,7 @@ func TestGetUserinfo(t *testing.T) {
 		"macrat",
 		"openid",
 		time.Now(),
-		10 * time.Minute,
+		10*time.Minute,
 	)
 	if err != nil {
 		t.Fatalf("failed to generate access_token: %s", err)
@@ -26,7 +25,7 @@ func TestGetUserinfo(t *testing.T) {
 		"macrat",
 		"openid profile email",
 		time.Now(),
-		10 * time.Minute,
+		10*time.Minute,
 	)
 	if err != nil {
 		t.Fatalf("failed to generate access_token: %s", err)
@@ -37,7 +36,7 @@ func TestGetUserinfo(t *testing.T) {
 		"nobody",
 		"openid profile",
 		time.Now(),
-		10 * time.Minute,
+		10*time.Minute,
 	)
 	if err != nil {
 		t.Fatalf("failed to generate access_token: %s", err)
@@ -46,42 +45,42 @@ func TestGetUserinfo(t *testing.T) {
 	env.JSONTest(t, "GET", "/userinfo", []JSONTest{
 		{
 			Token: noScopeToken,
-			Code: http.StatusOK,
+			Code:  http.StatusOK,
 			Body: map[string]interface{}{
 				"sub": "macrat",
 			},
 		},
 		{
 			Token: multiScopeToken,
-			Code: http.StatusOK,
+			Code:  http.StatusOK,
 			Body: map[string]interface{}{
-				"sub": "macrat",
-				"name": "SHIDA Yuuma",
-				"given_name": "yuuma",
+				"sub":         "macrat",
+				"name":        "SHIDA Yuuma",
+				"given_name":  "yuuma",
 				"family_name": "shida",
-				"email": "m@crat.jp",
+				"email":       "m@crat.jp",
 			},
 		},
 		{
 			Token: "invalid token",
-			Code: http.StatusForbidden,
+			Code:  http.StatusForbidden,
 			Body: map[string]interface{}{
-				"error": "invalid_token",
+				"error":             "invalid_token",
 				"error_description": "token is invalid",
 			},
 		},
 		{
 			Code: http.StatusForbidden,
 			Body: map[string]interface{}{
-				"error": "invalid_token",
+				"error":             "invalid_token",
 				"error_description": "bearer token is required",
 			},
 		},
 		{
 			Token: nobodyToken,
-			Code: http.StatusForbidden,
+			Code:  http.StatusForbidden,
 			Body: map[string]interface{}{
-				"error": "invalid_token",
+				"error":             "invalid_token",
 				"error_description": "user was not found or disabled",
 			},
 		},
