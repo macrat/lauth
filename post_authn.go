@@ -106,7 +106,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 			api.Config.TokenExpiresIn,
 		)
 		if err != nil {
-			req.makeError(err, "server_error", "failed to generate code").Redirect(c)
+			req.makeError(err, "server_error", "failed to generate access_token").Redirect(c)
 			return
 		}
 		resp.Set("token_type", "Bearer")
@@ -123,7 +123,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 			api.Config.TokenExpiresIn,
 		)
 		if err != nil {
-			req.makeError(err, "server_error", "failed to generate code").Redirect(c)
+			req.makeError(err, "server_error", "failed to generate id_token").Redirect(c)
 			return
 		}
 		resp.Set("id_token", token)

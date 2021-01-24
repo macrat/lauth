@@ -111,10 +111,13 @@ func (env *APITestEnvironment) Do(method, path string, values url.Values) *httpt
 	}
 }
 
+type ParamsTester func(t *testing.T, query, fragment url.Values)
+
 type RedirectTest struct {
 	Request     url.Values
 	Code        int
 	HasLocation bool
+	CheckParams ParamsTester
 	Query       url.Values
 	Fragment    url.Values
 }
@@ -146,16 +149,20 @@ func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint strin
 				continue
 			}
 
-			if !reflect.DeepEqual(loc.Query(), tt.Query) {
-				t.Errorf("%s: redirect with unexpected query: %#v", tt.Request.Encode(), location)
-			}
-
 			fragment, err := url.ParseQuery(loc.Fragment)
 			if err != nil {
 				t.Errorf("%s: failed to parse Location fragment: %s", tt.Request.Encode(), err)
 			}
-			if !reflect.DeepEqual(fragment, tt.Fragment) {
-				t.Errorf("%s: redirect with unexpected fragment: %#v", tt.Request.Encode(), location)
+
+			if tt.CheckParams != nil {
+				tt.CheckParams(t, loc.Query(), fragment)
+			} else {
+				if !reflect.DeepEqual(loc.Query(), tt.Query) {
+					t.Errorf("%s: redirect with unexpected query: %#v", tt.Request.Encode(), location)
+				}
+				if !reflect.DeepEqual(fragment, tt.Fragment) {
+					t.Errorf("%s: redirect with unexpected fragment: %#v", tt.Request.Encode(), location)
+				}
 			}
 		}
 	}
