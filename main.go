@@ -33,6 +33,7 @@ var (
 	LdapAddress     = app.Flag("ldap", "URL of LDAP server like \"ldap://USER_DN:PASSWORD@ldap.example.com\".").Envar("LDAP_ADDRESS").PlaceHolder("ADDRESS").Required().URL()
 	LdapBaseDN      = app.Flag("ldap-base-dn", "The base DN for search user account in LDAP like \"OU=somewhere,DC=example,DC=local\".").Envar("LDAP_BASE_DN").PlaceHolder("DN").Required().String() // TODO: make it automate set same OU as bind user if omit.
 	LdapIDAttribute = app.Flag("ldap-id-attribute", "ID attribute name in LDAP.").Envar("LDAP_ID_ATTRIBUTE").Default("sAMAccountName").String()
+	LdapDisableTLS  = app.Flag("ldap-disable-tls", "Disable use TLS when connect to LDAP server. THIS IS INSECURE.").Envar("LDAP_DISABLE_TLS").Bool()
 
 	LoginPage = app.Flag("login-page", "Templte file for login page.").Envar("LDAPIN_LOGIN_PAGE").PlaceHolder("FILE").File()
 	ErrorPage = app.Flag("error-page", "Templte file for error page.").Envar("LDAPIN_ERROR_PAGE").PlaceHolder("FILE").File()
@@ -96,7 +97,10 @@ func main() {
 		Password:    ldapPassword,
 		IDAttribute: *LdapIDAttribute,
 		BaseDN:      *LdapBaseDN,
+		DisableTLS:  *LdapDisableTLS,
 	}
+	_, err = connector.Connect()
+	app.FatalIfError(err, "failed to connect LDAP server")
 
 	var jwt JWTManager
 	if *PrivateKey != nil {

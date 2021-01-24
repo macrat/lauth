@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/url"
@@ -30,6 +31,7 @@ type SimpleLDAPConnector struct {
 	Password    string
 	IDAttribute string
 	BaseDN      string
+	DisableTLS  bool
 }
 
 func (c SimpleLDAPConnector) Connect() (LDAPSession, error) {
@@ -42,6 +44,14 @@ func (c SimpleLDAPConnector) Connect() (LDAPSession, error) {
 	if err != nil {
 		conn.Close()
 		return nil, err
+	}
+
+	if c.ServerURL.Scheme != "ldaps" && !c.DisableTLS {
+		err = conn.StartTLS(&tls.Config{InsecureSkipVerify: true})
+		if err != nil {
+			conn.Close()
+			return nil, err
+		}
 	}
 
 	return &SimpleLDAPSession{
