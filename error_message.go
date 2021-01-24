@@ -31,7 +31,7 @@ func (msg ErrorMessage) Error() string {
 }
 
 func (msg ErrorMessage) Redirect(c *gin.Context) {
-	if msg.RedirectURI == nil || msg.RedirectURI.String() == "" {
+	if msg.RedirectURI == nil || msg.RedirectURI.String() == "" || !msg.RedirectURI.IsAbs() {
 		c.HTML(http.StatusBadRequest, "error.tmpl", gin.H{
 			"error": msg,
 		})
@@ -48,7 +48,7 @@ func (msg ErrorMessage) Redirect(c *gin.Context) {
 		resp.Set("error_description", msg.Description)
 	}
 
-	if msg.ResponseType != "code" {
+	if msg.ResponseType != "code" && msg.ResponseType != "" {
 		msg.RedirectURI.Fragment = resp.Encode()
 	} else {
 		msg.RedirectURI.RawQuery = resp.Encode()

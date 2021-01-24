@@ -37,11 +37,12 @@ func (req GetAuthnRequest) makeError(err error, reason, description string) *Err
 	}
 
 	return &ErrorMessage{
-		Err:         err,
-		RedirectURI: redirectURI,
-		State:       req.State,
-		Reason:      reason,
-		Description: description,
+		Err:          err,
+		RedirectURI:  redirectURI,
+		ResponseType: req.ResponseType,
+		State:        req.State,
+		Reason:       reason,
+		Description:  description,
 	}
 }
 
@@ -50,16 +51,25 @@ func (req GetAuthnRequest) Validate() *ErrorMessage {
 		return req.makeError(nil, "invalid_redirect_uri", "redirect_uri is not set")
 	}
 
-	_, err := url.Parse(req.RedirectURI)
-	if err != nil {
+	if u, err := url.Parse(req.RedirectURI); err != nil {
 		return req.makeError(err, "invalid_redirect_uri", "redirect_uri is invalid format")
+	} else if !u.IsAbs() {
+		return req.makeError(err, "invalid_redirect_uri", "redirect_uri is must be absolute URL")
 	}
 
 	if req.ClientID == "" {
 		return req.makeError(nil, "invalid_request", "client_id is required")
 	}
 
-	if err := ParseStringSet(req.ResponseType).Validate("response_type", []string{"code", "token", "id_token"}); err != nil {
+	rt := ParseStringSet(req.ResponseType)
+	if rt.String() == "" {
+		return req.makeError(
+			nil,
+			"unsupported_response_type",
+			"response_type is required",
+		)
+	}
+	if err := rt.Validate("response_type", []string{"code", "token", "id_token"}); err != nil {
 		return req.makeError(
 			err,
 			"unsupported_response_type",
@@ -85,10 +95,11 @@ func (api *LdapinAPI) GetAuthn(c *gin.Context) {
 	}
 
 	if ParseStringSet(req.Prompt).Has("none") {
-		ErrorMessage{
-			Reason:      "login_required",
-			Description: "prompt=none is not supported",
-		}.Redirect(c)
+		req.makeError(
+			nil,
+			"login_required",
+			"prompt=none is not supported",
+		).Redirect(c)
 		return
 	}
 

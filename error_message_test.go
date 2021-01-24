@@ -30,7 +30,7 @@ func MustParseQuery(q string) url.Values {
 func ServeErrorMessageRedirect(t *testing.T, msg main.ErrorMessage) *httptest.ResponseRecorder {
 	t.Helper()
 
-	router := MakeTestRouter()
+	router := makeTestRouter()
 
 	router.GET("/", func(c *gin.Context) {
 		msg.Redirect(c)
@@ -44,22 +44,27 @@ func ServeErrorMessageRedirect(t *testing.T, msg main.ErrorMessage) *httptest.Re
 }
 
 func TestErrorMessage_Redirect(t *testing.T) {
-	nonRedirect := ServeErrorMessageRedirect(t, main.ErrorMessage{
-		Reason:      "some_reason",
-		Description: "hello world",
-	})
-	if nonRedirect.Code != http.StatusBadRequest {
-		t.Errorf("unexpected response code: %d", nonRedirect.Code)
-	}
-	if nonRedirect.Header().Get("Content-Type") != "text/html; charset=utf-8" {
-		t.Errorf("unexpected content-type: %s", nonRedirect.Header().Get("Content-Type"))
-	}
-
 	tests := []struct {
-		Msg      main.ErrorMessage
-		Query    url.Values
-		Fragment url.Values
+		Msg        main.ErrorMessage
+		NoRedirect bool
+		Query      url.Values
+		Fragment   url.Values
 	}{
+		{
+			Msg: main.ErrorMessage{
+				Reason:      "some_reason",
+				Description: "hello world",
+			},
+			NoRedirect: true,
+		},
+		{
+			Msg: main.ErrorMessage{
+				RedirectURI: MustParseURL("/relative/path"),
+				Reason:      "some_reason",
+				Description: "hello world",
+			},
+			NoRedirect: true,
+		},
 		{
 			Msg: main.ErrorMessage{
 				RedirectURI:  MustParseURL("http://localhost:3000/redirect"),
@@ -91,30 +96,65 @@ func TestErrorMessage_Redirect(t *testing.T) {
 			Query:    MustParseQuery("error=something_wrong"),
 			Fragment: url.Values{},
 		},
+		{
+			Msg: main.ErrorMessage{
+				RedirectURI:  MustParseURL("http://localhost:3000/redirect"),
+				ResponseType: "token",
+				Reason:       "something_wrong",
+			},
+			Query:    url.Values{},
+			Fragment: MustParseQuery("error=something_wrong"),
+		},
+		{
+			Msg: main.ErrorMessage{
+				RedirectURI: MustParseURL("http://localhost:3000/redirect"),
+				Reason:      "something_wrong",
+			},
+			Query:    MustParseQuery("error=something_wrong"),
+			Fragment: url.Values{},
+		},
+		{
+			Msg: main.ErrorMessage{
+				RedirectURI:  MustParseURL("http://localhost:3000/redirect"),
+				ResponseType: "code invalid",
+				Reason:       "something_wrong",
+			},
+			Query:    url.Values{},
+			Fragment: MustParseQuery("error=something_wrong"),
+		},
 	}
 
 	for i, tt := range tests {
 		resp := ServeErrorMessageRedirect(t, tt.Msg)
-		if resp.Code != http.StatusFound {
-			t.Errorf("%d: unexpected response code: %d", i, resp.Code)
-		}
+		if tt.NoRedirect {
+			if resp.Code != http.StatusBadRequest {
+				t.Errorf("%d: unexpected response code: %d", i, resp.Code)
+			}
+			if resp.Header().Get("Content-Type") != "text/html; charset=utf-8" {
+				t.Errorf("%d: unexpected content-type: %s", i, resp.Header().Get("Content-Type"))
+			}
+		} else {
+			if resp.Code != http.StatusFound {
+				t.Errorf("%d: unexpected response code: %d", i, resp.Code)
+			}
 
-		location, err := url.Parse(resp.Header().Get("Location"))
-		if err != nil {
-			t.Errorf("%d: failed to parse redirect url: %s", i, err)
-			continue
-		}
+			location, err := url.Parse(resp.Header().Get("Location"))
+			if err != nil {
+				t.Errorf("%d: failed to parse redirect url: %s", i, err)
+				continue
+			}
 
-		if !reflect.DeepEqual(location.Query(), tt.Query) {
-			t.Errorf("%d: unexpected redirect query: %#v", i, location.String())
-		}
+			if !reflect.DeepEqual(location.Query(), tt.Query) {
+				t.Errorf("%d: unexpected redirect query: %#v", i, location.String())
+			}
 
-		fragment, err := url.ParseQuery(location.Fragment)
-		if err != nil {
-			t.Errorf("%d: failed to parse fragment: %s", i, err)
-		}
-		if !reflect.DeepEqual(fragment, tt.Fragment) {
-			t.Errorf("%d: unexpected redirect fragment: %#v", i, location.String())
+			fragment, err := url.ParseQuery(location.Fragment)
+			if err != nil {
+				t.Errorf("%d: failed to parse fragment: %s", i, err)
+			}
+			if !reflect.DeepEqual(fragment, tt.Fragment) {
+				t.Errorf("%d: unexpected redirect fragment: %#v", i, location.String())
+			}
 		}
 	}
 }
