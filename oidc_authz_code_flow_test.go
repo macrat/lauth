@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestOAuth2AuthzCodeFlow(t *testing.T) {
+func TestOIDCAuthzCodeFlow(t *testing.T) {
 	env := NewAPITestEnvironment(t)
 
 	clientID := "hello_client"
