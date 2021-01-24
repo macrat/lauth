@@ -15,8 +15,11 @@ var (
 	app = kingpin.New("Ldapin", "The simple OpenID Provider for LDAP like a ActiveDirectory.")
 
 	Issuer     = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").Default("http://localhost:8000").URL()
-	Listen     = app.Flag("listen", "Listen address and port. In default, use same port as Issuer URL.").Envar("LDAPIN_LISTEN").TCP()
+	Listen     = app.Flag("listen", "Listen address and port. In default, use same port as Issuer URL. This option can't use when auto generate TLS cert.").Envar("LDAPIN_LISTEN").TCP()
 	PrivateKey = app.Flag("private-key", "RSA private key for signing to token. If omit this, automate generate key for one time use.").Envar("LDAPIN_PRIVATE_KEY").PlaceHolder("FILE").File()
+
+	TLSCertFile = app.Flag("tls-cert", "Cert file for TLS encryption.").Envar("LDAPIN_TLS_CERT").ExistingFile()
+	TLSKeyFile  = app.Flag("tls-key", "Key file for TLS encryption.").Envar("LDAPIN_TLS_KEY").ExistingFile()
 
 	BasePath         = app.Flag("base-path", "Path prefix for endpoints.").Envar("LDAPIN_BASE_PATH").Default("/").String()
 	AuthnEndpoint    = app.Flag("authn-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHN_ENDPOINT").Default("/login").String()
@@ -62,6 +65,15 @@ func main() {
 	app.FatalIfError(err, "--code-ttl")
 	tokenExpiresIn, err := str2duration.ParseDuration(*TokenTTL)
 	app.FatalIfError(err, "--token-ttl")
+
+	if *TLSCertFile != "" && *TLSKeyFile == "" {
+		app.Fatalf("--tls-key is required when set --tls-cert")
+	} else if *TLSCertFile == "" && *TLSKeyFile != "" {
+		app.Fatalf("--tls-cert is required when set --tls-key")
+	}
+	if *TLSCertFile != "" && *TLSKeyFile != "" && (*Issuer).Scheme != "https" {
+		app.Fatalf("Please set https URL for --issuer when use TLS.")
+	}
 
 	if *Verbose {
 		gin.SetMode(gin.DebugMode)
@@ -134,5 +146,12 @@ func main() {
 
 	api.SetRoutes(router)
 
-	router.Run(DecideListenAddress(*Issuer, *Listen))
+	addr := DecideListenAddress(*Issuer, *Listen)
+	if *TLSCertFile != "" {
+		err = router.RunTLS(addr, *TLSCertFile, *TLSKeyFile)
+		app.FatalIfError(err, "failed to start server")
+	} else {
+		err = router.Run(addr)
+		app.FatalIfError(err, "failed to start server")
+	}
 }
