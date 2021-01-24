@@ -22,7 +22,8 @@ listen: ":8000"
 
 ttl:
   code: 10m
-  token: 1h
+  token: 7d
+  sso: 14d
 
 endpoint:
   base_path: /

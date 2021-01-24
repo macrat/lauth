@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func MakeAuthnTokens(jwt JWTManager, config *LdapinConfig, req GetAuthnRequest, subject string) (*url.URL, *ErrorMessage) {
+func MakeAuthnTokens(jwt JWTManager, config *LdapinConfig, req GetAuthnRequest, subject string, authTime time.Time) (*url.URL, *ErrorMessage) {
 	resp := make(url.Values)
 
 	if req.State != "" {
@@ -21,7 +21,7 @@ func MakeAuthnTokens(jwt JWTManager, config *LdapinConfig, req GetAuthnRequest, 
 			req.ClientID,
 			req.Scope,
 			req.Nonce,
-			time.Now(),
+			authTime,
 			time.Duration(config.TTL.Code),
 		)
 		if err != nil {
@@ -34,7 +34,7 @@ func MakeAuthnTokens(jwt JWTManager, config *LdapinConfig, req GetAuthnRequest, 
 			config.Issuer,
 			subject,
 			req.Scope,
-			time.Now(),
+			authTime,
 			time.Duration(config.TTL.Token),
 		)
 		if err != nil {
@@ -51,7 +51,7 @@ func MakeAuthnTokens(jwt JWTManager, config *LdapinConfig, req GetAuthnRequest, 
 			subject,
 			req.ClientID,
 			req.Nonce,
-			time.Now(),
+			authTime,
 			time.Duration(config.TTL.Token),
 		)
 		if err != nil {

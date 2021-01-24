@@ -21,7 +21,8 @@ var (
 		},
 		TTL: TTLConfig{
 			Code:  Duration(10 * time.Hour),
-			Token: Duration(14 * 24 * time.Hour),
+			Token: Duration(7 * 24 * time.Hour),
+			SSO:   Duration(14 * 24 * time.Hour),
 		},
 		Endpoints: EndpointConfig{
 			BasePath: "/",
@@ -161,6 +162,7 @@ func (d *Duration) UnmarshalText(text []byte) error {
 type TTLConfig struct {
 	Code  Duration `yaml:"code"`
 	Token Duration `yaml:"token"`
+	SSO   Duration `yaml:"sso"`
 }
 
 func (c *TTLConfig) Override(patch TTLConfig) {
@@ -169,6 +171,9 @@ func (c *TTLConfig) Override(patch TTLConfig) {
 	}
 	if patch.Token > 0 {
 		(*c).Token = patch.Token
+	}
+	if patch.SSO > 0 {
+		(*c).SSO = patch.SSO
 	}
 }
 

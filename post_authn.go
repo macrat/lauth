@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/url"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -71,7 +73,29 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 		return
 	}
 
-	resp, errMsg := MakeAuthnTokens(api.JWTManager, api.Config, req.GetAuthnRequest, req.User)
+	// TODO: test it
+	ssoToken, err := api.JWTManager.CreateIDToken(
+		api.Config.Issuer,
+		req.User,
+		api.Config.Issuer.String(),
+		"",
+		time.Now(),
+		time.Duration(api.Config.TTL.SSO),
+	)
+	if err == nil {
+		secure := api.Config.Issuer.Scheme == "https"
+		c.SetCookie(
+			"token",
+			ssoToken,
+			int(api.Config.TTL.SSO.IntSeconds()),
+			"/",
+			(*url.URL)(api.Config.Issuer).Hostname(),
+			secure,
+			true,
+		)
+	}
+
+	resp, errMsg := MakeAuthnTokens(api.JWTManager, api.Config, req.GetAuthnRequest, req.User, time.Now())
 	if errMsg != nil {
 		errMsg.Redirect(c)
 	}

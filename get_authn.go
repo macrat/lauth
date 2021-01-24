@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -92,6 +93,27 @@ func (api *LdapinAPI) GetAuthn(c *gin.Context) {
 	if err := (&req).BindAndValidate(c); err != nil {
 		err.Redirect(c)
 		return
+	}
+
+	prompt := ParseStringSet(req.Prompt)
+
+	// TODO: test it
+	if !prompt.Has("login") && !prompt.Has("consent") && !prompt.Has("select_account") {
+		if token, err := c.Cookie("token"); err == nil {
+			issuer := api.Config.Issuer
+			secure := issuer.Scheme == "https"
+			if idToken, err := api.JWTManager.ParseIDToken(token); err != nil || idToken.Validate(issuer, issuer.String()) != nil {
+				c.SetCookie("token", "", 0, "/", issuer.Host, secure, true)
+			} else {
+				redirect, errMsg := MakeAuthnTokens(api.JWTManager, api.Config, req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
+				if errMsg != nil {
+					errMsg.Redirect(c)
+				} else {
+					c.Redirect(http.StatusFound, redirect.String())
+				}
+				return
+			}
+		}
 	}
 
 	if ParseStringSet(req.Prompt).Has("none") {
