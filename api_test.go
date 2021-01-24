@@ -1,10 +1,11 @@
 package main_test
 
 import (
+	"encoding/json"
 	"net/http"
-	"reflect"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -163,6 +164,46 @@ func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint strin
 				if !reflect.DeepEqual(fragment, tt.Fragment) {
 					t.Errorf("%s: redirect with unexpected fragment: %#v", tt.Request.Encode(), location)
 				}
+			}
+		}
+	}
+}
+
+type RawBody []byte
+
+func (body RawBody) Bind(target interface{}) error {
+	return json.Unmarshal(body, &target)
+}
+
+type JSONTester func(t *testing.T, body RawBody)
+
+type JSONTest struct {
+	Request   url.Values
+	Code      int
+	CheckBody JSONTester
+	Body      map[string]interface{}
+}
+
+func (env *APITestEnvironment) JSONTest(t *testing.T, method, endpoint string, tests []JSONTest) {
+	t.Helper()
+
+	for _, tt := range tests {
+		resp := env.Do(method, endpoint, tt.Request)
+
+		if resp.Code != tt.Code {
+			t.Errorf("%s: expected status code %d but got %d", tt.Request.Encode(), tt.Code, resp.Code)
+		}
+
+		rawBody := resp.Body.Bytes()
+
+		if tt.CheckBody != nil {
+			tt.CheckBody(t, RawBody(rawBody))
+		} else {
+			var body map[string]interface{}
+			if err := json.Unmarshal(rawBody, &body); err != nil {
+				t.Errorf("%s: failed to unmarshal response body: %s", tt.Request.Encode(), err)
+			} else if !reflect.DeepEqual(body, tt.Body) {
+				t.Errorf("%s: unexpected response body: %s", tt.Request.Encode(), string(rawBody))
 			}
 		}
 	}

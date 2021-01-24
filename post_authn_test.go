@@ -57,7 +57,7 @@ func TestPostAuthn(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code: http.StatusFound,
+			Code:        http.StatusFound,
 			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(fragment, url.Values{}) {
@@ -82,7 +82,7 @@ func TestPostAuthn(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code: http.StatusFound,
+			Code:        http.StatusFound,
 			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
@@ -117,7 +117,7 @@ func TestPostAuthn(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code: http.StatusFound,
+			Code:        http.StatusFound,
 			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
@@ -148,7 +148,7 @@ func TestPostAuthn(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code: http.StatusFound,
+			Code:        http.StatusFound,
 			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
@@ -173,7 +173,7 @@ func TestPostAuthn(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code: http.StatusFound,
+			Code:        http.StatusFound,
 			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {

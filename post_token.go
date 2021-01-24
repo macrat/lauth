@@ -28,7 +28,7 @@ func (req PostTokenRequest) Validate() *ErrorMessage {
 	if req.GrantType != "authorization_code" {
 		return &ErrorMessage{
 			Reason:      "unsupported_grant_type",
-			Description: "not supported grant_type",
+			Description: "only supported grant_type is authorization_code",
 		}
 	}
 
@@ -40,6 +40,14 @@ func (req *PostTokenRequest) BindAndValidate(c *gin.Context) *ErrorMessage {
 		return err
 	}
 	return req.Validate()
+}
+
+type PostTokenResponse struct {
+	TokenType   string `json:"token_type"`
+	AccessToken string `json:"access_token"`
+	IDToken     string `json:"id_token"`
+	ExpiresIn   int64  `json:"expires_in"`
+	Scope       string `json:"string"`
 }
 
 func (api *LdapinAPI) PostToken(c *gin.Context) {
@@ -55,12 +63,14 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 			Err:    err,
 			Reason: "invalid_grant",
 		})
+		return
 	}
 	if err := code.Validate(api.Config.Issuer); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorMessage{
 			Err:    err,
 			Reason: "invalid_grant",
 		})
+		return
 	}
 	scope := ParseStringSet(code.Scope)
 	scope.Add("openid")
@@ -78,6 +88,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 			Reason:      "server_error",
 			Description: "failed to generate access_token",
 		})
+		return
 	}
 
 	idToken, err := api.JWTManager.CreateIDToken(
@@ -93,13 +104,14 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 			Reason:      "server_error",
 			Description: "failed to generate access_token",
 		})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"token_type":   "Bearer",
-		"access_token": accessToken,
-		"id_token":     idToken,
-		"expires_in":   api.Config.TokenExpiresIn,
-		"scope":        code.Scope,
+	c.JSON(http.StatusOK, PostTokenResponse{
+		TokenType:   "Bearer",
+		AccessToken: accessToken,
+		IDToken:     idToken,
+		ExpiresIn:   int64(api.Config.TokenExpiresIn.Seconds()),
+		Scope:       code.Scope,
 	})
 }

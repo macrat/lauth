@@ -84,6 +84,20 @@ func (claims AccessTokenClaims) Validate(issuer string) error {
 	return nil
 }
 
+type IDTokenClaims OIDCClaims
+
+func (claims IDTokenClaims) Validate(issuer, audience string) error {
+	if err := OIDCClaims(claims).Validate(issuer, audience); err != nil {
+		return err
+	}
+
+	if claims.Type != "ID_TOKEN" {
+		return UnexpectedTokenTypeError
+	}
+
+	return nil
+}
+
 type JWTManager struct {
 	private *rsa.PrivateKey
 	public  *rsa.PublicKey
@@ -205,6 +219,14 @@ func (m JWTManager) ParseAccessToken(token string) (AccessTokenClaims, error) {
 	var claims AccessTokenClaims
 	if _, err := m.parse(token, &claims); err != nil {
 		return AccessTokenClaims{}, err
+	}
+	return claims, nil
+}
+
+func (m JWTManager) ParseIDToken(token string) (IDTokenClaims, error) {
+	var claims IDTokenClaims
+	if _, err := m.parse(token, &claims); err != nil {
+		return IDTokenClaims{}, err
 	}
 	return claims, nil
 }
