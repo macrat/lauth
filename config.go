@@ -60,6 +60,7 @@ func (sc ScopeConfig) ClaimMapFor(scopes *StringSet) map[string]ClaimConfig {
 }
 
 type EndpointConfig struct {
+	BasePath string `toml:"base_path"`
 	Authn    string `toml:"authorization"`
 	Token    string `toml:"token"`
 	Userinfo string `toml:"userinfo"`
@@ -77,10 +78,10 @@ type LdapinConfig struct {
 func (c LdapinConfig) OpenIDConfiguration() map[string]interface{} {
 	return map[string]interface{}{
 		"issuer":                                c.Issuer,
-		"authorization_endpoint":                path.Join(c.Issuer, c.Endpoints.Authn),
-		"token_endpoint":                        path.Join(c.Issuer, c.Endpoints.Token),
-		"userinfo_endpoint":                     path.Join(c.Issuer, c.Endpoints.Userinfo),
-		"jwks_uri":                              path.Join(c.Issuer, c.Endpoints.Jwks),
+		"authorization_endpoint":                path.Join(c.Issuer, c.Endpoints.BasePath, c.Endpoints.Authn),
+		"token_endpoint":                        path.Join(c.Issuer, c.Endpoints.BasePath, c.Endpoints.Token),
+		"userinfo_endpoint":                     path.Join(c.Issuer, c.Endpoints.BasePath, c.Endpoints.Userinfo),
+		"jwks_uri":                              path.Join(c.Issuer, c.Endpoints.BasePath, c.Endpoints.Jwks),
 		"scopes_supported":                      append(c.Scopes.ScopeNames(), "openid"),
 		"response_types_supported":              []string{"code", "token", "id_token", "code token", "code id_token", "token id_token", "code token id_token"},
 		"response_modes_supported":              []string{"query", "fragment"},

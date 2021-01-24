@@ -15,6 +15,7 @@ var (
 	Issuer     = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").Default("http://localhost:8000").URL()
 	PrivateKey = app.Flag("private-key", "RSA private key for signing to token. If omit this, automate generate key for one time use.").Envar("LDAPIN_PRIVATE_KEY").PlaceHolder("FILE").File()
 
+	BasePath         = app.Flag("base-path", "Path prefix for endpoints.").Envar("LDAPIN_BASE_PATH").Default("/").String()
 	AuthnEndpoint    = app.Flag("authn-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHN_ENDPOINT").Default("/login").String()
 	TokenEndpoint    = app.Flag("token-endpoint", "Path to token endpoint.").Envar("LDAPIN_TOKEN_ENDPOINT").Default("/login/token").String()
 	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").Default("/login/userinfo").String()
@@ -84,6 +85,7 @@ func main() {
 			CodeExpiresIn:  codeExpiresIn,
 			TokenExpiresIn: tokenExpiresIn,
 			Endpoints: EndpointConfig{
+				BasePath: *BasePath,
 				Authn:    *AuthnEndpoint,
 				Token:    *TokenEndpoint,
 				Userinfo: *UserinfoEndpoint,
@@ -112,12 +114,7 @@ func main() {
 	app.FatalIfError(err, "failed to load template")
 	router.SetHTMLTemplate(tmpl)
 
-	router.GET("/.well-known/openid-configuration", api.GetConfiguration)
-	router.GET("/login", api.GetAuthn)
-	router.POST("/login", api.PostAuthn)
-	router.POST("/login/token", api.PostToken)
-	router.GET("/login/userinfo", api.GetUserInfo)
-	router.GET("/login/certs", api.GetCerts)
+	api.SetRoutes(router)
 
 	router.Run(fmt.Sprintf("0.0.0.0:%s", (*Issuer).Port()))
 }
