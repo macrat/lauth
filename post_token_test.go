@@ -18,19 +18,19 @@ func TestPostToken(t *testing.T) {
 		"some_client_id",
 		"openid profile",
 		time.Now(),
-		env.API.Config.CodeExpiresIn,
+		time.Duration(env.API.Config.TTL.Code),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)
 	}
 
 	invalidCode, err := env.API.JWTManager.CreateCode(
-		"another_issuer",
+		&main.URL{Host: "another_issuer"},
 		"macrat",
 		"some_client_id",
 		"openid profile",
 		time.Now(),
-		env.API.Config.CodeExpiresIn,
+		time.Duration(env.API.Config.TTL.Code),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)

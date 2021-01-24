@@ -27,12 +27,12 @@ type OIDCClaims struct {
 	AuthTime int64  `json:"auth_time"`
 }
 
-func (claims OIDCClaims) Validate(issuer, audience string) error {
+func (claims OIDCClaims) Validate(issuer *URL, audience string) error {
 	if err := claims.StandardClaims.Valid(); err != nil {
 		return err
 	}
 
-	if claims.Issuer != issuer {
+	if claims.Issuer != issuer.String() {
 		return UnexpectedIssuerError
 	}
 
@@ -50,8 +50,8 @@ type CodeClaims struct {
 	Scope    string `json:"scope,omitempty"`
 }
 
-func (claims CodeClaims) Validate(issuer string) error {
-	if err := claims.OIDCClaims.Validate(issuer, issuer); err != nil {
+func (claims CodeClaims) Validate(issuer *URL) error {
+	if err := claims.OIDCClaims.Validate(issuer, issuer.String()); err != nil {
 		return err
 	}
 
@@ -72,8 +72,8 @@ type AccessTokenClaims struct {
 	Scope string `json:"scope,omitempty"`
 }
 
-func (claims AccessTokenClaims) Validate(issuer string) error {
-	if err := claims.OIDCClaims.Validate(issuer, issuer); err != nil {
+func (claims AccessTokenClaims) Validate(issuer *URL) error {
+	if err := claims.OIDCClaims.Validate(issuer, issuer.String()); err != nil {
 		return err
 	}
 
@@ -86,7 +86,7 @@ func (claims AccessTokenClaims) Validate(issuer string) error {
 
 type IDTokenClaims OIDCClaims
 
-func (claims IDTokenClaims) Validate(issuer, audience string) error {
+func (claims IDTokenClaims) Validate(issuer *URL, audience string) error {
 	if err := OIDCClaims(claims).Validate(issuer, audience); err != nil {
 		return err
 	}
@@ -144,13 +144,13 @@ func (m JWTManager) create(claims jwt.Claims) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(m.private)
 }
 
-func (m JWTManager) CreateCode(issuer, subject, clientID, scope string, authTime time.Time, expiresIn time.Duration) (string, error) {
+func (m JWTManager) CreateCode(issuer *URL, subject, clientID, scope string, authTime time.Time, expiresIn time.Duration) (string, error) {
 	return m.create(CodeClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
-				Issuer:    issuer,
+				Issuer:    issuer.String(),
 				Subject:   subject,
-				Audience:  issuer,
+				Audience:  issuer.String(),
 				ExpiresAt: time.Now().Add(expiresIn).Unix(),
 				IssuedAt:  time.Now().Unix(),
 			},
@@ -162,13 +162,13 @@ func (m JWTManager) CreateCode(issuer, subject, clientID, scope string, authTime
 	})
 }
 
-func (m JWTManager) CreateAccessToken(issuer, subject, scope string, authTime time.Time, expiresIn time.Duration) (string, error) {
+func (m JWTManager) CreateAccessToken(issuer *URL, subject, scope string, authTime time.Time, expiresIn time.Duration) (string, error) {
 	return m.create(AccessTokenClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
-				Issuer:    issuer,
+				Issuer:    issuer.String(),
 				Subject:   subject,
-				Audience:  issuer,
+				Audience:  issuer.String(),
 				ExpiresAt: time.Now().Add(expiresIn).Unix(),
 				IssuedAt:  time.Now().Unix(),
 			},
@@ -179,10 +179,10 @@ func (m JWTManager) CreateAccessToken(issuer, subject, scope string, authTime ti
 	})
 }
 
-func (m JWTManager) CreateIDToken(issuer, subject, audience string, authTime time.Time, expiresIn time.Duration) (string, error) {
+func (m JWTManager) CreateIDToken(issuer *URL, subject, audience string, authTime time.Time, expiresIn time.Duration) (string, error) {
 	return m.create(OIDCClaims{
 		StandardClaims: jwt.StandardClaims{
-			Issuer:    issuer,
+			Issuer:    issuer.String(),
 			Subject:   subject,
 			Audience:  audience,
 			ExpiresAt: time.Now().Add(expiresIn).Unix(),

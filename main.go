@@ -8,27 +8,26 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/gin-gonic/gin"
-	"github.com/xhit/go-str2duration/v2"
 )
 
 var (
 	app = kingpin.New("Ldapin", "The simple OpenID Provider for LDAP like a ActiveDirectory.")
 
-	Issuer     = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").Default("http://localhost:8000").URL()
+	Issuer     = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").PlaceHolder(DefaultConfig.Issuer.String()).URL()
 	Listen     = app.Flag("listen", "Listen address and port. In default, use same port as Issuer URL. This option can't use when auto generate TLS cert.").Envar("LDAPIN_LISTEN").TCP()
 	PrivateKey = app.Flag("private-key", "RSA private key for signing to token. If omit this, automate generate key for one time use.").Envar("LDAPIN_PRIVATE_KEY").PlaceHolder("FILE").File()
 
-	TLSCertFile = app.Flag("tls-cert", "Cert file for TLS encryption.").Envar("LDAPIN_TLS_CERT").ExistingFile()
-	TLSKeyFile  = app.Flag("tls-key", "Key file for TLS encryption.").Envar("LDAPIN_TLS_KEY").ExistingFile()
+	TLSCertFile = app.Flag("tls-cert", "Cert file for TLS encryption.").Envar("LDAPIN_TLS_CERT").PlaceHolder("FILE").ExistingFile()
+	TLSKeyFile  = app.Flag("tls-key", "Key file for TLS encryption.").Envar("LDAPIN_TLS_KEY").PlaceHolder("FILE").ExistingFile()
 
-	BasePath         = app.Flag("base-path", "Path prefix for endpoints.").Envar("LDAPIN_BASE_PATH").Default("/").String()
-	AuthnEndpoint    = app.Flag("authn-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHN_ENDPOINT").Default("/login").String()
-	TokenEndpoint    = app.Flag("token-endpoint", "Path to token endpoint.").Envar("LDAPIN_TOKEN_ENDPOINT").Default("/login/token").String()
-	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").Default("/login/userinfo").String()
-	JwksEndpoint     = app.Flag("jwks-uri", "Path to jwks uri.").Envar("LDAPIN_JWKS_URI").Default("/login/certs").String()
+	BasePath         = app.Flag("base-path", "Path prefix for endpoints.").Envar("LDAPIN_BASE_PATH").PlaceHolder(DefaultConfig.Endpoints.BasePath).String()
+	AuthnEndpoint    = app.Flag("authn-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHN_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Authn).String()
+	TokenEndpoint    = app.Flag("token-endpoint", "Path to token endpoint.").Envar("LDAPIN_TOKEN_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Token).String()
+	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Userinfo).String()
+	JwksEndpoint     = app.Flag("jwks-uri", "Path to jwks uri.").Envar("LDAPIN_JWKS_URI").PlaceHolder(DefaultConfig.Endpoints.Jwks).String()
 
-	CodeTTL  = app.Flag("code-ttl", "TTL for code.").Envar("LDAPIN_CODE_TTL").Default("10m").String()
-	TokenTTL = app.Flag("token-ttl", "TTL for access_token and id_token.").Envar("LDAPIN_TOKEN_TTL").Default("14d").String()
+	CodeTTL  = app.Flag("code-ttl", "TTL for code.").Envar("LDAPIN_CODE_TTL").PlaceHolder("10m").String()
+	TokenTTL = app.Flag("token-ttl", "TTL for access_token and id_token.").Envar("LDAPIN_TOKEN_TTL").PlaceHolder("14d").String()
 
 	LdapAddress     = app.Flag("ldap", "URL of LDAP server like \"ldap://USER_DN:PASSWORD@ldap.example.com\".").Envar("LDAP_ADDRESS").PlaceHolder("ADDRESS").Required().URL()
 	LdapBaseDN      = app.Flag("ldap-base-dn", "The base DN for search user account in LDAP like \"OU=somewhere,DC=example,DC=local\".").Envar("LDAP_BASE_DN").PlaceHolder("DN").Required().String() // TODO: make it automate set same OU as bind user if omit.
@@ -38,10 +37,8 @@ var (
 	LoginPage = app.Flag("login-page", "Templte file for login page.").Envar("LDAPIN_LOGIN_PAGE").PlaceHolder("FILE").File()
 	ErrorPage = app.Flag("error-page", "Templte file for error page.").Envar("LDAPIN_ERROR_PAGE").PlaceHolder("FILE").File()
 
-	// TODO: implement configuration file.
-	//ConfigFile = app.Flag("config", "Path to configuration file.").Envar("LDAPIN_CONFIG").File()
-
-	Verbose = app.Flag("verbose", "Enable debug mode.").Envar("LDAP_VERBOSE").Bool()
+	Config  = app.Flag("config", "Load options from YAML file.").Envar("LDAPIN_CONFIG").PlaceHolder("FILE").File()
+	Verbose = app.Flag("verbose", "Enable debug mode.").Envar("LDAPIN_VERBOSE").Bool()
 )
 
 func DecideListenAddress(issuer *url.URL, listen *net.TCPAddr) string {
@@ -62,10 +59,16 @@ func DecideListenAddress(issuer *url.URL, listen *net.TCPAddr) string {
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	codeExpiresIn, err := str2duration.ParseDuration(*CodeTTL)
-	app.FatalIfError(err, "--code-ttl")
-	tokenExpiresIn, err := str2duration.ParseDuration(*TokenTTL)
-	app.FatalIfError(err, "--token-ttl")
+	var codeExpiresIn, tokenExpiresIn Duration
+	var err error
+	if *CodeTTL != "" {
+		codeExpiresIn, err = ParseDuration(*CodeTTL)
+		app.FatalIfError(err, "--code-ttl")
+	}
+	if *TokenTTL != "" {
+		tokenExpiresIn, err = ParseDuration(*TokenTTL)
+		app.FatalIfError(err, "--token-ttl")
+	}
 
 	if *TLSCertFile != "" && *TLSKeyFile == "" {
 		app.Fatalf("--tls-key is required when set --tls-cert")
@@ -111,37 +114,31 @@ func main() {
 		app.FatalIfError(err, "failed to generate private key")
 	}
 
+	conf := DefaultConfig
+	if *Config != nil {
+		loaded, err := LoadConfig(*Config)
+		app.FatalIfError(err, "failed to load config file")
+		conf.Override(loaded)
+	}
+	conf.Override(&LdapinConfig{
+		Issuer: (*URL)(*Issuer),
+		Listen: (*TCPAddr)(*Listen),
+		TTL: TTLConfig{
+			Code:  codeExpiresIn,
+			Token: tokenExpiresIn,
+		},
+		Endpoints: EndpointConfig{
+			BasePath: *BasePath,
+			Authn:    *AuthnEndpoint,
+			Token:    *TokenEndpoint,
+			Userinfo: *UserinfoEndpoint,
+			Jwks:     *JwksEndpoint,
+		},
+	})
 	api := &LdapinAPI{
 		Connector:  connector,
 		JWTManager: jwt,
-		Config: LdapinConfig{
-			Issuer:         (*Issuer).String(),
-			CodeExpiresIn:  codeExpiresIn,
-			TokenExpiresIn: tokenExpiresIn,
-			Endpoints: EndpointConfig{
-				BasePath: *BasePath,
-				Authn:    *AuthnEndpoint,
-				Token:    *TokenEndpoint,
-				Userinfo: *UserinfoEndpoint,
-				Jwks:     *JwksEndpoint,
-			},
-			Scopes: ScopeConfig{
-				"profile": []ClaimConfig{
-					{Claim: "name", Attribute: "displayName", Type: "string"},
-					{Claim: "given_name", Attribute: "givenName", Type: "string"},
-					{Claim: "family_name", Attribute: "sn", Type: "string"},
-				},
-				"email": []ClaimConfig{
-					{Claim: "email", Attribute: "mail", Type: "string"},
-				},
-				"phone": []ClaimConfig{
-					{Claim: "phone_number", Attribute: "telephoneNumber", Type: "string"},
-				},
-				"groups": []ClaimConfig{
-					{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
-				},
-			},
-		},
+		Config:     conf,
 	}
 
 	tmpl, err := loadPageTemplate(*LoginPage, *ErrorPage)
@@ -150,7 +147,7 @@ func main() {
 
 	api.SetRoutes(router)
 
-	addr := DecideListenAddress(*Issuer, *Listen)
+	addr := DecideListenAddress((*url.URL)(conf.Issuer), (*net.TCPAddr)(conf.Listen))
 	if *TLSCertFile != "" {
 		err = router.RunTLS(addr, *TLSCertFile, *TLSKeyFile)
 		app.FatalIfError(err, "failed to start server")

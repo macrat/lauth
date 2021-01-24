@@ -1,0 +1,34 @@
+issuer: http://localhost:8000
+
+ttl:
+  code: 10m
+  token: 1h
+
+endpoint:
+  base_path: /
+  authorization: /login
+  token: /login/token
+  userinfo: /login/userinfo
+  jwks: /login/certs
+
+scope:
+  profile:
+    - claim: name
+      attribute: displayName
+    - claim: given_name
+      attribute: givenName
+    - claim: family_name
+      attribute: sn
+
+  email:
+    - claim: email
+      attribute: mail
+
+  phone:
+    - claim: phone_number
+      attribute: telephoneNumber
+
+  groups:
+    - claim: groups
+      attribute: memberOf
+      type: '[]string'

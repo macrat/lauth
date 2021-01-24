@@ -16,10 +16,15 @@ import (
 )
 
 var (
-	dummyLdapinConfig = main.LdapinConfig{
-		Issuer:         "http://localhost:8000",
-		CodeExpiresIn:  1 * time.Minute,
-		TokenExpiresIn: 1 * time.Hour,
+	dummyLdapinConfig = &main.LdapinConfig{
+		Issuer: &main.URL{
+			Scheme: "http",
+			Host:   "localhost:8000",
+		},
+		TTL: main.TTLConfig{
+			Code:  main.Duration(1 * time.Minute),
+			Token: main.Duration(1 * time.Hour),
+		},
 		Endpoints: main.EndpointConfig{
 			BasePath: "/",
 			Authn:    "/authn",

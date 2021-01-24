@@ -9,7 +9,7 @@ import (
 
 type LdapinAPI struct {
 	Connector  LDAPConnector
-	Config     LdapinConfig
+	Config     *LdapinConfig
 	JWTManager JWTManager
 }
 

@@ -15,6 +15,7 @@ require (
 	github.com/rakyll/statik v0.1.7
 	github.com/xhit/go-str2duration/v2 v2.0.0
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
+	gopkg.in/yaml.v2 v2.2.8
 )
 
 replace github.com/macrat/ldapin/statik => ./statik

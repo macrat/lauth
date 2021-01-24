@@ -23,7 +23,7 @@ func TestCodeToken(t *testing.T) {
 		t.Fatalf("failed to generate JWTManager: %s", err)
 	}
 
-	issuer := "http://localhost:8000"
+	issuer := &main.URL{Scheme: "http", Host: "localhost:8000"}
 
 	code, err := jwtManager.CreateCode(issuer, "someone", "something", "openid profile", time.Now(), 10*time.Minute)
 	if err != nil {
@@ -39,7 +39,7 @@ func TestCodeToken(t *testing.T) {
 		t.Errorf("failed to validate code: %s", err)
 	}
 
-	if err = claims.Validate("another-issuer"); err == nil {
+	if err = claims.Validate(&main.URL{Host: "another-issuer"}); err == nil {
 		t.Errorf("must be failed if issuer is incorrect but success")
 	} else if err != main.UnexpectedIssuerError {
 		t.Errorf("unexpected error: %s", err)
@@ -59,7 +59,7 @@ func TestAccessToken(t *testing.T) {
 		t.Fatalf("failed to generate JWTManager: %s", err)
 	}
 
-	issuer := "http://localhost:8000"
+	issuer := &main.URL{Scheme: "http", Host: "localhost:8000"}
 
 	token, err := jwtManager.CreateAccessToken(issuer, "someone", "openid profile", time.Now(), 10*time.Minute)
 	if err != nil {
@@ -75,7 +75,7 @@ func TestAccessToken(t *testing.T) {
 		t.Errorf("failed to validate access token: %s", err)
 	}
 
-	if err = claims.Validate("another-issuer"); err == nil {
+	if err = claims.Validate(&main.URL{Host: "another-issuer"}); err == nil {
 		t.Errorf("must be failed if issuer is incorrect but success")
 	} else if err != main.UnexpectedIssuerError {
 		t.Errorf("unexpected error: %s", err)
@@ -95,7 +95,7 @@ func TestIDToken(t *testing.T) {
 		t.Fatalf("failed to generate JWTManager: %s", err)
 	}
 
-	issuer := "http://localhost:8000"
+	issuer := &main.URL{Scheme: "http", Host: "localhost:8000"}
 
 	_, err = jwtManager.CreateIDToken(issuer, "someone", "something", time.Now(), 10*time.Minute)
 	if err != nil {

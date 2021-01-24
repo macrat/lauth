@@ -80,7 +80,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		code.Subject,
 		scope.String(),
 		time.Unix(code.AuthTime, 0),
-		api.Config.TokenExpiresIn,
+		time.Duration(api.Config.TTL.Token),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
@@ -96,7 +96,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		code.Subject,
 		code.ClientID,
 		time.Unix(code.AuthTime, 0),
-		api.Config.TokenExpiresIn,
+		time.Duration(api.Config.TTL.Token),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
@@ -111,7 +111,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		TokenType:   "Bearer",
 		AccessToken: accessToken,
 		IDToken:     idToken,
-		ExpiresIn:   int64(api.Config.TokenExpiresIn.Seconds()),
+		ExpiresIn:   api.Config.TTL.Token.IntSeconds(),
 		Scope:       code.Scope,
 	})
 }
