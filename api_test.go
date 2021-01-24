@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"net/http"
+	"reflect"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -97,4 +98,65 @@ func (env *APITestEnvironment) Post(path string, body url.Values) *httptest.Resp
 	env.App.ServeHTTP(w, r)
 
 	return w
+}
+
+func (env *APITestEnvironment) Do(method, path string, values url.Values) *httptest.ResponseRecorder {
+	switch method {
+	case "GET":
+		return env.Get(path, values)
+	case "POST":
+		return env.Post(path, values)
+	default:
+		panic("unsupported method")
+	}
+}
+
+type RedirectTest struct {
+	Request     url.Values
+	Code        int
+	HasLocation bool
+	Query       url.Values
+	Fragment    url.Values
+}
+
+func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint string, tests []RedirectTest) {
+	t.Helper()
+
+	for _, tt := range tests {
+		resp := env.Do(method, endpoint, tt.Request)
+
+		if resp.Code != tt.Code {
+			t.Errorf("%s: expected status code %d but got %d", tt.Request.Encode(), tt.Code, resp.Code)
+		}
+
+		location := resp.Header().Get("Location")
+		if !tt.HasLocation {
+			if location != "" {
+				t.Errorf("%s: expected has no Location but got %#v", tt.Request.Encode(), location)
+			}
+		} else {
+			if location == "" {
+				t.Errorf("%s: expected Location header but not set", tt.Request.Encode())
+				continue
+			}
+
+			loc, err := url.Parse(location)
+			if err != nil {
+				t.Errorf("%s: failed to parse Location header: %s", tt.Request.Encode(), err)
+				continue
+			}
+
+			if !reflect.DeepEqual(loc.Query(), tt.Query) {
+				t.Errorf("%s: redirect with unexpected query: %#v", tt.Request.Encode(), location)
+			}
+
+			fragment, err := url.ParseQuery(loc.Fragment)
+			if err != nil {
+				t.Errorf("%s: failed to parse Location fragment: %s", tt.Request.Encode(), err)
+			}
+			if !reflect.DeepEqual(fragment, tt.Fragment) {
+				t.Errorf("%s: redirect with unexpected fragment: %#v", tt.Request.Encode(), location)
+			}
+		}
+	}
 }

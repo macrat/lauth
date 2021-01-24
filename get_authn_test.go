@@ -3,20 +3,13 @@ package main_test
 import (
 	"net/http"
 	"net/url"
-	"reflect"
 	"testing"
 )
 
 func TestGetAuthn(t *testing.T) {
 	env := NewAPITestEnvironment(t)
 
-	tests := []struct {
-		Request     url.Values
-		Code        int
-		HasLocation bool
-		Query       url.Values
-		Fragment    url.Values
-	}{
+	env.RedirectTest(t, "GET", "/authn", []RedirectTest{
 		{
 			Request:     url.Values{},
 			Code:        http.StatusBadRequest,
@@ -102,43 +95,5 @@ func TestGetAuthn(t *testing.T) {
 			},
 			Fragment: url.Values{},
 		},
-	}
-
-	for _, tt := range tests {
-		resp := env.Get("/authn", tt.Request)
-
-		if resp.Code != tt.Code {
-			t.Errorf("%s: expected status code %d but got %d", tt.Request.Encode(), tt.Code, resp.Code)
-		}
-
-		location := resp.Header().Get("Location")
-		if !tt.HasLocation {
-			if location != "" {
-				t.Errorf("%s: expected has no Location but got %#v", tt.Request.Encode(), location)
-			}
-		} else {
-			if location == "" {
-				t.Errorf("%s: expected Location header but not set", tt.Request.Encode())
-				continue
-			}
-
-			loc, err := url.Parse(location)
-			if err != nil {
-				t.Errorf("%s: failed to parse Location header: %s", tt.Request.Encode(), err)
-				continue
-			}
-
-			if !reflect.DeepEqual(loc.Query(), tt.Query) {
-				t.Errorf("%s: redirect with unexpected query: %#v", tt.Request.Encode(), location)
-			}
-
-			fragment, err := url.ParseQuery(loc.Fragment)
-			if err != nil {
-				t.Errorf("%s: failed to parse Location fragment: %s", tt.Request.Encode(), err)
-			}
-			if !reflect.DeepEqual(fragment, tt.Fragment) {
-				t.Errorf("%s: redirect with unexpected fragment: %#v", tt.Request.Encode(), location)
-			}
-		}
-	}
+	})
 }
