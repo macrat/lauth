@@ -15,10 +15,10 @@ func TestMappingClaims(t *testing.T) {
 	}{
 		{
 			Attrs: map[string][]string{
-				"foo_attr": []string{"foo1", "foo2"},
-				"bar_attr": []string{"bar1"},
+				"foo_attr": {"foo1", "foo2"},
+				"bar_attr": {"bar1"},
 				"baz_attr": nil,
-				"qux_attr": []string{"qux1", "qux2"},
+				"qux_attr": {"qux1", "qux2"},
 			},
 			Maps: map[string]main.ClaimConfig{
 				"foo_attr": {
