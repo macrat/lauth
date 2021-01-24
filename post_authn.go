@@ -3,8 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"net/url"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -73,69 +71,10 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 		return
 	}
 
-	resp := make(url.Values)
-
-	if req.State != "" {
-		resp.Set("state", req.State)
+	resp, errMsg := MakeAuthnTokens(api.JWTManager, api.Config, req.GetAuthnRequest, req.User)
+	if errMsg != nil {
+		errMsg.Redirect(c)
 	}
 
-	rt := ParseStringSet(req.ResponseType)
-
-	if rt.Has("code") {
-		code, err := api.JWTManager.CreateCode(
-			api.Config.Issuer,
-			req.User,
-			req.ClientID,
-			req.Scope,
-			req.Nonce,
-			time.Now(),
-			time.Duration(api.Config.TTL.Code),
-		)
-		if err != nil {
-			req.makeError(err, "server_error", "failed to generate code").Redirect(c)
-			return
-		}
-		resp.Set("code", code)
-	}
-	if rt.Has("token") {
-		token, err := api.JWTManager.CreateAccessToken(
-			api.Config.Issuer,
-			req.User,
-			req.Scope,
-			time.Now(),
-			time.Duration(api.Config.TTL.Token),
-		)
-		if err != nil {
-			req.makeError(err, "server_error", "failed to generate access_token").Redirect(c)
-			return
-		}
-		resp.Set("token_type", "Bearer")
-		resp.Set("access_token", token)
-		resp.Set("scope", req.Scope)
-		resp.Set("expires_in", api.Config.TTL.Token.StrSeconds())
-	}
-	if rt.Has("id_token") {
-		token, err := api.JWTManager.CreateIDToken(
-			api.Config.Issuer,
-			req.User,
-			req.ClientID,
-			req.Nonce,
-			time.Now(),
-			time.Duration(api.Config.TTL.Token),
-		)
-		if err != nil {
-			req.makeError(err, "server_error", "failed to generate id_token").Redirect(c)
-			return
-		}
-		resp.Set("id_token", token)
-		resp.Set("expires_in", api.Config.TTL.Token.StrSeconds())
-	}
-
-	redirectURI, _ := url.Parse(req.RedirectURI)
-	if rt.String() != "code" {
-		redirectURI.Fragment = resp.Encode()
-	} else {
-		redirectURI.RawQuery = resp.Encode()
-	}
-	c.Redirect(http.StatusFound, redirectURI.String())
+	c.Redirect(http.StatusFound, resp.String())
 }
