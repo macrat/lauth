@@ -17,7 +17,7 @@ var (
 				"givenName":       {"yuuma"},
 				"sn":              {"shida"},
 				"mail":            {"m@crat.jp"},
-				"telephoneNumber": {"000-0000-0000"},
+				"telephoneNumber": {"000-1234-5678"},
 			},
 		},
 		"j.smith": DummyUserInfo{
