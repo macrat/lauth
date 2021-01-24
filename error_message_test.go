@@ -1,14 +1,14 @@
 package main_test
 
 import (
-	"testing"
-	"net/url"
-	"reflect"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"reflect"
+	"testing"
 
-	"github.com/macrat/ldapin"
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/ldapin"
 )
 
 func MustParseURL(u string) *url.URL {
@@ -45,7 +45,7 @@ func ServeErrorMessageRedirect(t *testing.T, msg main.ErrorMessage) *httptest.Re
 
 func TestErrorMessage_Redirect(t *testing.T) {
 	nonRedirect := ServeErrorMessageRedirect(t, main.ErrorMessage{
-		Reason: "some_reason",
+		Reason:      "some_reason",
 		Description: "hello world",
 	})
 	if nonRedirect.Code != http.StatusBadRequest {
@@ -55,40 +55,40 @@ func TestErrorMessage_Redirect(t *testing.T) {
 		t.Errorf("unexpected content-type: %s", nonRedirect.Header().Get("Content-Type"))
 	}
 
-	tests := []struct{
+	tests := []struct {
 		Msg      main.ErrorMessage
 		Query    url.Values
 		Fragment url.Values
 	}{
 		{
 			Msg: main.ErrorMessage{
-				RedirectURI: MustParseURL("http://localhost:3000/redirect"),
+				RedirectURI:  MustParseURL("http://localhost:3000/redirect"),
 				ResponseType: "code",
-				State: "hello world",
-				Reason: "something_wrong",
-				Description: "this is something wrong!",
+				State:        "hello world",
+				Reason:       "something_wrong",
+				Description:  "this is something wrong!",
 			},
-			Query: MustParseQuery("state=hello world&error=something_wrong&error_description=this is something wrong!"),
+			Query:    MustParseQuery("state=hello world&error=something_wrong&error_description=this is something wrong!"),
 			Fragment: url.Values{},
 		},
 		{
 			Msg: main.ErrorMessage{
-				RedirectURI: MustParseURL("http://localhost:3000/redirect"),
+				RedirectURI:  MustParseURL("http://localhost:3000/redirect"),
 				ResponseType: "code token",
-				State: "hello world",
-				Reason: "something_wrong",
-				Description: "this is something wrong!",
+				State:        "hello world",
+				Reason:       "something_wrong",
+				Description:  "this is something wrong!",
 			},
-			Query: url.Values{},
+			Query:    url.Values{},
 			Fragment: MustParseQuery("state=hello world&error=something_wrong&error_description=this is something wrong!"),
 		},
 		{
 			Msg: main.ErrorMessage{
-				RedirectURI: MustParseURL("http://localhost:3000/redirect"),
+				RedirectURI:  MustParseURL("http://localhost:3000/redirect"),
 				ResponseType: "code",
-				Reason: "something_wrong",
+				Reason:       "something_wrong",
 			},
-			Query: MustParseQuery("error=something_wrong"),
+			Query:    MustParseQuery("error=something_wrong"),
 			Fragment: url.Values{},
 		},
 	}
