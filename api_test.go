@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"fmt"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -82,31 +83,39 @@ func NewAPITestEnvironment(t *testing.T) *APITestEnvironment {
 	}
 }
 
-func (env *APITestEnvironment) Get(path string, query url.Values) *httptest.ResponseRecorder {
+func (env *APITestEnvironment) Get(path, token string, query url.Values) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", path+"?"+query.Encode(), nil)
+
+	if token != "" {
+		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	}
 
 	env.App.ServeHTTP(w, r)
 
 	return w
 }
 
-func (env *APITestEnvironment) Post(path string, body url.Values) *httptest.ResponseRecorder {
+func (env *APITestEnvironment) Post(path, token string, body url.Values) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("POST", path, strings.NewReader(body.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
+	if token != "" {
+		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	}
+
 	env.App.ServeHTTP(w, r)
 
 	return w
 }
 
-func (env *APITestEnvironment) Do(method, path string, values url.Values) *httptest.ResponseRecorder {
+func (env *APITestEnvironment) Do(method, path, token string, values url.Values) *httptest.ResponseRecorder {
 	switch method {
 	case "GET":
-		return env.Get(path, values)
+		return env.Get(path, token, values)
 	case "POST":
-		return env.Post(path, values)
+		return env.Post(path, token, values)
 	default:
 		panic("unsupported method")
 	}
@@ -127,7 +136,7 @@ func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint strin
 	t.Helper()
 
 	for _, tt := range tests {
-		resp := env.Do(method, endpoint, tt.Request)
+		resp := env.Do(method, endpoint, "", tt.Request)
 
 		if resp.Code != tt.Code {
 			t.Errorf("%s: expected status code %d but got %d", tt.Request.Encode(), tt.Code, resp.Code)
@@ -182,13 +191,14 @@ type JSONTest struct {
 	Code      int
 	CheckBody JSONTester
 	Body      map[string]interface{}
+	Token     string
 }
 
 func (env *APITestEnvironment) JSONTest(t *testing.T, method, endpoint string, tests []JSONTest) {
 	t.Helper()
 
 	for _, tt := range tests {
-		resp := env.Do(method, endpoint, tt.Request)
+		resp := env.Do(method, endpoint, tt.Token, tt.Request)
 
 		if resp.Code != tt.Code {
 			t.Errorf("%s: expected status code %d but got %d", tt.Request.Encode(), tt.Code, resp.Code)
