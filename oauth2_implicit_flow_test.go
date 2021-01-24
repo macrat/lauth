@@ -8,22 +8,19 @@ import (
 	"testing"
 )
 
-func TestOAuth2AuthzCodeFlow(t *testing.T) {
+func TestOAuth2ImplicitFlow(t *testing.T) {
 	env := NewAPITestEnvironment(t)
 
 	clientID := "hello_client"
-	nonce := "this is Nonce"
 
 	resp := env.Post("/authn", "", url.Values{
-		"response_type": {"code"},
+		"response_type": {"token"},
 		"redirect_uri":  {"http://localhost:3000"},
 		"client_id":     {clientID},
-		"nonce":         {nonce},
 		"scope":         {"phone"},
 		"username":      {"macrat"},
 		"password":      {"foobar"},
 	})
-
 	if resp.Code != http.StatusFound {
 		t.Fatalf("unexpected status code: %d", resp.Code)
 	}
@@ -32,35 +29,17 @@ func TestOAuth2AuthzCodeFlow(t *testing.T) {
 		t.Fatalf("failed to parse location: %s", err)
 	}
 
-	code := location.Query().Get("code")
-	if code == "" {
-		t.Fatalf("failed to get code")
+	fragment, err := url.ParseQuery(location.Fragment)
+	if err != nil {
+		t.Fatalf("failed to parse fragment: %s", err)
 	}
 
-	resp = env.Post("/token", "", url.Values{
-		"grant_type": {"authorization_code"},
-		"code":       {code},
-	})
-
-	if resp.Code != http.StatusOK {
-		t.Fatalf("unexpected status code: %d", resp.Code)
+	accessToken := fragment.Get("access_token")
+	if accessToken == "" {
+		t.Fatalf("failed to get access_token")
 	}
 
-	var tokens struct {
-		AccessToken string `json:"access_token"`
-		IDToken     string `json:"id_token"`
-	}
-	if err = json.Unmarshal(resp.Body.Bytes(), &tokens); err != nil {
-		t.Fatalf("failed to parse body: %s", err)
-	}
-
-	if idToken, err := env.API.JWTManager.ParseIDToken(tokens.IDToken); err != nil {
-		t.Errorf("failed to parse id_token: %s", err)
-	} else if idToken.Nonce != nonce {
-		t.Errorf("nonce of id_token expected %#v but got %#v", nonce, idToken.Nonce)
-	}
-
-	resp = env.Get("/userinfo", tokens.AccessToken, nil)
+	resp = env.Get("/userinfo", accessToken, nil)
 	if resp.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", resp.Code)
 	}
