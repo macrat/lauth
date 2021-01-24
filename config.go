@@ -73,6 +73,7 @@ type LdapinConfig struct {
 	TokenExpiresIn time.Duration  `toml:"token_ttl"`
 	Endpoints      EndpointConfig `toml:"endpoint"`
 	Scopes         ScopeConfig    `toml:"scope"`
+	//Clients        []ClientConfig `toml:"client"`  // TODO: implement client authentication.
 }
 
 func (c LdapinConfig) OpenIDConfiguration() map[string]interface{} {
