@@ -23,7 +23,7 @@ func (api *LdapinAPI) SetRoutes(r gin.IRoutes) {
 }
 
 func (api *LdapinAPI) GetConfiguration(c *gin.Context) {
-	c.JSON(200, api.Config.OpenIDConfiguration())
+	c.IndentedJSON(200, api.Config.OpenIDConfiguration())
 }
 
 func (api *LdapinAPI) GetCerts(c *gin.Context) {
