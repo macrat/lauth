@@ -1,15 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/lestrrat-go/jwx/jwk"
 )
 
 var (
@@ -137,12 +139,38 @@ func NewJWTManagerFromFile(file io.Reader) (JWTManager, error) {
 	return NewJWTManager(pri)
 }
 
-func (m JWTManager) JWKs() (interface{}, error) {
-	k := jwk.NewRSAPublicKey()
-	if err := k.FromRaw(m.public); err != nil {
-		return nil, err
-	}
-	return []jwk.Key{k}, nil
+type JWK struct {
+	Use       string `json:"use"`
+	Algorithm string `json:"alg"`
+	KeyType   string `json:"kty"`
+	E         string `json:"e"`
+	N         string `json:"n"`
+}
+
+func bytes2base64(b []byte) string {
+	buf := bytes.NewBuffer([]byte{})
+	enc := base64.NewEncoder(base64.StdEncoding, buf)
+	enc.Write(b)
+	enc.Close()
+	return string(buf.Bytes())
+}
+
+func int2base64(i int) string {
+	bytes := make([]byte, 8)
+	n := binary.PutVarint(bytes, int64(i))
+	return bytes2base64(bytes[:n])
+}
+
+func (m JWTManager) JWKs() ([]JWK, error) {
+	return []JWK{
+		{
+			Use:       "sig",
+			Algorithm: "RS256",
+			KeyType:   "RSA",
+			E:         int2base64(m.public.E),
+			N:         bytes2base64(m.public.N.Bytes()),
+		},
+	}, nil
 }
 
 func (m JWTManager) create(claims jwt.Claims) (string, error) {
