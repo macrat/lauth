@@ -28,8 +28,7 @@ var (
 			Token: main.Duration(1 * time.Hour),
 		},
 		Endpoints: main.EndpointConfig{
-			BasePath: "/",
-			Authn:    "/authn",
+			Authz:    "/authz",
 			Token:    "/token",
 			Userinfo: "/userinfo",
 			Jwks:     "/certs",
@@ -275,8 +274,8 @@ func TestOpenIDConfiguration(t *testing.T) {
 	}
 
 	endpoints := provider.Endpoint()
-	if endpoints.AuthURL != "http://localhost:38980/authn" {
-		t.Errorf("unexpected authn endpoint guessed: %#v", endpoints.AuthURL)
+	if endpoints.AuthURL != "http://localhost:38980/authz" {
+		t.Errorf("unexpected authz endpoint guessed: %#v", endpoints.AuthURL)
 	}
 	if endpoints.TokenURL != "http://localhost:38980/token" {
 		t.Errorf("unexpected token endpoint guessed: %#v", endpoints.TokenURL)

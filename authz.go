@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func MakeAuthnTokens(jwt JWTManager, config *LdapinConfig, req GetAuthnRequest, subject string, authTime time.Time) (*url.URL, *ErrorMessage) {
+func MakeAuthzTokens(jwt JWTManager, config *LdapinConfig, req GetAuthzRequest, subject string, authTime time.Time) (*url.URL, *ErrorMessage) {
 	resp := make(url.Values)
 
 	if req.State != "" {

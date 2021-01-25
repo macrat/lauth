@@ -25,8 +25,7 @@ var (
 			SSO:   Duration(14 * 24 * time.Hour),
 		},
 		Endpoints: EndpointConfig{
-			BasePath: "/",
-			Authn:    "/login",
+			Authz:    "/login",
 			Token:    "/login/token",
 			Userinfo: "/login/userinfo",
 			Jwks:     "/login/jwks",
@@ -105,19 +104,15 @@ func (sc ScopeConfig) ClaimMapFor(scopes *StringSet) map[string]ClaimConfig {
 }
 
 type EndpointConfig struct {
-	BasePath string `yaml:"base_path"`
-	Authn    string `yaml:"authorization"`
+	Authz    string `yaml:"authorization"`
 	Token    string `yaml:"token"`
 	Userinfo string `yaml:"userinfo"`
 	Jwks     string `yaml:"jwks"`
 }
 
 func (c *EndpointConfig) Override(patch EndpointConfig) {
-	if patch.BasePath != "" {
-		(*c).BasePath = patch.BasePath
-	}
-	if patch.Authn != "" {
-		(*c).Authn = patch.Authn
+	if patch.Authz != "" {
+		(*c).Authz = patch.Authz
 	}
 	if patch.Token != "" {
 		(*c).Token = patch.Token
@@ -252,21 +247,73 @@ func (c *LdapinConfig) Override(patch *LdapinConfig) {
 	}
 }
 
-func (c *LdapinConfig) OpenIDConfiguration() map[string]interface{} {
+type ResolvedEndpointPaths struct {
+	OpenIDConfiguration string
+	Authz               string
+	Token               string
+	Userinfo            string
+	Jwks                string
+}
+
+func (c *LdapinConfig) EndpointPaths() ResolvedEndpointPaths {
+	return ResolvedEndpointPaths{
+		OpenIDConfiguration: path.Join(c.Issuer.Path, "/.well-known/openid-configuration"),
+		Authz:               path.Join(c.Issuer.Path, c.Endpoints.Authz),
+		Token:               path.Join(c.Issuer.Path, c.Endpoints.Token),
+		Userinfo:            path.Join(c.Issuer.Path, c.Endpoints.Userinfo),
+		Jwks:                path.Join(c.Issuer.Path, c.Endpoints.Jwks),
+	}
+}
+
+type OpenIDConfiguration struct {
+	Issuer                           string   `json:"issuer"`
+	AuthorizationEndpoint            string   `json:"authorization_endpoint"`
+	TokenEndpoint                    string   `json:"token_endpoint"`
+	UserinfoEndpoint                 string   `json:"userinfo_endpoint"`
+	JwksEndpoint                     string   `json:"jwks_uri"`
+	ScopesSupported                  []string `json:"scopes_supported"`
+	ResponseTypesSupported           []string `json:"response_types_supported"`
+	ResponseModesSupported           []string `json:"response_modes_supported"`
+	GrantTypesSupported              []string `json:"grant_types_supported"`
+	SubjectTypesSupported            []string `json:"subject_types_supported"`
+	IDTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
+	DisplayValuesSupported           []string `json:"display_values_supported"`
+	ClaimsSupported                  []string `json:"claims_supported"`
+}
+
+func (c *LdapinConfig) OpenIDConfiguration() OpenIDConfiguration {
 	issuer := c.Issuer.String()
-	return map[string]interface{}{
-		"issuer":                                issuer,
-		"authorization_endpoint":                issuer + path.Join("/", c.Endpoints.BasePath, c.Endpoints.Authn),
-		"token_endpoint":                        issuer + path.Join("/", c.Endpoints.BasePath, c.Endpoints.Token),
-		"userinfo_endpoint":                     issuer + path.Join("/", c.Endpoints.BasePath, c.Endpoints.Userinfo),
-		"jwks_uri":                              issuer + path.Join("/", c.Endpoints.BasePath, c.Endpoints.Jwks),
-		"scopes_supported":                      append(c.Scopes.ScopeNames(), "openid"),
-		"response_types_supported":              []string{"code", "token", "id_token", "code token", "code id_token", "token id_token", "code token id_token"},
-		"response_modes_supported":              []string{"query", "fragment"},
-		"grant_types_supported":                 []string{"authorization_code"},
-		"subject_types_supported":               []string{"public"},
-		"id_token_signing_alg_values_supported": []string{"RS256"},
-		"display_values_supported":              []string{"page"},
-		"claims_supported":                      append(c.Scopes.AllClaims(), "iss", "sub", "aud", "exp", "iat", "typ", "auth_time"),
+
+	return OpenIDConfiguration{
+		Issuer:                issuer,
+		AuthorizationEndpoint: issuer + path.Join("/", c.Endpoints.Authz),
+		TokenEndpoint:         issuer + path.Join("/", c.Endpoints.Token),
+		UserinfoEndpoint:      issuer + path.Join("/", c.Endpoints.Userinfo),
+		JwksEndpoint:          issuer + path.Join("/", c.Endpoints.Jwks),
+		ScopesSupported:       append(c.Scopes.ScopeNames(), "openid"),
+		ResponseTypesSupported: []string{
+			"code",
+			"token",
+			"id_token",
+			"code token",
+			"code id_token",
+			"token id_token",
+			"code token id_token",
+		},
+		ResponseModesSupported:           []string{"query", "fragment"},
+		GrantTypesSupported:              []string{"authorization_code"},
+		SubjectTypesSupported:            []string{"public"},
+		IDTokenSigningAlgValuesSupported: []string{"RS256"},
+		DisplayValuesSupported:           []string{"page"},
+		ClaimsSupported: append(
+			c.Scopes.AllClaims(),
+			"iss",
+			"sub",
+			"aud",
+			"exp",
+			"iat",
+			"typ",
+			"auth_time",
+		),
 	}
 }

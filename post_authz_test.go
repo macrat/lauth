@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-func TestPostAuthn(t *testing.T) {
+func TestPostAuthz(t *testing.T) {
 	env := NewAPITestEnvironment(t)
 
-	env.RedirectTest(t, "GET", "/authn", authnEndpointCommonTests)
+	env.RedirectTest(t, "GET", "/authz", authzEndpointCommonTests)
 
-	env.RedirectTest(t, "POST", "/authn", []RedirectTest{
+	env.RedirectTest(t, "POST", "/authz", []RedirectTest{
 		{
 			Request: url.Values{
 				"redirect_uri":  {"http://localhost:3000"},

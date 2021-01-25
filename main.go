@@ -20,8 +20,7 @@ var (
 	TLSCertFile = app.Flag("tls-cert", "Cert file for TLS encryption.").Envar("LDAPIN_TLS_CERT").PlaceHolder("FILE").ExistingFile()
 	TLSKeyFile  = app.Flag("tls-key", "Key file for TLS encryption.").Envar("LDAPIN_TLS_KEY").PlaceHolder("FILE").ExistingFile()
 
-	BasePath         = app.Flag("base-path", "Path prefix for endpoints.").Envar("LDAPIN_BASE_PATH").PlaceHolder(DefaultConfig.Endpoints.BasePath).String()
-	AuthnEndpoint    = app.Flag("authn-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHN_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Authn).String()
+	AuthzEndpoint    = app.Flag("authz-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHz_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Authz).String()
 	TokenEndpoint    = app.Flag("token-endpoint", "Path to token endpoint.").Envar("LDAPIN_TOKEN_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Token).String()
 	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Userinfo).String()
 	JwksEndpoint     = app.Flag("jwks-uri", "Path to jwks uri.").Envar("LDAPIN_JWKS_URI").PlaceHolder(DefaultConfig.Endpoints.Jwks).String()
@@ -129,8 +128,7 @@ func main() {
 			Token: tokenExpiresIn,
 		},
 		Endpoints: EndpointConfig{
-			BasePath: *BasePath,
-			Authn:    *AuthnEndpoint,
+			Authz:    *AuthzEndpoint,
 			Token:    *TokenEndpoint,
 			Userinfo: *UserinfoEndpoint,
 			Jwks:     *JwksEndpoint,

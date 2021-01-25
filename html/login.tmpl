@@ -1,5 +1,5 @@
 {{ template "header" }}
-    <form action="{{ .config.Endpoints.Authn }}" method="POST">
+    <form action="{{ .endpoints.Authz }}" method="POST">
         <input type="hidden" name="response_type" value="{{ .request.ResponseType }}" />
         <input type="hidden" name="client_id" value="{{ .request.ClientID }}" />
         <input type="hidden" name="redirect_uri" value="{{ .request.RedirectURI }}" />

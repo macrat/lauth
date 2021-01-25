@@ -14,7 +14,7 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 	clientID := "hello_client"
 	nonce := "this is Nonce"
 
-	resp := env.Post("/authn", "", url.Values{
+	resp := env.Post("/authz", "", url.Values{
 		"response_type": {"code"},
 		"redirect_uri":  {"http://localhost:3000"},
 		"client_id":     {clientID},

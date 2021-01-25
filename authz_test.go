@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	authnEndpointCommonTests = []RedirectTest{
+	authzEndpointCommonTests = []RedirectTest{
 		{
 			Request:     url.Values{},
 			Code:        http.StatusBadRequest,

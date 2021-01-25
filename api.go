@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"path"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,12 +13,14 @@ type LdapinAPI struct {
 }
 
 func (api *LdapinAPI) SetRoutes(r gin.IRoutes) {
-	r.GET(path.Join(api.Config.Endpoints.BasePath, "/.well-known/openid-configuration"), api.GetConfiguration)
-	r.GET(path.Join(api.Config.Endpoints.BasePath, api.Config.Endpoints.Authn), api.GetAuthn)
-	r.POST(path.Join(api.Config.Endpoints.BasePath, api.Config.Endpoints.Authn), api.PostAuthn)
-	r.POST(path.Join(api.Config.Endpoints.BasePath, api.Config.Endpoints.Token), api.PostToken)
-	r.GET(path.Join(api.Config.Endpoints.BasePath, api.Config.Endpoints.Userinfo), api.GetUserInfo)
-	r.GET(path.Join(api.Config.Endpoints.BasePath, api.Config.Endpoints.Jwks), api.GetCerts)
+	endpoints := api.Config.EndpointPaths()
+
+	r.GET(endpoints.OpenIDConfiguration, api.GetConfiguration)
+	r.GET(endpoints.Authz, api.GetAuthz)
+	r.POST(endpoints.Authz, api.PostAuthz)
+	r.POST(endpoints.Token, api.PostToken)
+	r.GET(endpoints.Userinfo, api.GetUserInfo)
+	r.GET(endpoints.Jwks, api.GetCerts)
 }
 
 func (api *LdapinAPI) GetConfiguration(c *gin.Context) {

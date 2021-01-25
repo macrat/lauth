@@ -26,7 +26,6 @@ ttl:
   sso: 14d
 
 endpoint:
-  base_path: /
   authorization: /login
   token: /login/token
   userinfo: /login/userinfo

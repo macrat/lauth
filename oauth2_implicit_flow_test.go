@@ -13,7 +13,7 @@ func TestOAuth2ImplicitFlow(t *testing.T) {
 
 	clientID := "hello_client"
 
-	resp := env.Post("/authn", "", url.Values{
+	resp := env.Post("/authz", "", url.Values{
 		"response_type": {"token"},
 		"redirect_uri":  {"http://localhost:3000"},
 		"client_id":     {clientID},

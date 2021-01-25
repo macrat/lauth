@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type GetAuthnRequest struct {
+type GetAuthzRequest struct {
 	ResponseType string `form:"response_type" json:"response_type" xml:"response_type"`
 	ClientID     string `form:"client_id"     json:"client_id"     xml:"client_id"`
 	RedirectURI  string `form:"redirect_uri"  json:"redirect_uri"  xml:"redirect_uri"`
@@ -19,7 +19,7 @@ type GetAuthnRequest struct {
 	MaxAge       int64  `form:"max_age"       json:"max_age"       xml:"max_age"`
 }
 
-func (req *GetAuthnRequest) Bind(c *gin.Context) *ErrorMessage {
+func (req *GetAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
 	err := c.ShouldBind(req)
 	if err != nil {
 		return &ErrorMessage{
@@ -31,7 +31,7 @@ func (req *GetAuthnRequest) Bind(c *gin.Context) *ErrorMessage {
 	return nil
 }
 
-func (req GetAuthnRequest) makeError(err error, reason, description string) *ErrorMessage {
+func (req GetAuthzRequest) makeError(err error, reason, description string) *ErrorMessage {
 	redirectURI, e2 := url.Parse(req.RedirectURI)
 	if e2 != nil {
 		redirectURI = nil
@@ -47,7 +47,7 @@ func (req GetAuthnRequest) makeError(err error, reason, description string) *Err
 	}
 }
 
-func (req GetAuthnRequest) Validate() *ErrorMessage {
+func (req GetAuthzRequest) Validate() *ErrorMessage {
 	if req.RedirectURI == "" {
 		return req.makeError(nil, "invalid_redirect_uri", "redirect_uri is not set")
 	}
@@ -81,15 +81,15 @@ func (req GetAuthnRequest) Validate() *ErrorMessage {
 	return nil
 }
 
-func (req *GetAuthnRequest) BindAndValidate(c *gin.Context) *ErrorMessage {
+func (req *GetAuthzRequest) BindAndValidate(c *gin.Context) *ErrorMessage {
 	if err := req.Bind(c); err != nil {
 		return err
 	}
 	return req.Validate()
 }
 
-func (api *LdapinAPI) GetAuthn(c *gin.Context) {
-	var req GetAuthnRequest
+func (api *LdapinAPI) GetAuthz(c *gin.Context) {
+	var req GetAuthzRequest
 	if err := (&req).BindAndValidate(c); err != nil {
 		err.Redirect(c)
 		return
@@ -105,7 +105,7 @@ func (api *LdapinAPI) GetAuthn(c *gin.Context) {
 			if idToken, err := api.JWTManager.ParseIDToken(token); err != nil || idToken.Validate(issuer, issuer.String()) != nil {
 				c.SetCookie("token", "", 0, "/", issuer.Host, secure, true)
 			} else {
-				redirect, errMsg := MakeAuthnTokens(api.JWTManager, api.Config, req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
+				redirect, errMsg := MakeAuthzTokens(api.JWTManager, api.Config, req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
 				if errMsg != nil {
 					errMsg.Redirect(c)
 				} else {
@@ -126,7 +126,8 @@ func (api *LdapinAPI) GetAuthn(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "login.tmpl", gin.H{
-		"config":  api.Config,
-		"request": req,
+		"endpoints": api.Config.EndpointPaths(),
+		"config":    api.Config,
+		"request":   req,
 	})
 }

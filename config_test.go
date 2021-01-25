@@ -122,3 +122,59 @@ func TestConfigExampleLoadable(t *testing.T) {
 		t.Errorf("failed to load example config: %s", err)
 	}
 }
+
+func TestLdapinConfig_EndpointPaths(t *testing.T) {
+	conf := main.LdapinConfig{
+		Issuer: &main.URL{Scheme: "https", Host: "test.example.com", Path: "/path/to"},
+		Endpoints: main.EndpointConfig{
+			Authz:    "/login",
+			Token:    "/login/token",
+			Userinfo: "/userinfo",
+			Jwks:     "/jwks",
+		},
+	}
+
+	endpoints := conf.EndpointPaths()
+
+	if endpoints.OpenIDConfiguration != "/path/to/.well-known/openid-configuration" {
+		t.Errorf("unexpected token endpoint: %s", endpoints.OpenIDConfiguration)
+	}
+
+	if endpoints.Authz != "/path/to/login" {
+		t.Errorf("unexpected authz endpoint: %s", endpoints.Authz)
+	}
+
+	if endpoints.Token != "/path/to/login/token" {
+		t.Errorf("unexpected token endpoint: %s", endpoints.Token)
+	}
+
+	if endpoints.Userinfo != "/path/to/userinfo" {
+		t.Errorf("unexpected userinfo endpoint: %s", endpoints.Userinfo)
+	}
+
+	if endpoints.Jwks != "/path/to/jwks" {
+		t.Errorf("unexpected jwks endpoint: %s", endpoints.Jwks)
+	}
+}
+
+func TestLdapinConfig_OpenIDConfiguration(t *testing.T) {
+	conf := main.LdapinConfig{
+		Issuer: &main.URL{Scheme: "https", Host: "test.example.com", Path: "/path/to"},
+		Endpoints: main.EndpointConfig{
+			Authz:    "/login",
+			Token:    "/login/token",
+			Userinfo: "/userinfo",
+			Jwks:     "/jwks",
+		},
+	}
+
+	oidconfig := conf.OpenIDConfiguration()
+
+	if oidconfig.Issuer != "https://test.example.com/path/to" {
+		t.Errorf("unexpected issuer: %s", oidconfig.Issuer)
+	}
+
+	if oidconfig.TokenEndpoint != "https://test.example.com/path/to/login/token" {
+		t.Errorf("unexpected issuer: %s", oidconfig.TokenEndpoint)
+	}
+}

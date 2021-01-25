@@ -9,14 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type PostAuthnRequest struct {
-	GetAuthnRequest
+type PostAuthzRequest struct {
+	GetAuthzRequest
 
 	User     string `form:"username" json:"username" xml:"username"`
 	Password string `form:"password" json:"password" xml:"password"`
 }
 
-func (req *PostAuthnRequest) Bind(c *gin.Context) *ErrorMessage {
+func (req *PostAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
 	err := c.ShouldBind(req)
 	if err != nil {
 		return &ErrorMessage{
@@ -28,15 +28,15 @@ func (req *PostAuthnRequest) Bind(c *gin.Context) *ErrorMessage {
 	return nil
 }
 
-func (req *PostAuthnRequest) BindAndValidate(c *gin.Context) *ErrorMessage {
+func (req *PostAuthzRequest) BindAndValidate(c *gin.Context) *ErrorMessage {
 	if err := req.Bind(c); err != nil {
 		return err
 	}
 	return req.Validate()
 }
 
-func (api *LdapinAPI) PostAuthn(c *gin.Context) {
-	var req PostAuthnRequest
+func (api *LdapinAPI) PostAuthz(c *gin.Context) {
+	var req PostAuthzRequest
 	if err := (&req).BindAndValidate(c); err != nil {
 		err.Redirect(c)
 		return
@@ -48,7 +48,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 	if req.User == "" || req.Password == "" {
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,
-			"request":          req.GetAuthnRequest,
+			"request":          req.GetAuthzRequest,
 			"initial_username": req.User,
 			"error":            "missing_username_or_password",
 		})
@@ -66,7 +66,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 	if err := conn.LoginTest(req.User, req.Password); err != nil {
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,
-			"request":          req.GetAuthnRequest,
+			"request":          req.GetAuthzRequest,
 			"initial_username": req.User,
 			"error":            "invalid_username_or_password",
 		})
@@ -95,7 +95,7 @@ func (api *LdapinAPI) PostAuthn(c *gin.Context) {
 		)
 	}
 
-	resp, errMsg := MakeAuthnTokens(api.JWTManager, api.Config, req.GetAuthnRequest, req.User, time.Now())
+	resp, errMsg := MakeAuthzTokens(api.JWTManager, api.Config, req.GetAuthzRequest, req.User, time.Now())
 	if errMsg != nil {
 		errMsg.Redirect(c)
 	}
