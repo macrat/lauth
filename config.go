@@ -256,10 +256,10 @@ func (c *LdapinConfig) OpenIDConfiguration() map[string]interface{} {
 	issuer := c.Issuer.String()
 	return map[string]interface{}{
 		"issuer":                                issuer,
-		"authorization_endpoint":                path.Join(issuer, c.Endpoints.BasePath, c.Endpoints.Authn),
-		"token_endpoint":                        path.Join(issuer, c.Endpoints.BasePath, c.Endpoints.Token),
-		"userinfo_endpoint":                     path.Join(issuer, c.Endpoints.BasePath, c.Endpoints.Userinfo),
-		"jwks_uri":                              path.Join(issuer, c.Endpoints.BasePath, c.Endpoints.Jwks),
+		"authorization_endpoint":                issuer + path.Join("/", c.Endpoints.BasePath, c.Endpoints.Authn),
+		"token_endpoint":                        issuer + path.Join("/", c.Endpoints.BasePath, c.Endpoints.Token),
+		"userinfo_endpoint":                     issuer + path.Join("/", c.Endpoints.BasePath, c.Endpoints.Userinfo),
+		"jwks_uri":                              issuer + path.Join("/", c.Endpoints.BasePath, c.Endpoints.Jwks),
 		"scopes_supported":                      append(c.Scopes.ScopeNames(), "openid"),
 		"response_types_supported":              []string{"code", "token", "id_token", "code token", "code id_token", "token id_token", "code token id_token"},
 		"response_modes_supported":              []string{"query", "fragment"},

@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coreos/go-oidc"
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin"
 )
@@ -19,7 +21,7 @@ var (
 	dummyLdapinConfig = &main.LdapinConfig{
 		Issuer: &main.URL{
 			Scheme: "http",
-			Host:   "localhost:8000",
+			Host:   "localhost:38980",
 		},
 		TTL: main.TTLConfig{
 			Code:  main.Duration(1 * time.Minute),
@@ -221,5 +223,62 @@ func (env *APITestEnvironment) JSONTest(t *testing.T, method, endpoint string, t
 				t.Errorf("%s: unexpected response body: %s", tt.Request.Encode(), string(rawBody))
 			}
 		}
+	}
+}
+
+func (env *APITestEnvironment) Run(ctx context.Context) error {
+	server := &http.Server{
+		Addr:    dummyLdapinConfig.Issuer.Host,
+		Handler: env.App,
+	}
+
+	errch := make(chan error)
+	go func() {
+		errch <- server.ListenAndServe()
+	}()
+	defer close(errch)
+
+	select {
+	case <-ctx.Done():
+		server.Close()
+		<-errch
+		return nil
+	case err := <-errch:
+		return err
+	}
+}
+
+func (env *APITestEnvironment) Start(t *testing.T) (stop func()) {
+	t.Helper()
+
+	ctx, stop := context.WithCancel(context.Background())
+	go func() {
+		err := env.Run(ctx)
+		if err != nil {
+			t.Fatalf("failed on test server: %s", err)
+		}
+	}()
+	time.Sleep(100 * time.Millisecond)
+
+	return stop
+}
+
+func TestOpenIDConfiguration(t *testing.T) {
+	env := NewAPITestEnvironment(t)
+
+	stop := env.Start(t)
+	defer stop()
+
+	provider, err := oidc.NewProvider(context.TODO(), dummyLdapinConfig.Issuer.String())
+	if err != nil {
+		t.Fatalf("failed to get provider info: %s", err)
+	}
+
+	endpoints := provider.Endpoint()
+	if endpoints.AuthURL != "http://localhost:38980/authn" {
+		t.Errorf("unexpected authn endpoint guessed: %#v", endpoints.AuthURL)
+	}
+	if endpoints.TokenURL != "http://localhost:38980/token" {
+		t.Errorf("unexpected token endpoint guessed: %#v", endpoints.TokenURL)
 	}
 }
