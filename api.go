@@ -38,7 +38,6 @@ func (api *LdapinAPI) GetCerts(c *gin.Context) {
 		return
 	}
 
-	c.Header("Content-Type", "application/jwk-set+json")
 	c.JSON(http.StatusOK, gin.H{
 		"keys": keys,
 	})

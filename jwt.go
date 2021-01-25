@@ -149,7 +149,7 @@ type JWK struct {
 
 func bytes2base64(b []byte) string {
 	buf := bytes.NewBuffer([]byte{})
-	enc := base64.NewEncoder(base64.StdEncoding, buf)
+	enc := base64.NewEncoder(base64.RawURLEncoding, buf)
 	enc.Write(b)
 	enc.Close()
 	return string(buf.Bytes())
@@ -157,8 +157,12 @@ func bytes2base64(b []byte) string {
 
 func int2base64(i int) string {
 	bytes := make([]byte, 8)
-	n := binary.PutVarint(bytes, int64(i))
-	return bytes2base64(bytes[:n])
+	binary.BigEndian.PutUint64(bytes, uint64(i))
+	skip := 0
+	for skip < 8 && bytes[skip] == 0x00 {
+		skip++
+	}
+	return bytes2base64(bytes[skip:])
 }
 
 func (m JWTManager) JWKs() ([]JWK, error) {

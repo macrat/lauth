@@ -61,7 +61,7 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to exchange token: %s", err)
 	}
-	if oauth2token.Valid() {
+	if !oauth2token.Valid() {
 		t.Errorf("access_token is not valid")
 	}
 

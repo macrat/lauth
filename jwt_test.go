@@ -120,7 +120,7 @@ func TestJWTManager_JWKs(t *testing.T) {
 		t.Errorf("failed to generate JWKs: %s", err)
 	}
 	expected := []main.JWK{
-		{Use: "sig", Algorithm: "RS256", KeyType: "RSA", E: "goAI", N: "rJXfsn14r/G2hX23sYzd4hM57l3dhebASzUQKc6nV3ozrcICRUr4gPIZ+OnzsoFlMBpaf9Lxwwm8TByrfdXHzw=="},
+		{Use: "sig", Algorithm: "RS256", KeyType: "RSA", E: "AQAB", N: "rJXfsn14r_G2hX23sYzd4hM57l3dhebASzUQKc6nV3ozrcICRUr4gPIZ-OnzsoFlMBpaf9Lxwwm8TByrfdXHzw"},
 	}
 	if !reflect.DeepEqual(jwks, expected) {
 		t.Errorf("unexpected jwks: %#v", jwks)
