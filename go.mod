@@ -16,7 +16,7 @@ require (
 	github.com/rakyll/statik v0.1.7
 	github.com/xhit/go-str2duration/v2 v2.0.0
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620 // indirect
-	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3 // indirect
+	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v2 v2.2.8

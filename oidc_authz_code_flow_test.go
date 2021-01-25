@@ -6,23 +6,43 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"context"
+
+	"github.com/coreos/go-oidc"
+	"golang.org/x/oauth2"
 )
 
 func TestOIDCAuthzCodeFlow(t *testing.T) {
 	env := NewAPITestEnvironment(t)
 
-	clientID := "hello_client"
-	nonce := "this is Nonce"
+	stop := env.Start(t)
+	defer stop()
 
-	resp := env.Post("/authz", "", url.Values{
-		"response_type": {"code"},
-		"redirect_uri":  {"http://localhost:3000"},
-		"client_id":     {clientID},
-		"nonce":         {nonce},
-		"scope":         {"phone"},
-		"username":      {"macrat"},
-		"password":      {"foobar"},
-	})
+	provider, err := oidc.NewProvider(context.TODO(), dummyLdapinConfig.Issuer.String())
+	if err != nil {
+		t.Fatalf("failed to get provider info: %s", err)
+	}
+
+	clientID := "hello_client"
+	verifier := provider.Verifier(&oidc.Config{ClientID: clientID})
+
+	oauth2config := oauth2.Config{
+		ClientID: clientID,
+		RedirectURL: "http://localhost:3000",
+		Endpoint: provider.Endpoint(),
+		Scopes: []string{oidc.ScopeOpenID, "phone"},
+	}
+
+	authURL, err := url.Parse(oauth2config.AuthCodeURL("this is state"))
+	if err != nil {
+		t.Fatalf("failed to mage auth code URL: %s", err)
+	}
+
+	authQuery := authURL.Query()
+	authQuery.Set("username", "macrat")
+	authQuery.Set("password", "foobar")
+
+	resp := env.Post("/authz", "", authQuery)
 
 	if resp.Code != http.StatusFound {
 		t.Fatalf("unexpected status code: %d", resp.Code)
@@ -37,30 +57,33 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 		t.Fatalf("failed to get code")
 	}
 
-	resp = env.Post("/token", "", url.Values{
-		"grant_type": {"authorization_code"},
-		"code":       {code},
-	})
-
-	if resp.Code != http.StatusOK {
-		t.Fatalf("unexpected status code: %d", resp.Code)
+	oauth2token, err := oauth2config.Exchange(context.TODO(), code)
+	if err != nil {
+		t.Fatalf("failed to exchange token: %s", err)
+	}
+	if oauth2token.Valid() {
+		t.Errorf("access_token is not valid")
 	}
 
-	var tokens struct {
-		AccessToken string `json:"access_token"`
-		IDToken     string `json:"id_token"`
-	}
-	if err = json.Unmarshal(resp.Body.Bytes(), &tokens); err != nil {
-		t.Fatalf("failed to parse body: %s", err)
+	if rawIDToken, ok := oauth2token.Extra("id_token").(string); !ok {
+		t.Errorf("failed to get id_token")
+	} else if idToken, err := verifier.Verify(context.TODO(), rawIDToken); err != nil {
+		t.Errorf("failed to verify id_token: %s", err)
+	} else {
+		var claims struct {
+			Subject string `json:"sub"`
+		}
+		if err = idToken.Claims(&claims); err != nil {
+			t.Errorf("failed to parse id_token: %s", err)
+		} else if claims.Subject != "macrat" {
+			t.Errorf("unexpected id_token subject: %s", claims.Subject)
+		}
 	}
 
-	if idToken, err := env.API.JWTManager.ParseIDToken(tokens.IDToken); err != nil {
-		t.Errorf("failed to parse id_token: %s", err)
-	} else if idToken.Nonce != nonce {
-		t.Errorf("nonce of id_token expected %#v but got %#v", nonce, idToken.Nonce)
-	}
+	req, _ := http.NewRequest("GET", "http://localhost:38980/userinfo", nil)
+	oauth2token.SetAuthHeader(req)
+	resp = env.DoRequest(req)
 
-	resp = env.Get("/userinfo", tokens.AccessToken, nil)
 	if resp.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", resp.Code)
 	}

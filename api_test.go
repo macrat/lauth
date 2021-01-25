@@ -89,21 +89,23 @@ func NewAPITestEnvironment(t *testing.T) *APITestEnvironment {
 	}
 }
 
-func (env *APITestEnvironment) Get(path, token string, query url.Values) *httptest.ResponseRecorder {
+func (env *APITestEnvironment) DoRequest(r *http.Request) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
+	env.App.ServeHTTP(w, r)
+	return w
+}
+
+func (env *APITestEnvironment) Get(path, token string, query url.Values) *httptest.ResponseRecorder {
 	r, _ := http.NewRequest("GET", path+"?"+query.Encode(), nil)
 
 	if token != "" {
 		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
 
-	env.App.ServeHTTP(w, r)
-
-	return w
+	return env.DoRequest(r)
 }
 
 func (env *APITestEnvironment) Post(path, token string, body url.Values) *httptest.ResponseRecorder {
-	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("POST", path, strings.NewReader(body.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -111,9 +113,7 @@ func (env *APITestEnvironment) Post(path, token string, body url.Values) *httpte
 		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
 
-	env.App.ServeHTTP(w, r)
-
-	return w
+	return env.DoRequest(r)
 }
 
 func (env *APITestEnvironment) Do(method, path, token string, values url.Values) *httptest.ResponseRecorder {
