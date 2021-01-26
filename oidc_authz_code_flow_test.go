@@ -1,12 +1,12 @@
 package main_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
-	"context"
 
 	"github.com/coreos/go-oidc"
 	"golang.org/x/oauth2"
@@ -27,10 +27,10 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 	verifier := provider.Verifier(&oidc.Config{ClientID: clientID})
 
 	oauth2config := oauth2.Config{
-		ClientID: clientID,
+		ClientID:    clientID,
 		RedirectURL: "http://localhost:3000",
-		Endpoint: provider.Endpoint(),
-		Scopes: []string{oidc.ScopeOpenID, "phone"},
+		Endpoint:    provider.Endpoint(),
+		Scopes:      []string{oidc.ScopeOpenID, "phone"},
 	}
 
 	authURL, err := url.Parse(oauth2config.AuthCodeURL("this is state"))

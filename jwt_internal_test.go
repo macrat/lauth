@@ -11,8 +11,8 @@ func TestBytes2base64(t *testing.T) {
 }
 
 func TestInt2base64(t *testing.T) {
-	tests := []struct{
-		Input int
+	tests := []struct {
+		Input  int
 		Expect string
 	}{
 		{0, ""},

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 )
 
 var (
@@ -139,7 +141,12 @@ func NewJWTManagerFromFile(file io.Reader) (JWTManager, error) {
 	return NewJWTManager(pri)
 }
 
+func (m JWTManager) KeyID() uuid.UUID {
+	return uuid.NewSHA1(uuid.NameSpaceX500, x509.MarshalPKCS1PublicKey(m.public))
+}
+
 type JWK struct {
+	KeyID     string `json:"kid"`
 	Use       string `json:"use"`
 	Algorithm string `json:"alg"`
 	KeyType   string `json:"kty"`
@@ -168,6 +175,7 @@ func int2base64(i int) string {
 func (m JWTManager) JWKs() ([]JWK, error) {
 	return []JWK{
 		{
+			KeyID:     m.KeyID().String(),
 			Use:       "sig",
 			Algorithm: "RS256",
 			KeyType:   "RSA",
@@ -178,7 +186,9 @@ func (m JWTManager) JWKs() ([]JWK, error) {
 }
 
 func (m JWTManager) create(claims jwt.Claims) (string, error) {
-	return jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(m.private)
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = m.KeyID().String()
+	return token.SignedString(m.private)
 }
 
 func (m JWTManager) CreateCode(issuer *URL, subject, clientID, scope, nonce string, authTime time.Time, expiresIn time.Duration) (string, error) {
