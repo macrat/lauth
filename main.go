@@ -148,6 +148,7 @@ func main() {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	api.SetRoutes(router)
+	api.SetErrorRoutes(router)
 
 	addr := DecideListenAddress((*url.URL)(conf.Issuer), (*net.TCPAddr)(conf.Listen))
 	if *TLSCertFile != "" {

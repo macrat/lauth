@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,33 @@ func (api *LdapinAPI) SetRoutes(r gin.IRoutes) {
 	r.POST(endpoints.Token, api.PostToken)
 	r.GET(endpoints.Userinfo, api.GetUserInfo)
 	r.GET(endpoints.Jwks, api.GetCerts)
+}
+
+func (api *LdapinAPI) SetErrorRoutes(r *gin.Engine) {
+	r.NoRoute(func(c *gin.Context) {
+		endpoints := api.Config.EndpointPaths()
+
+		methodNotAllowed := ErrorMessage{
+			Reason:      "method_not_allowed",
+			Description: fmt.Sprintf("%s method is not supported in this page", c.Request.Method),
+		}
+
+		switch c.Request.URL.Path {
+		case endpoints.Authz:
+			c.HTML(http.StatusMethodNotAllowed, "error.tmpl", gin.H{
+				"error": methodNotAllowed,
+			})
+		case endpoints.OpenIDConfiguration, endpoints.Token, endpoints.Userinfo, endpoints.Jwks:
+			c.JSON(http.StatusMethodNotAllowed, methodNotAllowed)
+		default:
+			c.HTML(http.StatusNotFound, "error.tmpl", gin.H{
+				"error": ErrorMessage{
+					Reason:      "page_not_found",
+					Description: "requested page is not found",
+				},
+			})
+		}
+	})
 }
 
 func (api *LdapinAPI) GetConfiguration(c *gin.Context) {

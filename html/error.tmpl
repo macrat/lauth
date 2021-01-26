@@ -1,11 +1,77 @@
-{{ template "header" }}
-    <div class="card" style="padding: .5rem 1rem">
-        <div class="card-body">
-            <h1 class="card-title">Bad Request</h1>
+<!DOCTYPE html>
 
-            <p class="card-text"><b>Reason:</b> <pre>{{ .error.Reason }}</pre></p>
+<html lang="en">
+    <head>
+        <title>Error</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <style>
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                margin: 0;
+                background-color: #f8f8f8;
+            }
+            footer {
+                position: absolute;
+                bottom: 2px;
+                font-size: 70%;
+                text-align: center;
+                color: #668;
+            }
+            footer a {
+                color: inherit;
+            }
+            main {
+                background-color: white;
+                border-radius: 4px;
+                border: 0 solid #99b;
+                border-width: 0 1px 1px 0;
+                padding: 24px 48px 16px 32px;
+                width: 100%;
+                max-width: 30em;
+            }
+            h1 {
+                margin: 0;
+                line-height: 1em;
+                color: #669;
+            }
+            section {
+                margin: 12px 0;
+            }
+            h2 {
+                color: #333;
+                margin: 0;
+                font-size: 110%;
+            }
+            h2::after {
+                content: ':';
+            }
+        </style>
+    </head>
 
-            <p class="card-text"><b>Description:</b> <pre>{{ .error.Description }}</pre></p>
-        </div>
-    </div>
-{{ template "footer" }}
+    <body>
+        <main role="alert">
+            {{ if eq .error.Reason "server_error" }}
+                <h1>Error: Internal Server Error</h1>
+            {{ else if eq .error.Reason "page_not_found" }}
+                <h1>Error: Not Found</h1>
+            {{ else }}
+                <h1>Error: Bad Request</h1>
+            {{ end }}
+            <section>
+                <h2>Reason</h2>
+                <pre>{{ .error.Reason }}</pre>
+            </section>
+            {{ if .error.Description }}<section>
+                <h2>Description</h2>
+                <pre>{{ .error.Description }}</pre>
+            </section>{{ end }}
+        </main>
+
+        <footer>
+            Powered by <a href="https://github.com/macrat/ldapin" rel="noreferer noopener" target="_blank">Ldapin</a>
+        </footer>
+    </body>
+</html>
