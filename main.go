@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -143,6 +144,8 @@ func main() {
 	tmpl, err := loadPageTemplate(*LoginPage, *ErrorPage)
 	app.FatalIfError(err, "failed to load template")
 	router.SetHTMLTemplate(tmpl)
+
+	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	api.SetRoutes(router)
 
