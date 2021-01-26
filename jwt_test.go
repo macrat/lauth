@@ -10,6 +10,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/macrat/ldapin"
+	"gopkg.in/square/go-jose.v2"
 )
 
 func makeJWTManager() (main.JWTManager, error) {
@@ -127,6 +128,19 @@ func TestJWTManager_JWKs(t *testing.T) {
 	}
 	if !reflect.DeepEqual(jwks, expected) {
 		t.Errorf("unexpected jwks: %#v", jwks)
+	}
+
+	if encJwks, err := json.Marshal(jwks[0]); err != nil {
+		t.Errorf("failed to marshal JWKs: %s", err)
+	} else {
+		decJwks := new(jose.JSONWebKey)
+		if err := decJwks.UnmarshalJSON(encJwks); err != nil {
+			t.Errorf("failed to unmarshal JWKs: %s", err)
+		} else if !decJwks.Valid() {
+			t.Errorf("unmarshalled JWKs is not valid")
+		} else if !decJwks.Key.(*rsa.PublicKey).Equal(manager.PublicKey()) {
+			t.Errorf("unmarshalled public key is not equals original key")
+		}
 	}
 
 	token, err := manager.CreateIDToken(&main.URL{Scheme: "https", Host: "localhost"}, "someone", "something", "", time.Now(), 10*time.Minute)

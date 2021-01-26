@@ -141,6 +141,10 @@ func NewJWTManagerFromFile(file io.Reader) (JWTManager, error) {
 	return NewJWTManager(pri)
 }
 
+func (m JWTManager) PublicKey() *rsa.PublicKey {
+	return m.public
+}
+
 func (m JWTManager) KeyID() uuid.UUID {
 	return uuid.NewSHA1(uuid.NameSpaceX500, x509.MarshalPKCS1PublicKey(m.public))
 }
