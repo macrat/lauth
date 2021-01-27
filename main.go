@@ -9,22 +9,27 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/ldapin/api"
+	"github.com/macrat/ldapin/config"
+	"github.com/macrat/ldapin/ldap"
+	"github.com/macrat/ldapin/page"
+	"github.com/macrat/ldapin/token"
 )
 
 var (
 	app = kingpin.New("Ldapin", "The simple OpenID Provider for LDAP like a ActiveDirectory.")
 
-	Issuer  = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").PlaceHolder(DefaultConfig.Issuer.String()).URL()
+	Issuer  = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").PlaceHolder(config.DefaultConfig.Issuer.String()).URL()
 	Listen  = app.Flag("listen", "Listen address and port. In default, use same port as Issuer URL. This option can't use when auto generate TLS cert.").Envar("LDAPIN_LISTEN").TCP()
 	SignKey = app.Flag("sign-key", "RSA private key for signing to token. If omit this, automate generate key for one time use.").Envar("LDAPIN_SIGN_KEY").PlaceHolder("FILE").File()
 
 	TLSCertFile = app.Flag("tls-cert", "Cert file for TLS encryption.").Envar("LDAPIN_TLS_CERT").PlaceHolder("FILE").ExistingFile()
 	TLSKeyFile  = app.Flag("tls-key", "Key file for TLS encryption.").Envar("LDAPIN_TLS_KEY").PlaceHolder("FILE").ExistingFile()
 
-	AuthzEndpoint    = app.Flag("authz-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHz_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Authz).String()
-	TokenEndpoint    = app.Flag("token-endpoint", "Path to token endpoint.").Envar("LDAPIN_TOKEN_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Token).String()
-	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").PlaceHolder(DefaultConfig.Endpoints.Userinfo).String()
-	JwksEndpoint     = app.Flag("jwks-uri", "Path to jwks uri.").Envar("LDAPIN_JWKS_URI").PlaceHolder(DefaultConfig.Endpoints.Jwks).String()
+	AuthzEndpoint    = app.Flag("authz-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHz_ENDPOINT").PlaceHolder(config.DefaultConfig.Endpoints.Authz).String()
+	TokenEndpoint    = app.Flag("token-endpoint", "Path to token endpoint.").Envar("LDAPIN_TOKEN_ENDPOINT").PlaceHolder(config.DefaultConfig.Endpoints.Token).String()
+	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").PlaceHolder(config.DefaultConfig.Endpoints.Userinfo).String()
+	JwksEndpoint     = app.Flag("jwks-uri", "Path to jwks uri.").Envar("LDAPIN_JWKS_URI").PlaceHolder(config.DefaultConfig.Endpoints.Jwks).String()
 
 	CodeTTL  = app.Flag("code-ttl", "TTL for code.").Envar("LDAPIN_CODE_TTL").PlaceHolder("10m").String()
 	TokenTTL = app.Flag("token-ttl", "TTL for access_token and id_token.").Envar("LDAPIN_TOKEN_TTL").PlaceHolder("7d").String()
@@ -60,14 +65,14 @@ func DecideListenAddress(issuer *url.URL, listen *net.TCPAddr) string {
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	var codeExpiresIn, tokenExpiresIn Duration
+	var codeExpiresIn, tokenExpiresIn config.Duration
 	var err error
 	if *CodeTTL != "" {
-		codeExpiresIn, err = ParseDuration(*CodeTTL)
+		codeExpiresIn, err = config.ParseDuration(*CodeTTL)
 		app.FatalIfError(err, "--code-ttl")
 	}
 	if *TokenTTL != "" {
-		tokenExpiresIn, err = ParseDuration(*TokenTTL)
+		tokenExpiresIn, err = config.ParseDuration(*TokenTTL)
 		app.FatalIfError(err, "--token-ttl")
 	}
 
@@ -95,7 +100,7 @@ func main() {
 		return
 	}
 
-	connector := SimpleLDAPConnector{
+	connector := ldap.SimpleLDAPConnector{
 		ServerURL:   *LdapAddress,
 		User:        ldapUser,
 		Password:    ldapPassword,
@@ -106,42 +111,42 @@ func main() {
 	_, err = connector.Connect()
 	app.FatalIfError(err, "failed to connect LDAP server")
 
-	var jwt JWTManager
+	var jwt token.JWTManager
 	if *SignKey != nil {
-		jwt, err = NewJWTManagerFromFile(*SignKey)
+		jwt, err = token.NewJWTManagerFromFile(*SignKey)
 		app.FatalIfError(err, "failed to read private key for sign")
 	} else {
-		jwt, err = GenerateJWTManager()
+		jwt, err = token.GenerateJWTManager()
 		app.FatalIfError(err, "failed to generate private key for sign")
 	}
 
-	conf := DefaultConfig
+	conf := config.DefaultConfig
 	if *Config != nil {
-		loaded, err := LoadConfig(*Config)
+		loaded, err := config.LoadConfig(*Config)
 		app.FatalIfError(err, "failed to load config file")
 		conf.Override(loaded)
 	}
-	conf.Override(&LdapinConfig{
-		Issuer: (*URL)(*Issuer),
-		Listen: (*TCPAddr)(*Listen),
-		TTL: TTLConfig{
+	conf.Override(&config.LdapinConfig{
+		Issuer: (*config.URL)(*Issuer),
+		Listen: (*config.TCPAddr)(*Listen),
+		TTL: config.TTLConfig{
 			Code:  codeExpiresIn,
 			Token: tokenExpiresIn,
 		},
-		Endpoints: EndpointConfig{
+		Endpoints: config.EndpointConfig{
 			Authz:    *AuthzEndpoint,
 			Token:    *TokenEndpoint,
 			Userinfo: *UserinfoEndpoint,
 			Jwks:     *JwksEndpoint,
 		},
 	})
-	api := &LdapinAPI{
+	api := &api.LdapinAPI{
 		Connector:  connector,
 		JWTManager: jwt,
 		Config:     conf,
 	}
 
-	tmpl, err := loadPageTemplate(*LoginPage, *ErrorPage)
+	tmpl, err := page.Load(*LoginPage, *ErrorPage)
 	app.FatalIfError(err, "failed to load template")
 	router.SetHTMLTemplate(tmpl)
 
