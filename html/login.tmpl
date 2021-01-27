@@ -127,6 +127,10 @@
                 <input type="hidden" name="scope" value="{{ .request.Scope }}" />
             {{ end }}
 
+            {{ if .request.State }}
+                <input type="hidden" name="state" value="{{ .request.State }}" />
+            {{ end }}
+
             {{ if .request.Nonce }}
                 <input type="hidden" name="nonce" value="{{ .request.Nonce }}" />
             {{ end }}
