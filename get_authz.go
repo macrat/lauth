@@ -97,7 +97,6 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 
 	prompt := ParseStringSet(req.Prompt)
 
-	// TODO: test it
 	if !prompt.Has("login") && !prompt.Has("consent") && !prompt.Has("select_account") {
 		if token, err := c.Cookie("token"); err == nil {
 			issuer := api.Config.Issuer
@@ -120,7 +119,7 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 		req.makeError(
 			nil,
 			"login_required",
-			"prompt=none is not supported",
+			"",
 		).Redirect(c)
 		return
 	}

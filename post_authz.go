@@ -73,7 +73,6 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		return
 	}
 
-	// TODO: test it
 	ssoToken, err := api.JWTManager.CreateIDToken(
 		api.Config.Issuer,
 		req.User,

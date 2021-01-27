@@ -26,6 +26,7 @@ var (
 		TTL: main.TTLConfig{
 			Code:  main.Duration(1 * time.Minute),
 			Token: main.Duration(1 * time.Hour),
+			SSO:   main.Duration(10 * time.Minute),
 		},
 		Endpoints: main.EndpointConfig{
 			Authz:    "/authz",
