@@ -27,9 +27,15 @@ require (
 )
 
 replace github.com/macrat/ldapin/api => ./api
-replace github.com/macrat/ldapin/page/statik => ./page/statik
+
 replace github.com/macrat/ldapin/config => ./config
+
 replace github.com/macrat/ldapin/ldap => ./ldap
-replace github.com/macrat/ldapin/token => ./token
+
 replace github.com/macrat/ldapin/page => ./page
+
+replace github.com/macrat/ldapin/page/statik => ./page/statik
+
 replace github.com/macrat/ldapin/testutil => ./testutil
+
+replace github.com/macrat/ldapin/token => ./token
