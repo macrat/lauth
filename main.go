@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -145,17 +145,19 @@ func main() {
 	app.FatalIfError(err, "failed to load template")
 	router.SetHTMLTemplate(tmpl)
 
-	router.Use(gzip.Gzip(gzip.DefaultCompression))
-
 	api.SetRoutes(router)
 	api.SetErrorRoutes(router)
 
 	addr := DecideListenAddress((*url.URL)(conf.Issuer), (*net.TCPAddr)(conf.Listen))
+	server := &http.Server{
+		Addr:    addr,
+		Handler: HTTPCompressor(router),
+	}
 	if *TLSCertFile != "" {
-		err = router.RunTLS(addr, *TLSCertFile, *TLSKeyFile)
+		err = server.ListenAndServeTLS(*TLSCertFile, *TLSKeyFile)
 		app.FatalIfError(err, "failed to start server")
 	} else {
-		err = router.Run(addr)
+		err = server.ListenAndServe()
 		app.FatalIfError(err, "failed to start server")
 	}
 }
