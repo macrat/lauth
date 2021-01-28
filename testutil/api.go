@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,6 +19,23 @@ import (
 	"github.com/macrat/ldapin/config"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+func FindAvailTCPPort() int {
+	min := 49152
+	max := 65535
+	for {
+		port := rand.Intn(max-min+1) + min
+		l, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+		if err == nil {
+			l.Close()
+			return port
+		}
+	}
+}
+
 func MakeTestRouter() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
@@ -26,11 +45,11 @@ func MakeTestRouter() *gin.Engine {
 	return router
 }
 
-var (
-	LdapinConfig = &config.LdapinConfig{
+func MakeLdapinConfig() *config.LdapinConfig {
+	return &config.LdapinConfig{
 		Issuer: &config.URL{
 			Scheme: "http",
-			Host:   "localhost:38980",
+			Host:   fmt.Sprintf("localhost:%d", FindAvailTCPPort()),
 		},
 		TTL: config.TTLConfig{
 			Code:  config.Duration(1 * time.Minute),
@@ -60,7 +79,7 @@ var (
 			},
 		},
 	}
-)
+}
 
 type APITestEnvironment struct {
 	App *gin.Engine
@@ -79,7 +98,7 @@ func NewAPITestEnvironment(t *testing.T) *APITestEnvironment {
 
 	api := &api.LdapinAPI{
 		Connector:  LDAP,
-		Config:     LdapinConfig,
+		Config:     MakeLdapinConfig(),
 		JWTManager: jwt,
 	}
 	api.SetRoutes(router)
@@ -228,7 +247,7 @@ func (env *APITestEnvironment) JSONTest(t *testing.T, method, endpoint string, t
 
 func (env *APITestEnvironment) Run(ctx context.Context) error {
 	server := &http.Server{
-		Addr:    LdapinConfig.Issuer.Host,
+		Addr:    env.API.Config.Issuer.Host,
 		Handler: env.App,
 	}
 

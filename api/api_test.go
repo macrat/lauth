@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/coreos/go-oidc"
@@ -20,10 +21,10 @@ func TestOpenIDConfiguration(t *testing.T) {
 	}
 
 	endpoints := provider.Endpoint()
-	if endpoints.AuthURL != "http://localhost:38980/authz" {
+	if endpoints.AuthURL != fmt.Sprintf("http://%s/authz", env.API.Config.Issuer.Host) {
 		t.Errorf("unexpected authz endpoint guessed: %#v", endpoints.AuthURL)
 	}
-	if endpoints.TokenURL != "http://localhost:38980/token" {
+	if endpoints.TokenURL != fmt.Sprintf("http://%s/token", env.API.Config.Issuer.Host) {
 		t.Errorf("unexpected token endpoint guessed: %#v", endpoints.TokenURL)
 	}
 }

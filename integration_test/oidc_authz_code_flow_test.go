@@ -29,7 +29,7 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 
 	oauth2config := oauth2.Config{
 		ClientID:    clientID,
-		RedirectURL: "http://localhost:3000",
+		RedirectURL: env.API.Config.Issuer.Host,
 		Endpoint:    provider.Endpoint(),
 		Scopes:      []string{oidc.ScopeOpenID, "phone"},
 	}
