@@ -100,7 +100,7 @@ func main() {
 		return
 	}
 
-	connector := ldap.SimpleLDAPConnector{
+	connector := ldap.SimpleConnector{
 		ServerURL:   *LdapAddress,
 		User:        ldapUser,
 		Password:    ldapPassword,

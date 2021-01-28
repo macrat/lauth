@@ -14,18 +14,18 @@ var (
 	MultipleUsersFoundError = fmt.Errorf("multiple users was found")
 )
 
-type LDAPConnector interface {
-	Connect() (LDAPSession, error)
+type Connector interface {
+	Connect() (Session, error)
 }
 
-type LDAPSession interface {
+type Session interface {
 	io.Closer
 
 	LoginTest(username, password string) error
 	GetUserAttributes(username string, attributes []string) (map[string][]string, error)
 }
 
-type SimpleLDAPConnector struct {
+type SimpleConnector struct {
 	ServerURL   *url.URL
 	User        string
 	Password    string
@@ -34,7 +34,7 @@ type SimpleLDAPConnector struct {
 	DisableTLS  bool
 }
 
-func (c SimpleLDAPConnector) Connect() (LDAPSession, error) {
+func (c SimpleConnector) Connect() (Session, error) {
 	conn, err := ldap.DialURL(c.ServerURL.String())
 	if err != nil {
 		return nil, err
@@ -54,25 +54,25 @@ func (c SimpleLDAPConnector) Connect() (LDAPSession, error) {
 		}
 	}
 
-	return &SimpleLDAPSession{
+	return &SimpleSession{
 		conn:        conn,
 		IDAttribute: c.IDAttribute,
 		BaseDN:      c.BaseDN,
 	}, nil
 }
 
-type SimpleLDAPSession struct {
+type SimpleSession struct {
 	conn        *ldap.Conn
 	IDAttribute string
 	BaseDN      string
 }
 
-func (c *SimpleLDAPSession) Close() error {
+func (c *SimpleSession) Close() error {
 	c.conn.Close()
 	return nil
 }
 
-func (c *SimpleLDAPSession) searchUser(username string, attributes []string) (*ldap.Entry, error) {
+func (c *SimpleSession) searchUser(username string, attributes []string) (*ldap.Entry, error) {
 	req := ldap.NewSearchRequest(
 		c.BaseDN,
 		ldap.ScopeWholeSubtree,
@@ -100,7 +100,7 @@ func (c *SimpleLDAPSession) searchUser(username string, attributes []string) (*l
 	return res.Entries[0], nil
 }
 
-func (c *SimpleLDAPSession) LoginTest(username, password string) error {
+func (c *SimpleSession) LoginTest(username, password string) error {
 	user, err := c.searchUser(username, []string{"dn"})
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (c *SimpleLDAPSession) LoginTest(username, password string) error {
 	return c.conn.Bind(user.DN, password)
 }
 
-func (c *SimpleLDAPSession) GetUserAttributes(username string, attributes []string) (map[string][]string, error) {
+func (c *SimpleSession) GetUserAttributes(username string, attributes []string) (map[string][]string, error) {
 	user, err := c.searchUser(username, attributes)
 	if err != nil {
 		return nil, err

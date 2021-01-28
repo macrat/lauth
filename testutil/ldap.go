@@ -37,7 +37,7 @@ type DummyUserInfo struct {
 
 type DummyLDAP map[string]DummyUserInfo
 
-func (c DummyLDAP) Connect() (ldap.LDAPSession, error) {
+func (c DummyLDAP) Connect() (ldap.Session, error) {
 	return c, nil
 }
 
