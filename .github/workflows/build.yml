@@ -53,15 +53,3 @@ jobs:
           tags: ${{ steps.tags.outputs.tags }}
           labels: ${{ steps.tags.outputs.labels }}
           platforms: linux/amd64,linux/arm64,linux/arm/v6
-
-  update-description:
-    name: Update DockerHub description
-    needs: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: peter-evans/dockerhub-description@v2
-        with:
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: macrat/ldapin
