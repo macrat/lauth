@@ -64,4 +64,4 @@ jobs:
         with:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ github.repository }}
+          repository: macrat/ldapin
