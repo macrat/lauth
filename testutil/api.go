@@ -78,6 +78,15 @@ func MakeLdapinConfig() *config.LdapinConfig {
 				{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
 			},
 		},
+		Clients: config.ClientConfig{
+			"some_client_id": {
+				Secret: "secret for some-client",
+				RedirectURI: []config.Pattern{
+					MustParsePattern("http://some-client.example.com/**"),
+				},
+			},
+		},
+		EnableClientAuth: true,
 	}
 }
 

@@ -1,8 +1,8 @@
 package config
 
 import (
-	"time"
 	"strconv"
+	"time"
 
 	"github.com/xhit/go-str2duration/v2"
 )

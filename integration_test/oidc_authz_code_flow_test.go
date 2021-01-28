@@ -24,14 +24,15 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 		t.Fatalf("failed to get provider info: %s", err)
 	}
 
-	clientID := "hello_client"
+	clientID := "some_client_id"
 	verifier := provider.Verifier(&oidc.Config{ClientID: clientID})
 
 	oauth2config := oauth2.Config{
-		ClientID:    clientID,
-		RedirectURL: env.API.Config.Issuer.Host,
-		Endpoint:    provider.Endpoint(),
-		Scopes:      []string{oidc.ScopeOpenID, "phone"},
+		ClientID:     clientID,
+		ClientSecret: "secret for some-client",
+		RedirectURL:  env.API.Config.Issuer.Host,
+		Endpoint:     provider.Endpoint(),
+		Scopes:       []string{oidc.ScopeOpenID, "phone"},
 	}
 
 	authURL, err := url.Parse(oauth2config.AuthCodeURL("this is state"))

@@ -43,8 +43,10 @@ func TestPostToken(t *testing.T) {
 	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
 		{
 			Request: url.Values{
-				"grant_type": {"invalid_grant_type"},
-				"code":       {code},
+				"grant_type":    {"invalid_grant_type"},
+				"code":          {code},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -54,8 +56,22 @@ func TestPostToken(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"grant_type": {"authorization_code"},
-				"code":       {"invalid-code"},
+				"grant_type":    {"authorization_code"},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "code is required",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {"invalid-code"},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -64,18 +80,70 @@ func TestPostToken(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"grant_type": {"authorization_code"},
-				"code":       {invalidCode},
+				"grant_type":    {"authorization_code"},
+				"code":          {invalidCode},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
 				"error": "invalid_grant",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_secret": {"secret for some-client"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "client_id is required",
 			},
 		},
 		{
 			Request: url.Values{
 				"grant_type": {"authorization_code"},
 				"code":       {code},
+				"client_id":  {"another_client_id"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "client_secret is required",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"another_client_id"},
+				"client_secret": {"secret for some-client"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "unauthorized_client",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"invalid secret for some-client"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "unauthorized_client",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
 			},
 			Code: http.StatusOK,
 			CheckBody: func(t *testing.T, body testutil.RawBody) {
@@ -115,6 +183,80 @@ func TestPostToken(t *testing.T) {
 				if idToken.Nonce != "something-nonce" {
 					t.Errorf("nonce must be \"something-nonce\" but got %#v", idToken.Nonce)
 				}
+			},
+		},
+	})
+}
+
+func TestPostToken_PublicClients(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+	env.API.Config.EnableClientAuth = false
+
+	code, err := env.API.TokenManager.CreateCode(
+		env.API.Config.Issuer,
+		"macrat",
+		"some_client_id",
+		"openid profile",
+		"something-nonce",
+		time.Now(),
+		time.Duration(env.API.Config.TTL.Code),
+	)
+	if err != nil {
+		t.Fatalf("failed to generate test code: %s", err)
+	}
+
+	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_secret": {"secret for some-client"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "client_id is required if set client_secret",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+			},
+			Code: http.StatusOK,
+			CheckBody: func(t *testing.T, body testutil.RawBody) {
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type": {"authorization_code"},
+				"code":       {code},
+				"client_id":  {"some_client_id"},
+			},
+			Code: http.StatusOK,
+			CheckBody: func(t *testing.T, body testutil.RawBody) {
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type": {"authorization_code"},
+				"code":       {code},
+				"client_id":  {"another_client_id"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "invalid_grant",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type": {"authorization_code"},
+				"code":       {code},
+			},
+			Code: http.StatusOK,
+			CheckBody: func(t *testing.T, body testutil.RawBody) {
 			},
 		},
 	})

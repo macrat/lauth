@@ -1,9 +1,9 @@
 package config_test
 
 import (
-	"testing"
-	"sort"
 	"reflect"
+	"sort"
+	"testing"
 
 	"github.com/macrat/ldapin/config"
 )

@@ -8,8 +8,10 @@ import (
 )
 
 type PostTokenRequest struct {
-	GrantType string `form:"grant_type"   json:"grant_type"   xml:"grant_type"`
-	Code      string `form:"code"         json:"code"         xml:"code"`
+	GrantType    string `form:"grant_type"    json:"grant_type"    xml:"grant_type"`
+	Code         string `form:"code"          json:"code"          xml:"code"`
+	ClientID     string `form:"client_id"     json:"client_id"     xml:"client_id"`
+	ClientSecret string `form:"client_secret" json:"client_secret" xml:"client_secret"`
 }
 
 func (req *PostTokenRequest) Bind(c *gin.Context) *ErrorMessage {
@@ -29,6 +31,13 @@ func (req PostTokenRequest) Validate() *ErrorMessage {
 		return &ErrorMessage{
 			Reason:      "unsupported_grant_type",
 			Description: "only supported grant_type is authorization_code",
+		}
+	}
+
+	if req.Code == "" {
+		return &ErrorMessage{
+			Reason:      "invalid_request",
+			Description: "code is required",
 		}
 	}
 
@@ -57,6 +66,38 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		return
 	}
 
+	if req.ClientID == "" {
+		if api.Config.EnableClientAuth {
+			c.JSON(http.StatusBadRequest, ErrorMessage{
+				Reason:      "invalid_request",
+				Description: "client_id is required",
+			})
+			return
+		} else if req.ClientSecret != "" {
+			c.JSON(http.StatusBadRequest, ErrorMessage{
+				Reason:      "invalid_request",
+				Description: "client_id is required if set client_secret",
+			})
+			return
+		}
+	} else if req.ClientSecret == "" {
+		if api.Config.EnableClientAuth {
+			c.JSON(http.StatusBadRequest, ErrorMessage{
+				Reason:      "invalid_request",
+				Description: "client_secret is required",
+			})
+			return
+		}
+	} else {
+		client, ok := api.Config.Clients[req.ClientID]
+		if !ok || client.Secret != req.ClientSecret {
+			c.JSON(http.StatusBadRequest, ErrorMessage{
+				Reason: "unauthorized_client",
+			})
+			return
+		}
+	}
+
 	code, err := api.TokenManager.ParseCode(req.Code)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorMessage{
@@ -72,6 +113,14 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		})
 		return
 	}
+
+	if req.ClientID != "" && req.ClientID != code.ClientID {
+		c.JSON(http.StatusBadRequest, ErrorMessage{
+			Reason: "invalid_grant",
+		})
+		return
+	}
+
 	scope := ParseStringSet(code.Scope)
 	scope.Add("openid")
 

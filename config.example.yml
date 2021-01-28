@@ -52,3 +52,12 @@ scope:
     - claim: groups
       attribute: memberOf
       type: '[]string'
+
+client:
+  http://example.com:
+    secret: this is secret key
+    redirect_uri:
+      - http://example.com/login/*
+      - http://*.example.com/**
+
+allow_public_client: true

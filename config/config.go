@@ -42,6 +42,7 @@ var (
 				{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
 			},
 		},
+		EnableClientAuth: false,
 	}
 )
 
@@ -91,13 +92,19 @@ func (c *TTLConfig) Override(patch TTLConfig) {
 	}
 }
 
+type ClientConfig map[string]struct {
+	Secret      string     `yaml:"secret"`
+	RedirectURI PatternSet `yaml:"redirect_uri"`
+}
+
 type LdapinConfig struct {
-	Issuer    *URL           `yaml:"issuer"`
-	Listen    *TCPAddr       `yaml:"listen"`
-	TTL       TTLConfig      `yaml:"ttl"`
-	Endpoints EndpointConfig `yaml:"endpoint"`
-	Scopes    ScopeConfig    `yaml:"scope"`
-	//Clients   []ClientConfig `yaml:"client"`  // TODO: implement client authentication.
+	Issuer           *URL           `yaml:"issuer"`
+	Listen           *TCPAddr       `yaml:"listen"`
+	TTL              TTLConfig      `yaml:"ttl"`
+	Endpoints        EndpointConfig `yaml:"endpoint"`
+	Scopes           ScopeConfig    `yaml:"scope"`
+	Clients          ClientConfig   `yaml:"client"`
+	EnableClientAuth bool           `yaml:"enable_client_auth"`
 }
 
 func LoadConfig(f io.Reader) (*LdapinConfig, error) {
@@ -125,6 +132,14 @@ func (c *LdapinConfig) Override(patch *LdapinConfig) {
 
 	if patch.Scopes != nil {
 		(*c).Scopes = patch.Scopes
+	}
+
+	if patch.Clients != nil {
+		(*c).Clients = patch.Clients
+	}
+
+	if patch.EnableClientAuth {
+		(*c).EnableClientAuth = patch.EnableClientAuth
 	}
 }
 

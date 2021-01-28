@@ -100,26 +100,6 @@ func main() {
 		return
 	}
 
-	connector := ldap.SimpleConnector{
-		ServerURL:   *LdapAddress,
-		User:        ldapUser,
-		Password:    ldapPassword,
-		IDAttribute: *LdapIDAttribute,
-		BaseDN:      *LdapBaseDN,
-		DisableTLS:  *LdapDisableTLS,
-	}
-	_, err = connector.Connect()
-	app.FatalIfError(err, "failed to connect LDAP server")
-
-	var tokenManager token.Manager
-	if *SignKey != nil {
-		tokenManager, err = token.NewManagerFromFile(*SignKey)
-		app.FatalIfError(err, "failed to read private key for sign")
-	} else {
-		tokenManager, err = token.GenerateManager()
-		app.FatalIfError(err, "failed to generate private key for sign")
-	}
-
 	conf := config.DefaultConfig
 	if *Config != nil {
 		loaded, err := config.LoadConfig(*Config)
@@ -140,6 +120,27 @@ func main() {
 			Jwks:     *JwksEndpoint,
 		},
 	})
+
+	connector := ldap.SimpleConnector{
+		ServerURL:   *LdapAddress,
+		User:        ldapUser,
+		Password:    ldapPassword,
+		IDAttribute: *LdapIDAttribute,
+		BaseDN:      *LdapBaseDN,
+		DisableTLS:  *LdapDisableTLS,
+	}
+	_, err = connector.Connect()
+	app.FatalIfError(err, "failed to connect LDAP server")
+
+	var tokenManager token.Manager
+	if *SignKey != nil {
+		tokenManager, err = token.NewManagerFromFile(*SignKey)
+		app.FatalIfError(err, "failed to read private key for sign")
+	} else {
+		tokenManager, err = token.GenerateManager()
+		app.FatalIfError(err, "failed to generate private key for sign")
+	}
+
 	api := &api.LdapinAPI{
 		Connector:    connector,
 		TokenManager: tokenManager,
