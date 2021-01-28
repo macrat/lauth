@@ -23,7 +23,6 @@ jobs:
   build-container:
     name: Build Container
     needs: Test
-    if: "${{ github.event_name == 'push' }}"
     runs-on: ubuntu-latest
     steps:
       - uses: docker/setup-qemu-action@v1
