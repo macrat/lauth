@@ -22,6 +22,7 @@ func MakeAuthzTokens(jwt token.Manager, conf *config.LdapinConfig, req GetAuthzR
 			conf.Issuer,
 			subject,
 			req.ClientID,
+			req.RedirectURI,
 			req.Scope,
 			req.Nonce,
 			authTime,

@@ -92,6 +92,27 @@ var (
 			},
 			Fragment: url.Values{},
 		},
+		{
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+			Query:       url.Values{},
+			Fragment:    url.Values{},
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"this is invalid url::"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+			Query:       url.Values{},
+			Fragment:    url.Values{},
+		},
 	}
 )
 

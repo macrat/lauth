@@ -69,7 +69,7 @@ func (req GetAuthzRequest) ValidateClient(config *config.LdapinConfig) *ErrorMes
 
 func (req GetAuthzRequest) Validate() *ErrorMessage {
 	if req.RedirectURI == "" {
-		return req.makeError(nil, "invalid_request", "redirect_uri is not set")
+		return req.makeError(nil, "invalid_request", "redirect_uri is required")
 	}
 
 	if u, err := url.Parse(req.RedirectURI); err != nil {

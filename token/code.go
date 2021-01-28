@@ -10,9 +10,10 @@ import (
 type CodeClaims struct {
 	OIDCClaims
 
-	ClientID string `json:"client_id"`
-	Nonce    string `json:"nonce"`
-	Scope    string `json:"scope,omitempty"`
+	ClientID    string `json:"client_id"`
+	RedirectURI string `json:"redirect_uri"`
+	Nonce       string `json:"nonce"`
+	Scope       string `json:"scope,omitempty"`
 }
 
 func (claims CodeClaims) Validate(issuer *config.URL) error {
@@ -31,7 +32,7 @@ func (claims CodeClaims) Validate(issuer *config.URL) error {
 	return nil
 }
 
-func (m Manager) CreateCode(issuer *config.URL, subject, clientID, scope, nonce string, authTime time.Time, expiresIn time.Duration) (string, error) {
+func (m Manager) CreateCode(issuer *config.URL, subject, clientID, redirectURI, scope, nonce string, authTime time.Time, expiresIn time.Duration) (string, error) {
 	return m.create(CodeClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
@@ -44,9 +45,10 @@ func (m Manager) CreateCode(issuer *config.URL, subject, clientID, scope, nonce 
 			Type:     "CODE",
 			AuthTime: authTime.Unix(),
 		},
-		ClientID: clientID,
-		Scope:    scope,
-		Nonce:    nonce,
+		ClientID:    clientID,
+		RedirectURI: redirectURI,
+		Scope:       scope,
+		Nonce:       nonce,
 	})
 }
 

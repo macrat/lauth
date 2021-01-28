@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,7 @@ type PostTokenRequest struct {
 	Code         string `form:"code"          json:"code"          xml:"code"`
 	ClientID     string `form:"client_id"     json:"client_id"     xml:"client_id"`
 	ClientSecret string `form:"client_secret" json:"client_secret" xml:"client_secret"`
+	RedirectURI  string `form:"redirect_uri"  json:"redirect_uri"  xml:"redirect_uri"`
 }
 
 func (req *PostTokenRequest) Bind(c *gin.Context) *ErrorMessage {
@@ -38,6 +40,23 @@ func (req PostTokenRequest) Validate() *ErrorMessage {
 		return &ErrorMessage{
 			Reason:      "invalid_request",
 			Description: "code is required",
+		}
+	}
+
+	if req.RedirectURI == "" {
+		return &ErrorMessage{
+			Reason:      "invalid_request",
+			Description: "redirect_uri is required",
+		}
+	} else if u, err := url.Parse(req.RedirectURI); err != nil {
+		return &ErrorMessage{
+			Reason:      "invalid_request",
+			Description: "redirect_uri is invalid format",
+		}
+	} else if !u.IsAbs() {
+		return &ErrorMessage{
+			Reason:      "invalid_request",
+			Description: "redirect_uri is must be absolute URL",
 		}
 	}
 
@@ -117,6 +136,14 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 	if req.ClientID != "" && req.ClientID != code.ClientID {
 		c.JSON(http.StatusBadRequest, ErrorMessage{
 			Reason: "invalid_grant",
+		})
+		return
+	}
+
+	if req.RedirectURI != code.RedirectURI {
+		c.JSON(http.StatusBadRequest, ErrorMessage{
+			Reason:      "invalid_request",
+			Description: "redirect_uri is miss match",
 		})
 		return
 	}

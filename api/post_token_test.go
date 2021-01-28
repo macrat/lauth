@@ -18,6 +18,7 @@ func TestPostToken(t *testing.T) {
 		env.API.Config.Issuer,
 		"macrat",
 		"some_client_id",
+		"http://some-client.example.com/callback",
 		"openid profile",
 		"something-nonce",
 		time.Now(),
@@ -31,6 +32,7 @@ func TestPostToken(t *testing.T) {
 		&config.URL{Host: "another_issuer"},
 		"macrat",
 		"some_client_id",
+		"http://some-client.example.com/callback",
 		"openid profile",
 		"",
 		time.Now(),
@@ -47,6 +49,7 @@ func TestPostToken(t *testing.T) {
 				"code":          {code},
 				"client_id":     {"some_client_id"},
 				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -59,6 +62,7 @@ func TestPostToken(t *testing.T) {
 				"grant_type":    {"authorization_code"},
 				"client_id":     {"some_client_id"},
 				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -72,6 +76,7 @@ func TestPostToken(t *testing.T) {
 				"code":          {"invalid-code"},
 				"client_id":     {"some_client_id"},
 				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -84,6 +89,7 @@ func TestPostToken(t *testing.T) {
 				"code":          {invalidCode},
 				"client_id":     {"some_client_id"},
 				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -95,6 +101,7 @@ func TestPostToken(t *testing.T) {
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
 				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -104,9 +111,10 @@ func TestPostToken(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"grant_type": {"authorization_code"},
-				"code":       {code},
-				"client_id":  {"another_client_id"},
+				"grant_type":   {"authorization_code"},
+				"code":         {code},
+				"client_id":    {"another_client_id"},
+				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -120,6 +128,7 @@ func TestPostToken(t *testing.T) {
 				"code":          {code},
 				"client_id":     {"another_client_id"},
 				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -132,6 +141,7 @@ func TestPostToken(t *testing.T) {
 				"code":          {code},
 				"client_id":     {"some_client_id"},
 				"client_secret": {"invalid secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -144,6 +154,62 @@ func TestPostToken(t *testing.T) {
 				"code":          {code},
 				"client_id":     {"some_client_id"},
 				"client_secret": {"secret for some-client"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "redirect_uri is required",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"is not url::"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "redirect_uri is invalid format",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "redirect_uri is must be absolute URL",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://another-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "redirect_uri is miss match",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusOK,
 			CheckBody: func(t *testing.T, body testutil.RawBody) {
@@ -196,6 +262,7 @@ func TestPostToken_PublicClients(t *testing.T) {
 		env.API.Config.Issuer,
 		"macrat",
 		"some_client_id",
+		"http://some-client.example.com/callback",
 		"openid profile",
 		"something-nonce",
 		time.Now(),
@@ -211,6 +278,7 @@ func TestPostToken_PublicClients(t *testing.T) {
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
 				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -224,6 +292,7 @@ func TestPostToken_PublicClients(t *testing.T) {
 				"code":          {code},
 				"client_id":     {"some_client_id"},
 				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusOK,
 			CheckBody: func(t *testing.T, body testutil.RawBody) {
@@ -231,9 +300,10 @@ func TestPostToken_PublicClients(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"grant_type": {"authorization_code"},
-				"code":       {code},
-				"client_id":  {"some_client_id"},
+				"grant_type":   {"authorization_code"},
+				"code":         {code},
+				"client_id":    {"some_client_id"},
+				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusOK,
 			CheckBody: func(t *testing.T, body testutil.RawBody) {
@@ -241,9 +311,10 @@ func TestPostToken_PublicClients(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"grant_type": {"authorization_code"},
-				"code":       {code},
-				"client_id":  {"another_client_id"},
+				"grant_type":   {"authorization_code"},
+				"code":         {code},
+				"client_id":    {"another_client_id"},
+				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
@@ -252,8 +323,9 @@ func TestPostToken_PublicClients(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"grant_type": {"authorization_code"},
-				"code":       {code},
+				"grant_type":   {"authorization_code"},
+				"code":         {code},
+				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
 			Code: http.StatusOK,
 			CheckBody: func(t *testing.T, body testutil.RawBody) {

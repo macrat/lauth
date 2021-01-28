@@ -17,7 +17,7 @@ func TestCodeToken(t *testing.T) {
 
 	issuer := &config.URL{Scheme: "http", Host: "localhost:8000"}
 
-	code, err := tokenManager.CreateCode(issuer, "someone", "something", "openid profile", "", time.Now(), 10*time.Minute)
+	code, err := tokenManager.CreateCode(issuer, "someone", "something", "http://something", "openid profile", "", time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate code: %s", err)
 	}
