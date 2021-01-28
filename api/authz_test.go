@@ -87,7 +87,7 @@ func TestSSO(t *testing.T) {
 
 	cookie, _ := (&http.Request{Header: http.Header{"Cookie": rawCookie}}).Cookie("token")
 
-	ssoToken, err := env.API.JWTManager.ParseIDToken(cookie.Value)
+	ssoToken, err := env.API.TokenManager.ParseIDToken(cookie.Value)
 	if err != nil {
 		t.Errorf("failed to parse token in cookie: %s", err)
 	} else if err := ssoToken.Validate(env.API.Config.Issuer, env.API.Config.Issuer.String()); err != nil {
@@ -113,7 +113,7 @@ func TestSSO(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to parse location: %s", err)
 	}
-	code, err := env.API.JWTManager.ParseCode(location.Query().Get("code"))
+	code, err := env.API.TokenManager.ParseCode(location.Query().Get("code"))
 	if err != nil {
 		t.Errorf("failed to parse code: %s", err)
 	} else if err = code.Validate(env.API.Config.Issuer); err != nil {

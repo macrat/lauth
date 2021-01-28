@@ -8,7 +8,7 @@ import (
 	"github.com/macrat/ldapin/token"
 )
 
-func MakeAuthzTokens(jwt token.JWTManager, conf *config.LdapinConfig, req GetAuthzRequest, subject string, authTime time.Time) (*url.URL, *ErrorMessage) {
+func MakeAuthzTokens(jwt token.Manager, conf *config.LdapinConfig, req GetAuthzRequest, subject string, authTime time.Time) (*url.URL, *ErrorMessage) {
 	resp := make(url.Values)
 
 	if req.State != "" {

@@ -40,7 +40,7 @@ func TestOIDCImplicitFlow(t *testing.T) {
 
 	if fragment.Get("id_token") == "" {
 		t.Errorf("failed to get id_token")
-	} else if idToken, err := env.API.JWTManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+	} else if idToken, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
 		t.Errorf("failed to parse id_token: %s", err)
 	} else if idToken.Nonce != nonce {
 		t.Errorf("nonce of id_token expected %#v but got %#v", nonce, idToken.Nonce)

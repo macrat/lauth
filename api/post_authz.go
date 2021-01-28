@@ -73,7 +73,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		return
 	}
 
-	ssoToken, err := api.JWTManager.CreateIDToken(
+	ssoToken, err := api.TokenManager.CreateIDToken(
 		api.Config.Issuer,
 		req.User,
 		api.Config.Issuer.String(),
@@ -94,7 +94,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		)
 	}
 
-	resp, errMsg := MakeAuthzTokens(api.JWTManager, api.Config, req.GetAuthzRequest, req.User, time.Now())
+	resp, errMsg := MakeAuthzTokens(api.TokenManager, api.Config, req.GetAuthzRequest, req.User, time.Now())
 	if errMsg != nil {
 		errMsg.Redirect(c)
 	}

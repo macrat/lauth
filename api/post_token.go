@@ -57,7 +57,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		return
 	}
 
-	code, err := api.JWTManager.ParseCode(req.Code)
+	code, err := api.TokenManager.ParseCode(req.Code)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorMessage{
 			Err:    err,
@@ -75,7 +75,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 	scope := ParseStringSet(code.Scope)
 	scope.Add("openid")
 
-	accessToken, err := api.JWTManager.CreateAccessToken(
+	accessToken, err := api.TokenManager.CreateAccessToken(
 		api.Config.Issuer,
 		code.Subject,
 		scope.String(),
@@ -91,7 +91,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		return
 	}
 
-	idToken, err := api.JWTManager.CreateIDToken(
+	idToken, err := api.TokenManager.CreateIDToken(
 		api.Config.Issuer,
 		code.Subject,
 		code.ClientID,

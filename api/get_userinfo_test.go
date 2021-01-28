@@ -11,7 +11,7 @@ import (
 func TestGetUserinfo(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
-	noScopeToken, err := env.API.JWTManager.CreateAccessToken(
+	noScopeToken, err := env.API.TokenManager.CreateAccessToken(
 		env.API.Config.Issuer,
 		"macrat",
 		"openid",
@@ -22,7 +22,7 @@ func TestGetUserinfo(t *testing.T) {
 		t.Fatalf("failed to generate access_token: %s", err)
 	}
 
-	multiScopeToken, err := env.API.JWTManager.CreateAccessToken(
+	multiScopeToken, err := env.API.TokenManager.CreateAccessToken(
 		env.API.Config.Issuer,
 		"macrat",
 		"openid profile email",
@@ -33,7 +33,7 @@ func TestGetUserinfo(t *testing.T) {
 		t.Fatalf("failed to generate access_token: %s", err)
 	}
 
-	nobodyToken, err := env.API.JWTManager.CreateAccessToken(
+	nobodyToken, err := env.API.TokenManager.CreateAccessToken(
 		env.API.Config.Issuer,
 		"nobody",
 		"openid profile",

@@ -118,7 +118,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
 	for i, tt := range tests {
-		ssoToken, err := env.API.JWTManager.CreateIDToken(
+		ssoToken, err := env.API.TokenManager.CreateIDToken(
 			env.API.Config.Issuer,
 			"macrat",
 			env.API.Config.Issuer.String(),
@@ -157,7 +157,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 
 		if query.Get("code") == "" {
 			t.Errorf("%d: expected returns code but not set", i)
-		} else if code, err := env.API.JWTManager.ParseCode(query.Get("code")); err != nil {
+		} else if code, err := env.API.TokenManager.ParseCode(query.Get("code")); err != nil {
 			t.Errorf("%d: failed to parse code: %s", i, err)
 		} else if err := code.Validate(env.API.Config.Issuer); err != nil {
 			t.Errorf("%d: failed to validate code: %s", i, err)

@@ -26,7 +26,7 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 	}
 
 	rawToken := strings.TrimSpace(header.Authorization[len("Bearer "):])
-	token, err := api.JWTManager.ParseAccessToken(rawToken)
+	token, err := api.TokenManager.ParseAccessToken(rawToken)
 	if err == nil {
 		err = token.Validate(api.Config.Issuer)
 	}

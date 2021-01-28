@@ -14,7 +14,7 @@ import (
 func TestPostToken(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
-	code, err := env.API.JWTManager.CreateCode(
+	code, err := env.API.TokenManager.CreateCode(
 		env.API.Config.Issuer,
 		"macrat",
 		"some_client_id",
@@ -27,7 +27,7 @@ func TestPostToken(t *testing.T) {
 		t.Fatalf("failed to generate test code: %s", err)
 	}
 
-	invalidCode, err := env.API.JWTManager.CreateCode(
+	invalidCode, err := env.API.TokenManager.CreateCode(
 		&config.URL{Host: "another_issuer"},
 		"macrat",
 		"some_client_id",
@@ -97,7 +97,7 @@ func TestPostToken(t *testing.T) {
 					t.Errorf("scope is expected \"openid profile\" but got %#v", resp.Scope)
 				}
 
-				accessToken, err := env.API.JWTManager.ParseAccessToken(resp.AccessToken)
+				accessToken, err := env.API.TokenManager.ParseAccessToken(resp.AccessToken)
 				if err != nil {
 					t.Errorf("failed to parse access token: %s", err)
 				}
@@ -105,7 +105,7 @@ func TestPostToken(t *testing.T) {
 					t.Errorf("failed to validate access token: %s", err)
 				}
 
-				idToken, err := env.API.JWTManager.ParseIDToken(resp.IDToken)
+				idToken, err := env.API.TokenManager.ParseIDToken(resp.IDToken)
 				if err != nil {
 					t.Errorf("failed to parse id token: %s", err)
 				}

@@ -101,10 +101,10 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 		if token, err := c.Cookie("token"); err == nil {
 			issuer := api.Config.Issuer
 			secure := issuer.Scheme == "https"
-			if idToken, err := api.JWTManager.ParseIDToken(token); err != nil || idToken.Validate(issuer, issuer.String()) != nil {
+			if idToken, err := api.TokenManager.ParseIDToken(token); err != nil || idToken.Validate(issuer, issuer.String()) != nil {
 				c.SetCookie("token", "", 0, "/", issuer.Host, secure, true)
 			} else {
-				redirect, errMsg := MakeAuthzTokens(api.JWTManager, api.Config, req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
+				redirect, errMsg := MakeAuthzTokens(api.TokenManager, api.Config, req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
 				if errMsg != nil {
 					errMsg.Redirect(c)
 				} else {

@@ -7,10 +7,10 @@ import (
 	"github.com/macrat/ldapin/token"
 )
 
-func MakeJWTManager() (token.JWTManager, error) {
+func MakeTokenManager() (token.Manager, error) {
 	pri, err := rsa.GenerateKey(rand.Reader, 512)
 	if err != nil {
-		return token.JWTManager{}, err
+		return token.Manager{}, err
 	}
-	return token.NewJWTManager(pri)
+	return token.NewManager(pri)
 }

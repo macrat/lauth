@@ -111,12 +111,12 @@ func main() {
 	_, err = connector.Connect()
 	app.FatalIfError(err, "failed to connect LDAP server")
 
-	var jwt token.JWTManager
+	var tokenManager token.Manager
 	if *SignKey != nil {
-		jwt, err = token.NewJWTManagerFromFile(*SignKey)
+		tokenManager, err = token.NewManagerFromFile(*SignKey)
 		app.FatalIfError(err, "failed to read private key for sign")
 	} else {
-		jwt, err = token.GenerateJWTManager()
+		tokenManager, err = token.GenerateManager()
 		app.FatalIfError(err, "failed to generate private key for sign")
 	}
 
@@ -141,9 +141,9 @@ func main() {
 		},
 	})
 	api := &api.LdapinAPI{
-		Connector:  connector,
-		JWTManager: jwt,
-		Config:     conf,
+		Connector:    connector,
+		TokenManager: tokenManager,
+		Config:       conf,
 	}
 
 	tmpl, err := page.Load(*LoginPage, *ErrorPage)

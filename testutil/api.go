@@ -91,15 +91,15 @@ func NewAPITestEnvironment(t *testing.T) *APITestEnvironment {
 
 	router := MakeTestRouter()
 
-	jwt, err := MakeJWTManager()
+	tokenManager, err := MakeTokenManager()
 	if err != nil {
 		t.Fatalf("failed to make jwt certs: %s", err)
 	}
 
 	api := &api.LdapinAPI{
-		Connector:  LDAP,
-		Config:     MakeLdapinConfig(),
-		JWTManager: jwt,
+		Connector:    LDAP,
+		Config:       MakeLdapinConfig(),
+		TokenManager: tokenManager,
 	}
 	api.SetRoutes(router)
 

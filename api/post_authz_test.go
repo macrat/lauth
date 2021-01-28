@@ -67,7 +67,7 @@ func TestPostAuthz(t *testing.T) {
 				}
 				if query.Get("code") == "" {
 					t.Errorf("expected returns code but not set")
-				} else if code, err := env.API.JWTManager.ParseCode(query.Get("code")); err != nil {
+				} else if code, err := env.API.TokenManager.ParseCode(query.Get("code")); err != nil {
 					t.Errorf("failed to parse code: %s", err)
 				} else if err := code.Validate(env.API.Config.Issuer); err != nil {
 					t.Errorf("failed to validate code: %s", err)
@@ -96,7 +96,7 @@ func TestPostAuthz(t *testing.T) {
 				}
 				if fragment.Get("access_token") == "" {
 					t.Errorf("expected returns access_token but not set")
-				} else if code, err := env.API.JWTManager.ParseAccessToken(fragment.Get("access_token")); err != nil {
+				} else if code, err := env.API.TokenManager.ParseAccessToken(fragment.Get("access_token")); err != nil {
 					t.Errorf("failed to parse access_token: %s", err)
 				} else if err := code.Validate(env.API.Config.Issuer); err != nil {
 					t.Errorf("failed to validate access_token: %s", err)
@@ -135,7 +135,7 @@ func TestPostAuthz(t *testing.T) {
 				}
 				if fragment.Get("id_token") == "" {
 					t.Errorf("expected returns id_token but not set")
-				} else if code, err := env.API.JWTManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+				} else if code, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
 					t.Errorf("failed to parse access_token: %s", err)
 				} else if err := code.Validate(env.API.Config.Issuer, "test_client"); err != nil {
 					t.Errorf("failed to validate access_token: %s", err)

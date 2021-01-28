@@ -11,9 +11,9 @@ import (
 )
 
 type LdapinAPI struct {
-	Connector  ldap.LDAPConnector
-	Config     *config.LdapinConfig
-	JWTManager token.JWTManager
+	Connector    ldap.LDAPConnector
+	Config       *config.LdapinConfig
+	TokenManager token.Manager
 }
 
 func (api *LdapinAPI) SetRoutes(r gin.IRoutes) {
@@ -59,7 +59,7 @@ func (api *LdapinAPI) GetConfiguration(c *gin.Context) {
 }
 
 func (api *LdapinAPI) GetCerts(c *gin.Context) {
-	keys, err := api.JWTManager.JWKs()
+	keys, err := api.TokenManager.JWKs()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
 			Err:         err,
