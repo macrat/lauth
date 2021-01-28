@@ -112,7 +112,7 @@ ttl:
 }
 
 func TestConfigExampleLoadable(t *testing.T) {
-	f, err := os.Open("./config.example.yml")
+	f, err := os.Open("../config.example.yml")
 	if err != nil {
 		t.Fatalf("failed to open example config: %s", err)
 	}
