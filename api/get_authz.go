@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/ldapin/config"
 )
 
 type GetAuthzRequest struct {
@@ -47,15 +48,34 @@ func (req GetAuthzRequest) makeError(err error, reason, description string) *Err
 	}
 }
 
+func (req GetAuthzRequest) ValidateClient(config *config.LdapinConfig) *ErrorMessage {
+	if client, ok := config.Clients[req.ClientID]; !ok {
+		if config.EnableClientAuth {
+			return req.makeError(
+				nil,
+				"unauthorized_client",
+				"client_id is not registered",
+			)
+		}
+	} else if !client.RedirectURI.Match(req.RedirectURI) {
+		return req.makeError(
+			nil,
+			"invalid_request",
+			"redirect_uri is not registered",
+		)
+	}
+	return nil
+}
+
 func (req GetAuthzRequest) Validate() *ErrorMessage {
 	if req.RedirectURI == "" {
-		return req.makeError(nil, "invalid_redirect_uri", "redirect_uri is not set")
+		return req.makeError(nil, "invalid_request", "redirect_uri is not set")
 	}
 
 	if u, err := url.Parse(req.RedirectURI); err != nil {
-		return req.makeError(err, "invalid_redirect_uri", "redirect_uri is invalid format")
+		return req.makeError(err, "invalid_request", "redirect_uri is invalid format")
 	} else if !u.IsAbs() {
-		return req.makeError(err, "invalid_redirect_uri", "redirect_uri is must be absolute URL")
+		return req.makeError(err, "invalid_request", "redirect_uri is must be absolute URL")
 	}
 
 	if req.ClientID == "" {
@@ -93,6 +113,10 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 	if err := (&req).BindAndValidate(c); err != nil {
 		err.Redirect(c)
 		return
+	}
+
+	if err := req.ValidateClient(api.Config); err != nil {
+		err.Redirect(c)
 	}
 
 	prompt := ParseStringSet(req.Prompt)

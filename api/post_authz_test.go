@@ -17,16 +17,16 @@ func TestPostAuthz(t *testing.T) {
 	env.RedirectTest(t, "POST", "/authz", []testutil.RedirectTest{
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
 			},
@@ -34,8 +34,8 @@ func TestPostAuthz(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"password":      {"foobar"},
 			},
@@ -43,8 +43,8 @@ func TestPostAuthz(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"invalid"},
@@ -53,8 +53,8 @@ func TestPostAuthz(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
@@ -82,8 +82,8 @@ func TestPostAuthz(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"token"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
@@ -120,8 +120,8 @@ func TestPostAuthz(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"id_token"},
 				"state":         {"this-is-state"},
 				"username":      {"macrat"},
@@ -137,7 +137,7 @@ func TestPostAuthz(t *testing.T) {
 					t.Errorf("expected returns id_token but not set")
 				} else if code, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
 					t.Errorf("failed to parse access_token: %s", err)
-				} else if err := code.Validate(env.API.Config.Issuer, "test_client"); err != nil {
+				} else if err := code.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
 					t.Errorf("failed to validate access_token: %s", err)
 				}
 				if fragment.Get("code") != "" {
@@ -156,8 +156,8 @@ func TestPostAuthz(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"token id_token"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
@@ -181,8 +181,8 @@ func TestPostAuthz(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code id_token"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},

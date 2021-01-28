@@ -17,7 +17,7 @@ var (
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"response_type": {"code"},
 			},
 			Code:        http.StatusFound,
@@ -30,8 +30,8 @@ var (
 		},
 		{
 			Request: url.Values{
-				"redirect_uri": {"http://localhost:3000"},
-				"client_id":    {"test_client"},
+				"redirect_uri": {"http://some-client.example.com/callback"},
+				"client_id":    {"some_client_id"},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -43,8 +43,8 @@ var (
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code hogefuga"},
 			},
 			Code:        http.StatusFound,
@@ -58,11 +58,39 @@ var (
 		{
 			Request: url.Values{
 				"redirect_uri":  {"/invalid/relative/url"},
-				"client_id":     {"test_client"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 			},
 			Code:        http.StatusBadRequest,
 			HasLocation: false,
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"another_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"unauthorized_client"},
+				"error_description": {"client_id is not registered"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://other-site.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"redirect_uri is not registered"},
+			},
+			Fragment: url.Values{},
 		},
 	}
 )
@@ -71,8 +99,8 @@ func TestSSO(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
 	resp := env.Post("/authz", "", url.Values{
-		"redirect_uri":  {"http://localhost:3000"},
-		"client_id":     {"test_client"},
+		"redirect_uri":  {"http://some-client.example.com/callback"},
+		"client_id":     {"some_client_id"},
 		"response_type": {"code"},
 		"username":      {"macrat"},
 		"password":      {"foobar"},
@@ -95,8 +123,8 @@ func TestSSO(t *testing.T) {
 	}
 
 	params := url.Values{
-		"redirect_uri":  {"http://localhost:3000"},
-		"client_id":     {"test_client"},
+		"redirect_uri":  {"http://some-client.example.com/callback"},
+		"client_id":     {"some_client_id"},
 		"response_type": {"code"},
 	}
 	req, _ := http.NewRequest("GET", "/authz?"+params.Encode(), nil)

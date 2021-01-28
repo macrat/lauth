@@ -29,15 +29,15 @@ func (p Pattern) String() string {
 	return p.pattern
 }
 
-func (p Pattern) Match(u *URL) bool {
-	return p.matcher.Match(u.String())
+func (p Pattern) Match(url string) bool {
+	return p.matcher.Match(url)
 }
 
 type PatternSet []Pattern
 
-func (ps PatternSet) Match(u *URL) bool {
+func (ps PatternSet) Match(url string) bool {
 	for _, p := range ps {
-		if p.Match(u) {
+		if p.Match(url) {
 			return true
 		}
 	}

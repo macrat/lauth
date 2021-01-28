@@ -39,8 +39,8 @@ func TestLoginForm_value_passing(t *testing.T) {
 
 	params := url.Values{
 		"response_type": {"code"},
-		"client_id":     {"test_client"},
-		"redirect_uri":  {"http://localhost:3000"},
+		"client_id":     {"some_client_id"},
+		"redirect_uri":  {"http://some-client.example.com/callback"},
 		"scope":         {"openid profile"},
 		"state":         {"this-is-state"},
 		"nonce":         {"noncenoncenonce"},

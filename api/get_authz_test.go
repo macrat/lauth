@@ -18,24 +18,24 @@ func TestGetAuthz(t *testing.T) {
 	env.RedirectTest(t, "GET", "/authz", []testutil.RedirectTest{
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 			},
 			Code: http.StatusOK,
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code token"},
 			},
 			Code: http.StatusOK,
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"prompt":        {"none"},
 			},
@@ -57,8 +57,8 @@ func TestGetAuthz_SSO(t *testing.T) {
 	}{
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 			},
 			AuthTime: time.Now().Add(-5 * time.Minute),
@@ -66,8 +66,8 @@ func TestGetAuthz_SSO(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 			},
 			AuthTime: time.Now().Add(-11 * time.Minute),
@@ -75,8 +75,8 @@ func TestGetAuthz_SSO(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"prompt":        {"none"},
 			},
@@ -85,8 +85,8 @@ func TestGetAuthz_SSO(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"prompt":        {"login"},
 			},
@@ -95,8 +95,8 @@ func TestGetAuthz_SSO(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"prompt":        {"consent"},
 			},
@@ -105,8 +105,8 @@ func TestGetAuthz_SSO(t *testing.T) {
 		},
 		{
 			Request: url.Values{
-				"redirect_uri":  {"http://localhost:3000"},
-				"client_id":     {"test_client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"prompt":        {"select_account"},
 			},
@@ -167,4 +167,48 @@ func TestGetAuthz_SSO(t *testing.T) {
 			t.Errorf("%d: expected sub is \"macrat\" but got %s", i, code.Subject)
 		}
 	}
+}
+
+func TestGetAuthz_PublicClients(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+	env.API.Config.EnableClientAuth = false
+
+	env.RedirectTest(t, "GET", "/authz", []testutil.RedirectTest{
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"another_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusOK,
+			HasLocation: false,
+			Query:       url.Values{},
+			Fragment:    url.Values{},
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://other-site.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"redirect_uri is not registered"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"another_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusOK,
+			HasLocation: false,
+			Query:       url.Values{},
+			Fragment:    url.Values{},
+		},
+	})
 }

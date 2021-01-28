@@ -4,42 +4,37 @@ import (
 	"testing"
 
 	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/testutil"
 )
-
-func MustParseURL(raw string) *config.URL {
-	return (*config.URL)(testutil.MustParseURL(raw))
-}
 
 func TestPattern(t *testing.T) {
 	tests := []struct {
 		Pattern string
-		Input   *config.URL
+		Input   string
 		Match   bool
 	}{
 		{
 			Pattern: "http*://example.com/login/*",
-			Input:   MustParseURL("http://example.com/login/callback"),
+			Input:   "http://example.com/login/callback",
 			Match:   true,
 		},
 		{
 			Pattern: "http*://example.com/login/*",
-			Input:   MustParseURL("https://example.com/login/"),
+			Input:   "https://example.com/login/",
 			Match:   true,
 		},
 		{
 			Pattern: "http*://example.com/login/*",
-			Input:   MustParseURL("http://example.com/login"),
+			Input:   "http://example.com/login",
 			Match:   false,
 		},
 		{
 			Pattern: "http*://example.com/login/*",
-			Input:   MustParseURL("http://example.com/login/callback/oidc"),
+			Input:   "http://example.com/login/callback/oidc",
 			Match:   false,
 		},
 		{
 			Pattern: "http*://example.com/login/**",
-			Input:   MustParseURL("http://example.com/login/callback/oidc"),
+			Input:   "http://example.com/login/callback/oidc",
 			Match:   true,
 		},
 	}

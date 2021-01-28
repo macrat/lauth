@@ -41,6 +41,11 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		err.Redirect(c)
 		return
 	}
+
+	if err := req.ValidateClient(api.Config); err != nil {
+		err.Redirect(c)
+	}
+
 	scope := ParseStringSet(req.Scope)
 	scope.Add("openid")
 	req.Scope = scope.String()

@@ -82,7 +82,7 @@ func MakeLdapinConfig() *config.LdapinConfig {
 			"some_client_id": {
 				Secret: "secret for some-client",
 				RedirectURI: []config.Pattern{
-					MustParsePattern("http://some-client.example.com/**"),
+					MustParsePattern("http://some-client.example.com/callback"),
 				},
 			},
 		},
