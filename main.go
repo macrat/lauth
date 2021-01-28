@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	app = kingpin.New("Ldapin", "The simple OpenID Provider for LDAP like a ActiveDirectory.")
+	app = kingpin.New("ldapin", "The simple OpenID Provider for LDAP like a ActiveDirectory.")
 
 	Issuer  = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").PlaceHolder(config.DefaultConfig.Issuer.String()).URL()
 	Listen  = app.Flag("listen", "Listen address and port. In default, use same port as Issuer URL. This option can't use when auto generate TLS cert.").Envar("LDAPIN_LISTEN").TCP()
