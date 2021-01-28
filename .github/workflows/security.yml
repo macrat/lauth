@@ -14,18 +14,9 @@ jobs:
   analyze:
     name: CodeQL
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: 
-          - go
-
     steps:
-    - uses: actions/checkout@v2
-
-    - uses: github/codeql-action/init@v1
-      with:
-        languages: ${{ matrix.language }}
-
-    - uses: github/codeql-action/analyze@v1
+      - uses: actions/checkout@v2
+      - uses: github/codeql-action/init@v1
+        with:
+          languages: go
+      - uses: github/codeql-action/analyze@v1
