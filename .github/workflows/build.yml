@@ -52,10 +52,5 @@ jobs:
         with:
           push: true
           tags: ${{ steps.tags.outputs.tags }}
-          labels: ${{ step.tags.outputs.labels }}
-          platforms: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
-      - uses: peter-evans/dockerhub-description@v2
-        with:
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ github.repository }}
+          labels: ${{ steps.tags.outputs.labels }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v6
