@@ -3,13 +3,9 @@ package config
 import (
 	"io"
 	"io/ioutil"
-	"net"
-	"net/url"
 	"path"
-	"strconv"
 	"time"
 
-	"github.com/xhit/go-str2duration/v2"
 	"gopkg.in/yaml.v2"
 )
 
@@ -55,54 +51,6 @@ type ClaimConfig struct {
 	Type      string `yaml:"type"`
 }
 
-type ScopeConfig map[string][]ClaimConfig
-
-func (sc ScopeConfig) ScopeNames() []string {
-	var ss []string
-	for scope := range sc {
-		ss = append(ss, scope)
-	}
-	return ss
-}
-
-func (sc ScopeConfig) AllClaims() []string {
-	var claims []string
-	for _, scope := range sc {
-		for _, claim := range scope {
-			claims = append(claims, claim.Claim)
-		}
-	}
-	return claims
-}
-
-func (sc ScopeConfig) AttributesFor(scopes []string) []string {
-	var claims []string
-
-	for _, scopeName := range scopes {
-		if scope, ok := sc[scopeName]; ok {
-			for _, x := range scope {
-				claims = append(claims, x.Attribute)
-			}
-		}
-	}
-
-	return claims
-}
-
-func (sc ScopeConfig) ClaimMapFor(scopes []string) map[string]ClaimConfig {
-	claims := make(map[string]ClaimConfig)
-
-	for _, scopeName := range scopes {
-		if scope, ok := sc[scopeName]; ok {
-			for _, x := range scope {
-				claims[x.Attribute] = x
-			}
-		}
-	}
-
-	return claims
-}
-
 type EndpointConfig struct {
 	Authz    string `yaml:"authorization"`
 	Token    string `yaml:"token"`
@@ -125,35 +73,6 @@ func (c *EndpointConfig) Override(patch EndpointConfig) {
 	}
 }
 
-type Duration time.Duration
-
-func ParseDuration(text string) (Duration, error) {
-	d, err := str2duration.ParseDuration(text)
-	return Duration(d), err
-}
-
-func (d Duration) String() string {
-	return d.String()
-}
-
-func (d Duration) IntSeconds() int64 {
-	return int64(time.Duration(d).Seconds())
-}
-
-func (d Duration) StrSeconds() string {
-	return strconv.FormatInt(d.IntSeconds(), 10)
-}
-
-func (d Duration) MarshalText() ([]byte, error) {
-	return []byte(d.String()), nil
-}
-
-func (d *Duration) UnmarshalText(text []byte) error {
-	var err error
-	*d, err = ParseDuration(string(text))
-	return err
-}
-
 type TTLConfig struct {
 	Code  Duration `yaml:"code"`
 	Token Duration `yaml:"token"`
@@ -170,44 +89,6 @@ func (c *TTLConfig) Override(patch TTLConfig) {
 	if patch.SSO > 0 {
 		(*c).SSO = patch.SSO
 	}
-}
-
-type URL url.URL
-
-func (u *URL) String() string {
-	return (*url.URL)(u).String()
-}
-
-func (u *URL) UnmarshalText(text []byte) error {
-	parsed, err := url.Parse(string(text))
-	if err != nil {
-		return err
-	}
-	*u = URL(*parsed)
-	return nil
-}
-
-func (u *URL) MarshalText() ([]byte, error) {
-	return []byte(u.String()), nil
-}
-
-type TCPAddr net.TCPAddr
-
-func (a *TCPAddr) String() string {
-	return (*net.TCPAddr)(a).String()
-}
-
-func (a *TCPAddr) UnmarshalText(text []byte) error {
-	parsed, err := net.ResolveTCPAddr("", string(text))
-	if err != nil {
-		return err
-	}
-	*a = TCPAddr(*parsed)
-	return nil
-}
-
-func (a *TCPAddr) MarshalText() ([]byte, error) {
-	return []byte(a.String()), nil
 }
 
 type LdapinConfig struct {
