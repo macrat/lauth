@@ -1,6 +1,7 @@
 package token
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -33,7 +34,7 @@ func (claims CodeClaims) Validate(issuer *config.URL) error {
 }
 
 func (m Manager) CreateCode(issuer *config.URL, subject, clientID, redirectURI, scope, nonce string, authTime time.Time, expiresIn time.Duration) (string, error) {
-	plain, err := m.create(CodeClaims{
+	plain, err := json.Marshal(CodeClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
 				Issuer:    issuer.String(),
@@ -54,17 +55,17 @@ func (m Manager) CreateCode(issuer *config.URL, subject, clientID, redirectURI, 
 		return "", err
 	}
 
-	return m.encryptToken(plain)
+	return m.encrypt(plain)
 }
 
 func (m Manager) ParseCode(token string) (CodeClaims, error) {
-	dec, err := m.decryptToken(token)
+	dec, err := m.decrypt(token)
 	if err != nil {
 		return CodeClaims{}, err
 	}
 
 	var claims CodeClaims
-	if _, err := m.parse(dec, &claims); err != nil {
+	if err := json.Unmarshal(dec, &claims); err != nil {
 		return CodeClaims{}, err
 	}
 	return claims, nil

@@ -17,7 +17,7 @@ func (m Manager) encryptionKey() []byte {
 	return hash[:]
 }
 
-func (m Manager) encryptToken(token string) (string, error) {
+func (m Manager) encrypt(plain []byte) (string, error) {
 	enc, err := jose.NewEncrypter(
 		jose.A256GCM,
 		jose.Recipient{
@@ -35,26 +35,26 @@ func (m Manager) encryptToken(token string) (string, error) {
 		return "", err
 	}
 
-	e, err := enc.Encrypt([]byte(token))
+	e, err := enc.Encrypt(plain)
 	if err != nil {
 		return "", err
 	}
 	return e.CompactSerialize()
 }
 
-func (m Manager) decryptToken(token string) (string, error) {
-	e, err := jose.ParseEncrypted(token)
+func (m Manager) decrypt(jwe string) ([]byte, error) {
+	e, err := jose.ParseEncrypted(jwe)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if typ, ok := e.Header.ExtraHeaders[jose.HeaderContentType]; !ok || typ != "JWT" {
-		return "", NotJWEError
+		return nil, NotJWEError
 	}
 
 	dec, err := e.Decrypt(m.encryptionKey())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(dec), nil
+	return dec, nil
 }
