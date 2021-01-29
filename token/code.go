@@ -12,7 +12,7 @@ type CodeClaims struct {
 
 	ClientID    string `json:"client_id"`
 	RedirectURI string `json:"redirect_uri"`
-	Nonce       string `json:"nonce"`
+	Nonce       string `json:"nonce,omitempty"`
 	Scope       string `json:"scope,omitempty"`
 }
 
