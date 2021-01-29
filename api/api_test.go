@@ -3,11 +3,39 @@ package api_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/coreos/go-oidc"
 	"github.com/macrat/ldapin/testutil"
 )
+
+func TestErrorRoutes(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+
+	resp := env.Get("/no/such/page", "", nil)
+	if resp.Code != http.StatusNotFound {
+		t.Errorf("expected status code 404 but got %d", resp.Code)
+	} else if resp.Header().Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Errorf("unexpected content-type: %s", resp.Header().Get("Content-Type"))
+	}
+
+	req, _ := http.NewRequest("PATCH", "/authz", nil)
+	resp = env.DoRequest(req)
+	if resp.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected status code 405 but got %d", resp.Code)
+	} else if resp.Header().Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Errorf("unexpected content-type: %s", resp.Header().Get("Content-Type"))
+	}
+
+	req, _ = http.NewRequest("DELETE", "/token", nil)
+	resp = env.DoRequest(req)
+	if resp.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected status code 405 but got %d", resp.Code)
+	} else if resp.Header().Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("unexpected content-type: %s", resp.Header().Get("Content-Type"))
+	}
+}
 
 func TestOpenIDConfiguration(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)

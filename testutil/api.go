@@ -113,6 +113,7 @@ func NewAPITestEnvironment(t *testing.T) *APITestEnvironment {
 		TokenManager: tokenManager,
 	}
 	api.SetRoutes(router)
+	api.SetErrorRoutes(router)
 
 	return &APITestEnvironment{
 		App: router,
