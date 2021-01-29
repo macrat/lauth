@@ -14,6 +14,7 @@ import (
 	"github.com/macrat/ldapin/ldap"
 	"github.com/macrat/ldapin/page"
 	"github.com/macrat/ldapin/token"
+	"github.com/macrat/ldapin/metrics"
 )
 
 var (
@@ -208,7 +209,6 @@ func main() {
 	router.SetHTMLTemplate(tmpl)
 
 	router.Use(func(c *gin.Context) {
-		fmt.Println(c.Request.URL)
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Content-Security-Policy", "frame-ancestors 'none'")
 	})
