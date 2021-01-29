@@ -42,7 +42,8 @@ var (
 				{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
 			},
 		},
-		EnableClientAuth: false,
+		DisableClientAuth: false,
+		AllowImplicitFlow: false,
 	}
 )
 
@@ -98,13 +99,14 @@ type ClientConfig map[string]struct {
 }
 
 type LdapinConfig struct {
-	Issuer           *URL           `yaml:"issuer"`
-	Listen           *TCPAddr       `yaml:"listen"`
-	TTL              TTLConfig      `yaml:"ttl"`
-	Endpoints        EndpointConfig `yaml:"endpoint"`
-	Scopes           ScopeConfig    `yaml:"scope"`
-	Clients          ClientConfig   `yaml:"client"`
-	EnableClientAuth bool           `yaml:"enable_client_auth"`
+	Issuer            *URL           `yaml:"issuer"`
+	Listen            *TCPAddr       `yaml:"listen"`
+	TTL               TTLConfig      `yaml:"ttl"`
+	Endpoints         EndpointConfig `yaml:"endpoint"`
+	Scopes            ScopeConfig    `yaml:"scope"`
+	Clients           ClientConfig   `yaml:"client"`
+	DisableClientAuth bool           `yaml:"disable_client_auth"`
+	AllowImplicitFlow bool           `yaml:"allow_implicit_flow"`
 }
 
 func LoadConfig(f io.Reader) (*LdapinConfig, error) {
@@ -138,8 +140,12 @@ func (c *LdapinConfig) Override(patch *LdapinConfig) {
 		(*c).Clients = patch.Clients
 	}
 
-	if patch.EnableClientAuth {
-		(*c).EnableClientAuth = patch.EnableClientAuth
+	if patch.DisableClientAuth {
+		(*c).DisableClientAuth = patch.DisableClientAuth
+	}
+
+	if patch.AllowImplicitFlow {
+		(*c).AllowImplicitFlow = patch.AllowImplicitFlow
 	}
 }
 
@@ -180,14 +186,9 @@ type OpenIDConfiguration struct {
 func (c *LdapinConfig) OpenIDConfiguration() OpenIDConfiguration {
 	issuer := c.Issuer.String()
 
-	return OpenIDConfiguration{
-		Issuer:                issuer,
-		AuthorizationEndpoint: issuer + path.Join("/", c.Endpoints.Authz),
-		TokenEndpoint:         issuer + path.Join("/", c.Endpoints.Token),
-		UserinfoEndpoint:      issuer + path.Join("/", c.Endpoints.Userinfo),
-		JwksEndpoint:          issuer + path.Join("/", c.Endpoints.Jwks),
-		ScopesSupported:       append(c.Scopes.ScopeNames(), "openid"),
-		ResponseTypesSupported: []string{
+	responseTypes := []string{"code"}
+	if c.AllowImplicitFlow {
+		responseTypes = []string{
 			"code",
 			"token",
 			"id_token",
@@ -195,7 +196,17 @@ func (c *LdapinConfig) OpenIDConfiguration() OpenIDConfiguration {
 			"code id_token",
 			"token id_token",
 			"code token id_token",
-		},
+		}
+	}
+
+	return OpenIDConfiguration{
+		Issuer:                           issuer,
+		AuthorizationEndpoint:            issuer + path.Join("/", c.Endpoints.Authz),
+		TokenEndpoint:                    issuer + path.Join("/", c.Endpoints.Token),
+		UserinfoEndpoint:                 issuer + path.Join("/", c.Endpoints.Userinfo),
+		JwksEndpoint:                     issuer + path.Join("/", c.Endpoints.Jwks),
+		ScopesSupported:                  append(c.Scopes.ScopeNames(), "openid"),
+		ResponseTypesSupported:           responseTypes,
 		ResponseModesSupported:           []string{"query", "fragment"},
 		GrantTypesSupported:              []string{"authorization_code"},
 		SubjectTypesSupported:            []string{"public"},

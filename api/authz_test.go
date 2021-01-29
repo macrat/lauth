@@ -113,6 +113,21 @@ var (
 			Query:       url.Values{},
 			Fragment:    url.Values{},
 		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code token"},
+			},
+			AllowImplicit: false,
+			Code:          http.StatusFound,
+			HasLocation:   true,
+			Query:         url.Values{},
+			Fragment: url.Values{
+				"error":             {"unsupported_response_type"},
+				"error_description": {"implicit/hybrid flow is disallowed in this server"},
+			},
+		},
 	}
 )
 

@@ -59,8 +59,9 @@ func TestPostAuthz(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
+			AllowImplicit: false,
+			Code:          http.StatusFound,
+			HasLocation:   true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(fragment, url.Values{}) {
 					t.Errorf("expected fragment is not set but set %#v", fragment.Encode())
@@ -88,8 +89,9 @@ func TestPostAuthz(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
+			AllowImplicit: true,
+			Code:          http.StatusFound,
+			HasLocation:   true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())
@@ -127,8 +129,9 @@ func TestPostAuthz(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
+			AllowImplicit: true,
+			Code:          http.StatusFound,
+			HasLocation:   true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())
@@ -162,8 +165,9 @@ func TestPostAuthz(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
+			AllowImplicit: true,
+			Code:          http.StatusFound,
+			HasLocation:   true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())
@@ -187,8 +191,9 @@ func TestPostAuthz(t *testing.T) {
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
+			AllowImplicit: true,
+			Code:          http.StatusFound,
+			HasLocation:   true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())

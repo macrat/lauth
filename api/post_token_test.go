@@ -256,7 +256,7 @@ func TestPostToken(t *testing.T) {
 
 func TestPostToken_PublicClients(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
-	env.API.Config.EnableClientAuth = false
+	env.API.Config.DisableClientAuth = true
 
 	code, err := env.API.TokenManager.CreateCode(
 		env.API.Config.Issuer,

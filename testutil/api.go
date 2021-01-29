@@ -86,7 +86,8 @@ func MakeLdapinConfig() *config.LdapinConfig {
 				},
 			},
 		},
-		EnableClientAuth: true,
+		DisableClientAuth: false,
+		AllowImplicitFlow: false,
 	}
 }
 
@@ -159,19 +160,25 @@ func (env *APITestEnvironment) Do(method, path, token string, values url.Values)
 type ParamsTester func(t *testing.T, query, fragment url.Values)
 
 type RedirectTest struct {
-	Request     url.Values
-	Code        int
-	HasLocation bool
-	CheckParams ParamsTester
-	Query       url.Values
-	Fragment    url.Values
+	Request       url.Values
+	Code          int
+	HasLocation   bool
+	AllowImplicit bool
+	CheckParams   ParamsTester
+	Query         url.Values
+	Fragment      url.Values
 }
 
 func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint string, tests []RedirectTest) {
 	t.Helper()
 
 	for _, tt := range tests {
+		implicitOriginal := env.API.Config.AllowImplicitFlow
+		env.API.Config.AllowImplicitFlow = tt.AllowImplicit
+
 		resp := env.Do(method, endpoint, "", tt.Request)
+
+		env.API.Config.AllowImplicitFlow = implicitOriginal
 
 		if resp.Code != tt.Code {
 			t.Errorf("%s: expected status code %d but got %d", tt.Request.Encode(), tt.Code, resp.Code)

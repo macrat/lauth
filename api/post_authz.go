@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/ldapin/config"
 )
 
 type PostAuthzRequest struct {
@@ -28,22 +29,18 @@ func (req *PostAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
 	return nil
 }
 
-func (req *PostAuthzRequest) BindAndValidate(c *gin.Context) *ErrorMessage {
+func (req *PostAuthzRequest) BindAndValidate(c *gin.Context, config *config.LdapinConfig) *ErrorMessage {
 	if err := req.Bind(c); err != nil {
 		return err
 	}
-	return req.Validate()
+	return req.Validate(config)
 }
 
 func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	var req PostAuthzRequest
-	if err := (&req).BindAndValidate(c); err != nil {
+	if err := (&req).BindAndValidate(c, api.Config); err != nil {
 		err.Redirect(c)
 		return
-	}
-
-	if err := req.ValidateClient(api.Config); err != nil {
-		err.Redirect(c)
 	}
 
 	scope := ParseStringSet(req.Scope)

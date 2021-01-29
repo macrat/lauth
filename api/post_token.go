@@ -86,7 +86,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 	}
 
 	if req.ClientID == "" {
-		if api.Config.EnableClientAuth {
+		if !api.Config.DisableClientAuth {
 			c.JSON(http.StatusBadRequest, ErrorMessage{
 				Reason:      "invalid_request",
 				Description: "client_id is required",
@@ -100,7 +100,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 			return
 		}
 	} else if req.ClientSecret == "" {
-		if api.Config.EnableClientAuth {
+		if !api.Config.DisableClientAuth {
 			c.JSON(http.StatusBadRequest, ErrorMessage{
 				Reason:      "invalid_request",
 				Description: "client_secret is required",

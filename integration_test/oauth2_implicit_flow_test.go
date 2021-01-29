@@ -12,12 +12,13 @@ import (
 
 func TestOAuth2ImplicitFlow(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
+	env.API.Config.AllowImplicitFlow = true
 
-	clientID := "hello_client"
+	clientID := "some_client_id"
 
 	resp := env.Post("/authz", "", url.Values{
 		"response_type": {"token"},
-		"redirect_uri":  {"http://localhost:3000"},
+		"redirect_uri":  {"http://some-client.example.com/callback"},
 		"client_id":     {clientID},
 		"scope":         {"phone"},
 		"username":      {"macrat"},

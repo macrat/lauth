@@ -23,6 +23,9 @@ var (
 	Listen  = app.Flag("listen", "Listen address and port. In default, use same port as Issuer URL. This option can't use when auto generate TLS cert.").Envar("LDAPIN_LISTEN").TCP()
 	SignKey = app.Flag("sign-key", "RSA private key for signing to token. If omit this, automate generate key for one time use.").Envar("LDAPIN_SIGN_KEY").PlaceHolder("FILE").File()
 
+	AllowImplicitFlow = app.Flag("allow-implicit-flow", "Allow implicit/hybrid flow. It's may use for SPA site or native application.").Envar("LDAPIN_ALLOW_IMPLICIT_FLOW").Bool()
+	DisableClientAuth = app.Flag("disable-client-auth", "Allow use token endpoint without client authentication.").Envar("LDAPIN_DISABLE_CLIENT_AUTH").Bool()
+
 	TLSCertFile = app.Flag("tls-cert", "Cert file for TLS encryption.").Envar("LDAPIN_TLS_CERT").PlaceHolder("FILE").ExistingFile()
 	TLSKeyFile  = app.Flag("tls-key", "Key file for TLS encryption.").Envar("LDAPIN_TLS_KEY").PlaceHolder("FILE").ExistingFile()
 
@@ -119,7 +122,42 @@ func main() {
 			Userinfo: *UserinfoEndpoint,
 			Jwks:     *JwksEndpoint,
 		},
+		DisableClientAuth: *DisableClientAuth,
+		AllowImplicitFlow: *AllowImplicitFlow,
 	})
+	addr := DecideListenAddress((*url.URL)(conf.Issuer), (*net.TCPAddr)(conf.Listen))
+
+	fmt.Printf("OpenID Provider \"%s\" started on %s\n", conf.Issuer, addr)
+	fmt.Println()
+
+	if conf.Issuer.Scheme == "http" {
+		fmt.Fprintln(os.Stderr, "DANGER  Serve OAuth2/OpenID service over no encrypted HTTP.")
+		fmt.Fprintln(os.Stderr, "        An attacker can peek or rewrite user credentials, profile, or authorization.")
+		fmt.Fprintln(os.Stderr, "        Please set HTTPS URL to --issuer option.")
+		fmt.Fprintln(os.Stderr, "        And, you can enable TLS by --tls-cert and --tls-key options.")
+		fmt.Fprintln(os.Stderr, "")
+	}
+
+	if (*LdapAddress).Scheme == "ldap" && *LdapDisableTLS {
+		fmt.Fprintln(os.Stderr, "DANGER  Communication with LDAP server won't encryption.")
+		fmt.Fprintln(os.Stderr, "        An attacker in your network can peek at user credentials or profile.")
+		fmt.Fprintln(os.Stderr, "        Please consider removing --ldap-disable-tls option.")
+		fmt.Fprintln(os.Stderr, "")
+	}
+
+	if len(conf.Clients) == 0 && !conf.DisableClientAuth {
+		fmt.Fprintln(os.Stderr, "WARNING  No client is registered in the config file.")
+		fmt.Fprintln(os.Stderr, "         So, no client can use this provider.")
+		fmt.Fprintln(os.Stderr, "         Please consider register clients or use --disable-client-auth option.")
+		fmt.Fprintln(os.Stderr, "")
+	}
+
+	if !conf.AllowImplicitFlow {
+		fmt.Fprintln(os.Stderr, "NOTE  Implicit flow is disallowed.")
+		fmt.Fprintln(os.Stderr, "      Perhaps you have to allow this if used by SPA site.")
+		fmt.Fprintln(os.Stderr, "      You can allow this with --allow-implicit-flow option.")
+		fmt.Fprintln(os.Stderr, "")
+	}
 
 	connector := ldap.SimpleConnector{
 		ServerURL:   *LdapAddress,
@@ -154,7 +192,6 @@ func main() {
 	api.SetRoutes(router)
 	api.SetErrorRoutes(router)
 
-	addr := DecideListenAddress((*url.URL)(conf.Issuer), (*net.TCPAddr)(conf.Listen))
 	server := &http.Server{
 		Addr:    addr,
 		Handler: HTTPCompressor(router),

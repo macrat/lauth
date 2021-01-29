@@ -48,26 +48,7 @@ func (req GetAuthzRequest) makeError(err error, reason, description string) *Err
 	}
 }
 
-func (req GetAuthzRequest) ValidateClient(config *config.LdapinConfig) *ErrorMessage {
-	if client, ok := config.Clients[req.ClientID]; !ok {
-		if config.EnableClientAuth {
-			return req.makeError(
-				nil,
-				"unauthorized_client",
-				"client_id is not registered",
-			)
-		}
-	} else if !client.RedirectURI.Match(req.RedirectURI) {
-		return req.makeError(
-			nil,
-			"invalid_request",
-			"redirect_uri is not registered",
-		)
-	}
-	return nil
-}
-
-func (req GetAuthzRequest) Validate() *ErrorMessage {
+func (req GetAuthzRequest) Validate(config *config.LdapinConfig) *ErrorMessage {
 	if req.RedirectURI == "" {
 		return req.makeError(nil, "invalid_request", "redirect_uri is required")
 	}
@@ -80,6 +61,21 @@ func (req GetAuthzRequest) Validate() *ErrorMessage {
 
 	if req.ClientID == "" {
 		return req.makeError(nil, "invalid_request", "client_id is required")
+	}
+	if client, ok := config.Clients[req.ClientID]; !ok {
+		if !config.DisableClientAuth {
+			return req.makeError(
+				nil,
+				"unauthorized_client",
+				"client_id is not registered",
+			)
+		}
+	} else if !client.RedirectURI.Match(req.RedirectURI) {
+		return req.makeError(
+			nil,
+			"invalid_request",
+			"redirect_uri is not registered",
+		)
 	}
 
 	rt := ParseStringSet(req.ResponseType)
@@ -97,26 +93,29 @@ func (req GetAuthzRequest) Validate() *ErrorMessage {
 			err.Error(),
 		)
 	}
+	if !config.AllowImplicitFlow && rt.String() != "code" {
+		return req.makeError(
+			nil,
+			"unsupported_response_type",
+			"implicit/hybrid flow is disallowed in this server",
+		)
+	}
 
 	return nil
 }
 
-func (req *GetAuthzRequest) BindAndValidate(c *gin.Context) *ErrorMessage {
+func (req *GetAuthzRequest) BindAndValidate(c *gin.Context, config *config.LdapinConfig) *ErrorMessage {
 	if err := req.Bind(c); err != nil {
 		return err
 	}
-	return req.Validate()
+	return req.Validate(config)
 }
 
 func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 	var req GetAuthzRequest
-	if err := (&req).BindAndValidate(c); err != nil {
+	if err := (&req).BindAndValidate(c, api.Config); err != nil {
 		err.Redirect(c)
 		return
-	}
-
-	if err := req.ValidateClient(api.Config); err != nil {
-		err.Redirect(c)
 	}
 
 	prompt := ParseStringSet(req.Prompt)

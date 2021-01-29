@@ -30,7 +30,7 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 	oauth2config := oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: "secret for some-client",
-		RedirectURL:  env.API.Config.Issuer.Host,
+		RedirectURL:  "http://some-client.example.com/callback",
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "phone"},
 	}

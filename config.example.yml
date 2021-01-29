@@ -60,4 +60,4 @@ client:
       - http://example.com/login/*
       - http://*.example.com/**
 
-allow_public_client: true
+disable_client_auth: false

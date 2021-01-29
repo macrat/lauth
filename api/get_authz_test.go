@@ -30,7 +30,8 @@ func TestGetAuthz(t *testing.T) {
 				"client_id":     {"some_client_id"},
 				"response_type": {"code token"},
 			},
-			Code: http.StatusOK,
+			AllowImplicit: true,
+			Code:          http.StatusOK,
 		},
 		{
 			Request: url.Values{
@@ -171,7 +172,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 
 func TestGetAuthz_PublicClients(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
-	env.API.Config.EnableClientAuth = false
+	env.API.Config.DisableClientAuth = true
 
 	env.RedirectTest(t, "GET", "/authz", []testutil.RedirectTest{
 		{
