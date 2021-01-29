@@ -37,9 +37,9 @@ func TestAccessToken(t *testing.T) {
 		t.Errorf("unexpected error: %s", err)
 	}
 
-	code, _ := tokenManager.ParseCode(accessToken)
-	if err = code.Validate(issuer); err == nil {
-		t.Fatalf("must be failed to validation access token as code but success")
+	idToken, _ := tokenManager.ParseIDToken(accessToken)
+	if err = idToken.Validate(issuer, issuer.String()); err == nil {
+		t.Fatalf("must be failed to validation access token as id token but success")
 	} else if err != token.UnexpectedTokenTypeError {
 		t.Errorf("unexpected error: %s", err)
 	}

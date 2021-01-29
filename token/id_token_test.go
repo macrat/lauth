@@ -57,9 +57,9 @@ func TestIDToken(t *testing.T) {
 		t.Fatalf("failed to generate token: %s", err)
 	}
 
-	code, _ := tokenManager.ParseCode(idToken2)
-	if err = code.Validate(issuer); err == nil {
-		t.Fatalf("must be failed to validation id_token as code but success")
+	accessToken, _ := tokenManager.ParseAccessToken(idToken2)
+	if err = accessToken.Validate(issuer); err == nil {
+		t.Fatalf("must be failed to validation id_token as access_token but success")
 	} else if err != token.UnexpectedTokenTypeError {
 		t.Errorf("unexpected error: %s", err)
 	}

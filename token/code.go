@@ -33,7 +33,7 @@ func (claims CodeClaims) Validate(issuer *config.URL) error {
 }
 
 func (m Manager) CreateCode(issuer *config.URL, subject, clientID, redirectURI, scope, nonce string, authTime time.Time, expiresIn time.Duration) (string, error) {
-	return m.create(CodeClaims{
+	plain, err := m.create(CodeClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
 				Issuer:    issuer.String(),
@@ -50,11 +50,21 @@ func (m Manager) CreateCode(issuer *config.URL, subject, clientID, redirectURI, 
 		Scope:       scope,
 		Nonce:       nonce,
 	})
+	if err != nil {
+		return "", err
+	}
+
+	return m.encryptToken(plain)
 }
 
 func (m Manager) ParseCode(token string) (CodeClaims, error) {
+	dec, err := m.decryptToken(token)
+	if err != nil {
+		return CodeClaims{}, err
+	}
+
 	var claims CodeClaims
-	if _, err := m.parse(token, &claims); err != nil {
+	if _, err := m.parse(dec, &claims); err != nil {
 		return CodeClaims{}, err
 	}
 	return claims, nil

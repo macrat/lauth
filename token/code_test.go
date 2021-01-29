@@ -36,18 +36,4 @@ func TestCodeToken(t *testing.T) {
 	} else if err != token.UnexpectedIssuerError {
 		t.Errorf("unexpected error: %s", err)
 	}
-
-	accessToken, _ := tokenManager.ParseAccessToken(code)
-	if err = accessToken.Validate(issuer); err == nil {
-		t.Fatalf("must be failed to validation code as access token but success")
-	} else if err != token.UnexpectedTokenTypeError {
-		t.Errorf("unexpected error: %s", err)
-	}
-
-	idToken, _ := tokenManager.ParseIDToken(code)
-	if err = idToken.Validate(issuer, issuer.String()); err == nil {
-		t.Fatalf("must be failed to validation code as ID token but success")
-	} else if err != token.UnexpectedTokenTypeError {
-		t.Errorf("unexpected error: %s", err)
-	}
 }
