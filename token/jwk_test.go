@@ -49,7 +49,7 @@ func TestTokenManager_JWKs(t *testing.T) {
 		}
 	}
 
-	idToken, err := manager.CreateIDToken(&config.URL{Scheme: "https", Host: "localhost"}, "someone", "something", "", time.Now(), 10*time.Minute)
+	idToken, err := manager.CreateIDToken(&config.URL{Scheme: "https", Host: "localhost"}, "someone", "something", "", "code", "token", time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate id_token: %s", err)
 	}

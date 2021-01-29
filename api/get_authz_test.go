@@ -124,6 +124,8 @@ func TestGetAuthz_SSO(t *testing.T) {
 			"macrat",
 			env.API.Config.Issuer.String(),
 			"",
+			"",
+			"",
 			tt.AuthTime,
 			10*time.Minute,
 		)

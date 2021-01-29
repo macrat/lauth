@@ -18,7 +18,7 @@ func TestIDToken(t *testing.T) {
 	issuer := &config.URL{Scheme: "http", Host: "localhost:8000"}
 	audience := "something"
 
-	idToken, err := tokenManager.CreateIDToken(issuer, "someone", audience, "", time.Now(), 10*time.Minute)
+	idToken, err := tokenManager.CreateIDToken(issuer, "someone", audience, "", "code", "token", time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate token: %s", err)
 	}
@@ -44,7 +44,15 @@ func TestIDToken(t *testing.T) {
 		t.Errorf("unexpected error: %s", err)
 	}
 
-	idToken2, err := tokenManager.CreateIDToken(issuer, "someone", issuer.String(), "", time.Now(), 10*time.Minute)
+	if claims.CodeHash != token.TokenHash("code") {
+		t.Errorf("unexpected c_hash: %s", claims.CodeHash)
+	}
+
+	if claims.AccessTokenHash != token.TokenHash("token") {
+		t.Errorf("unexpected at_hash: %s", claims.AccessTokenHash)
+	}
+
+	idToken2, err := tokenManager.CreateIDToken(issuer, "someone", issuer.String(), "", "", "", time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate token: %s", err)
 	}
@@ -54,5 +62,16 @@ func TestIDToken(t *testing.T) {
 		t.Fatalf("must be failed to validation id_token as code but success")
 	} else if err != token.UnexpectedTokenTypeError {
 		t.Errorf("unexpected error: %s", err)
+	}
+
+	claims2, err := tokenManager.ParseIDToken(idToken2)
+	if err != nil {
+		t.Fatalf("failed to parse id_token: %s", err)
+	}
+	if claims2.CodeHash != "" {
+		t.Errorf("unexpected c_hash: %s", claims2.CodeHash)
+	}
+	if claims2.AccessTokenHash != "" {
+		t.Errorf("unexpected at_hash: %s", claims2.AccessTokenHash)
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/macrat/ldapin/api"
 	"github.com/macrat/ldapin/config"
 	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/ldapin/token"
 )
 
 func TestPostToken(t *testing.T) {
@@ -248,6 +249,13 @@ func TestPostToken(t *testing.T) {
 				}
 				if idToken.Nonce != "something-nonce" {
 					t.Errorf("nonce must be \"something-nonce\" but got %#v", idToken.Nonce)
+				}
+
+				if idToken.CodeHash != token.TokenHash(code) {
+					t.Errorf("unexpected c_hash value:\nexpected: %s\n but got: %s", token.TokenHash(code), idToken.CodeHash)
+				}
+				if idToken.AccessTokenHash != token.TokenHash(resp.AccessToken) {
+					t.Errorf("unexpected at_hash value:\nexpected: %s\n but got: %s", token.TokenHash(resp.AccessToken), idToken.AccessTokenHash)
 				}
 			},
 		},

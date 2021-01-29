@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/ldapin/token"
 )
 
 func TestPostAuthz(t *testing.T) {
@@ -181,6 +182,12 @@ func TestPostAuthz(t *testing.T) {
 				if fragment.Get("code") != "" {
 					t.Errorf("expected code is not set but set %#v", fragment.Get("code"))
 				}
+
+				if idToken, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+					t.Errorf("failed to parse id_token: %s", err)
+				} else if idToken.AccessTokenHash != token.TokenHash(fragment.Get("access_token")) {
+					t.Errorf("at_hash is not match\nfrom id_token: %s\ncalculated: %s", idToken.AccessTokenHash, token.TokenHash(fragment.Get("access_token")))
+				}
 			},
 		},
 		{
@@ -206,6 +213,12 @@ func TestPostAuthz(t *testing.T) {
 				}
 				if fragment.Get("access_token") != "" {
 					t.Errorf("expected access_token is not set but set %#v", fragment.Get("access_token"))
+				}
+
+				if idToken, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+					t.Errorf("failed to parse id_token: %s", err)
+				} else if idToken.CodeHash != token.TokenHash(fragment.Get("code")) {
+					t.Errorf("c_hash is not match\nfrom id_token: %s\ncalculated: %s", idToken.CodeHash, token.TokenHash(fragment.Get("code")))
 				}
 			},
 		},

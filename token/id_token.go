@@ -10,7 +10,9 @@ import (
 type IDTokenClaims struct {
 	OIDCClaims
 
-	Nonce string `json:"nonce,omitempty"`
+	Nonce           string `json:"nonce,omitempty"`
+	CodeHash        string `json:"c_hash,omitempty"`
+	AccessTokenHash string `json:"at_hash,omitempty"`
 }
 
 func (claims IDTokenClaims) Validate(issuer *config.URL, audience string) error {
@@ -25,7 +27,17 @@ func (claims IDTokenClaims) Validate(issuer *config.URL, audience string) error 
 	return nil
 }
 
-func (m Manager) CreateIDToken(issuer *config.URL, subject, audience, nonce string, authTime time.Time, expiresIn time.Duration) (string, error) {
+func (m Manager) CreateIDToken(issuer *config.URL, subject, audience, nonce, code, accessToken string, authTime time.Time, expiresIn time.Duration) (string, error) {
+	codeHash := ""
+	if code != "" {
+		codeHash = TokenHash(code)
+	}
+
+	accessTokenHash := ""
+	if accessToken != "" {
+		accessTokenHash = TokenHash(accessToken)
+	}
+
 	return m.create(IDTokenClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
@@ -38,7 +50,9 @@ func (m Manager) CreateIDToken(issuer *config.URL, subject, audience, nonce stri
 			Type:     "ID_TOKEN",
 			AuthTime: authTime.Unix(),
 		},
-		Nonce: nonce,
+		Nonce:           nonce,
+		CodeHash:        codeHash,
+		AccessTokenHash: accessTokenHash,
 	})
 }
 

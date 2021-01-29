@@ -172,6 +172,8 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		code.Subject,
 		code.ClientID,
 		code.Nonce,
+		req.Code,
+		accessToken,
 		time.Unix(code.AuthTime, 0),
 		time.Duration(api.Config.TTL.Token),
 	)

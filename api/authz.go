@@ -55,6 +55,8 @@ func MakeAuthzTokens(jwt token.Manager, conf *config.LdapinConfig, req GetAuthzR
 			subject,
 			req.ClientID,
 			req.Nonce,
+			resp.Get("code"),
+			resp.Get("access_token"),
 			authTime,
 			time.Duration(conf.TTL.Token),
 		)

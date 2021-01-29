@@ -80,6 +80,8 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		req.User,
 		api.Config.Issuer.String(),
 		"",
+		"",
+		"",
 		time.Now(),
 		time.Duration(api.Config.TTL.SSO),
 	)
