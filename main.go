@@ -36,8 +36,8 @@ var (
 
 	CodeTTL    = app.Flag("code-ttl", "TTL for code.").Envar("LDAPIN_CODE_TTL").PlaceHolder("5m").String()
 	TokenTTL   = app.Flag("token-ttl", "TTL for access_token and id_token.").Envar("LDAPIN_TOKEN_TTL").PlaceHolder("1d").String()
-	RefreshTTL = app.Flag("refresh-ttl", "TTL for refresh_token.").Envar("LDAPIN_REFRESH_TTL").PlaceHolder("7d").String()
-	SSOTTL     = app.Flag("sso-ttl", "TTL for single sign-on.").Envar("LDAPIN_SSO_TTL").PlaceHolder("14d").String()
+	RefreshTTL = app.Flag("refresh-ttl", "TTL for refresh_token. If set 0, refresh_token will not create.").Envar("LDAPIN_REFRESH_TTL").PlaceHolder("7d").String()
+	SSOTTL     = app.Flag("sso-ttl", "TTL for single sign-on. If set 0, always ask the username and password to the end-user.").Envar("LDAPIN_SSO_TTL").PlaceHolder("14d").String()
 
 	LdapAddress     = app.Flag("ldap", "URL of LDAP server like \"ldap://USER_DN:PASSWORD@ldap.example.com\".").Envar("LDAP_ADDRESS").PlaceHolder("ADDRESS").Required().URL()
 	LdapBaseDN      = app.Flag("ldap-base-dn", "The base DN for search user account in LDAP like \"OU=somewhere,DC=example,DC=local\".").Envar("LDAP_BASE_DN").PlaceHolder("DN").Required().String() // TODO: make it automate set same OU as bind user if omit.
@@ -69,7 +69,7 @@ func DecideListenAddress(issuer *url.URL, listen *net.TCPAddr) string {
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	var codeExpiresIn, tokenExpiresIn, refreshExpiresIn, ssoExpiresIn config.Duration
+	var codeExpiresIn, tokenExpiresIn, refreshExpiresIn, ssoExpiresIn *config.Duration
 	var err error
 	if *CodeTTL != "" {
 		codeExpiresIn, err = config.ParseDuration(*CodeTTL)
@@ -137,6 +137,13 @@ func main() {
 		AllowImplicitFlow: *AllowImplicitFlow,
 	})
 	addr := DecideListenAddress((*url.URL)(conf.Issuer), (*net.TCPAddr)(conf.Listen))
+
+	if *conf.TTL.Code <= 0 {
+		app.Fatalf("--code-ttl can't set 0 or less.")
+	}
+	if *conf.TTL.Token <= 0 {
+		app.Fatalf("--token-ttl can't set 0 or less.")
+	}
 
 	fmt.Printf("OpenID Provider \"%s\" started on %s\n", conf.Issuer, addr)
 	fmt.Println()

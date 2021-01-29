@@ -120,7 +120,7 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 
 	prompt := ParseStringSet(req.Prompt)
 
-	if !prompt.Has("login") && !prompt.Has("consent") && !prompt.Has("select_account") {
+	if !prompt.Has("login") && !prompt.Has("consent") && !prompt.Has("select_account") && *api.Config.TTL.SSO > 0 {
 		if token, err := c.Cookie("token"); err == nil {
 			issuer := api.Config.Issuer
 			secure := issuer.Scheme == "https"

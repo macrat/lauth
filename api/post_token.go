@@ -171,7 +171,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) {
 		code.Subject,
 		scope.String(),
 		time.Unix(code.AuthTime, 0),
-		time.Duration(api.Config.TTL.Token),
+		time.Duration(*api.Config.TTL.Token),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
@@ -201,7 +201,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) {
 		accessToken,
 		userinfo,
 		time.Unix(code.AuthTime, 0),
-		time.Duration(api.Config.TTL.Token),
+		time.Duration(*api.Config.TTL.Token),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
@@ -212,22 +212,25 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) {
 		return
 	}
 
-	refreshToken, err := api.TokenManager.CreateRefreshToken(
-		api.Config.Issuer,
-		code.Subject,
-		code.ClientID,
-		code.Scope,
-		code.Nonce,
-		time.Unix(code.AuthTime, 0),
-		time.Duration(api.Config.TTL.Refresh),
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
-			Err:         err,
-			Reason:      "server_error",
-			Description: "failed to generate refresh_token",
-		})
-		return
+	refreshToken := ""
+	if *api.Config.TTL.Refresh > 0 {
+		refreshToken, err = api.TokenManager.CreateRefreshToken(
+			api.Config.Issuer,
+			code.Subject,
+			code.ClientID,
+			code.Scope,
+			code.Nonce,
+			time.Unix(code.AuthTime, 0),
+			time.Duration(*api.Config.TTL.Refresh),
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorMessage{
+				Err:         err,
+				Reason:      "server_error",
+				Description: "failed to generate refresh_token",
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, PostTokenResponse{
@@ -269,7 +272,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 		refreshToken.Subject,
 		refreshToken.Scope,
 		time.Unix(refreshToken.AuthTime, 0),
-		time.Duration(api.Config.TTL.Token),
+		time.Duration(*api.Config.TTL.Token),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
@@ -300,7 +303,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 		accessToken,
 		userinfo,
 		time.Unix(refreshToken.AuthTime, 0),
-		time.Duration(api.Config.TTL.Token),
+		time.Duration(*api.Config.TTL.Token),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{

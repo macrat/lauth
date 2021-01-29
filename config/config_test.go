@@ -19,10 +19,19 @@ func TestConfig_Override(t *testing.T) {
 
 	conf.Override(&config.LdapinConfig{
 		TTL: config.TTLConfig{
-			Code: config.Duration(42 * time.Minute),
+			Code: config.NewDuration(42 * time.Minute),
 		},
 	})
-	if !reflect.DeepEqual(conf, &config.LdapinConfig{TTL: config.TTLConfig{Code: config.Duration(42 * time.Minute)}}) {
+	if !reflect.DeepEqual(conf, &config.LdapinConfig{TTL: config.TTLConfig{Code: config.NewDuration(42 * time.Minute)}}) {
+		t.Errorf("expected set code ttl but got %#v", conf)
+	}
+
+	conf.Override(&config.LdapinConfig{
+		TTL: config.TTLConfig{
+			Code: config.NewDuration(0 * time.Minute),
+		},
+	})
+	if !reflect.DeepEqual(conf, &config.LdapinConfig{TTL: config.TTLConfig{Code: config.NewDuration(0 * time.Minute)}}) {
 		t.Errorf("expected set code ttl but got %#v", conf)
 	}
 
@@ -54,11 +63,11 @@ ttl:
 		t.Errorf("unexpected listen address: %s", conf.Listen)
 	}
 
-	if time.Duration(conf.TTL.Code) != 5*time.Minute {
+	if time.Duration(*conf.TTL.Code) != 5*time.Minute {
 		t.Errorf("unexpected code TTL: %d", conf.TTL.Code)
 	}
 
-	if time.Duration(conf.TTL.Token) != 42*24*time.Hour {
+	if time.Duration(*conf.TTL.Token) != 42*24*time.Hour {
 		t.Errorf("unexpected token TTL: %d", conf.TTL.Token)
 	}
 }

@@ -23,7 +23,7 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 			req.Scope,
 			req.Nonce,
 			authTime,
-			time.Duration(api.Config.TTL.Code),
+			time.Duration(*api.Config.TTL.Code),
 		)
 		if err != nil {
 			return nil, req.makeError(err, "server_error", "failed to generate code")
@@ -36,7 +36,7 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 			subject,
 			req.Scope,
 			authTime,
-			time.Duration(api.Config.TTL.Token),
+			time.Duration(*api.Config.TTL.Token),
 		)
 		if err != nil {
 			return nil, req.makeError(err, "server_error", "failed to generate access_token")
@@ -66,7 +66,7 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 			resp.Get("access_token"),
 			userinfo,
 			authTime,
-			time.Duration(api.Config.TTL.Token),
+			time.Duration(*api.Config.TTL.Token),
 		)
 		if err != nil {
 			return nil, req.makeError(err, "server_error", "failed to generate id_token")

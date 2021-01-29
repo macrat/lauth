@@ -75,23 +75,25 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		return
 	}
 
-	ssoToken, err := api.TokenManager.CreateSSOToken(
-		api.Config.Issuer,
-		req.User,
-		time.Now(),
-		time.Duration(api.Config.TTL.SSO),
-	)
-	if err == nil {
-		secure := api.Config.Issuer.Scheme == "https"
-		c.SetCookie(
-			"token",
-			ssoToken,
-			int(api.Config.TTL.SSO.IntSeconds()),
-			"/",
-			(*url.URL)(api.Config.Issuer).Hostname(),
-			secure,
-			true,
+	if *api.Config.TTL.SSO > 0 {
+		ssoToken, err := api.TokenManager.CreateSSOToken(
+			api.Config.Issuer,
+			req.User,
+			time.Now(),
+			time.Duration(*api.Config.TTL.SSO),
 		)
+		if err == nil {
+			secure := api.Config.Issuer.Scheme == "https"
+			c.SetCookie(
+				"token",
+				ssoToken,
+				int(api.Config.TTL.SSO.IntSeconds()),
+				"/",
+				(*url.URL)(api.Config.Issuer).Hostname(),
+				secure,
+				true,
+			)
+		}
 	}
 
 	resp, errMsg := api.makeAuthzTokens(req.GetAuthzRequest, req.User, time.Now())

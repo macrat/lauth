@@ -52,10 +52,10 @@ func MakeLdapinConfig() *config.LdapinConfig {
 			Host:   fmt.Sprintf("localhost:%d", FindAvailTCPPort()),
 		},
 		TTL: config.TTLConfig{
-			Code:    config.Duration(1 * time.Minute),
-			Token:   config.Duration(1 * time.Hour),
-			Refresh: config.Duration(6 * time.Hour),
-			SSO:     config.Duration(10 * time.Minute),
+			Code:    config.NewDuration(1 * time.Minute),
+			Token:   config.NewDuration(1 * time.Hour),
+			Refresh: config.NewDuration(6 * time.Hour),
+			SSO:     config.NewDuration(10 * time.Minute),
 		},
 		Endpoints: config.EndpointConfig{
 			Authz:    "/authz",

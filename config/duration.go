@@ -9,9 +9,13 @@ import (
 
 type Duration time.Duration
 
-func ParseDuration(text string) (Duration, error) {
+func NewDuration(t time.Duration) *Duration {
+	return (*Duration)(&t)
+}
+
+func ParseDuration(text string) (*Duration, error) {
 	d, err := str2duration.ParseDuration(text)
-	return Duration(d), err
+	return NewDuration(d), err
 }
 
 func (d Duration) String() string {
@@ -31,7 +35,7 @@ func (d Duration) MarshalText() ([]byte, error) {
 }
 
 func (d *Duration) UnmarshalText(text []byte) error {
-	var err error
-	*d, err = ParseDuration(string(text))
+	d2, err := ParseDuration(string(text))
+	*d = *d2
 	return err
 }

@@ -93,7 +93,7 @@ func TestPostToken_Code(t *testing.T) {
 		"openid profile",
 		"something-nonce",
 		time.Now(),
-		time.Duration(env.API.Config.TTL.Code),
+		time.Duration(*env.API.Config.TTL.Code),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)
@@ -107,7 +107,7 @@ func TestPostToken_Code(t *testing.T) {
 		"openid profile",
 		"",
 		time.Now(),
-		time.Duration(env.API.Config.TTL.Code),
+		time.Duration(*env.API.Config.TTL.Code),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)
@@ -299,7 +299,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 		"openid profile",
 		"something-nonce",
 		time.Now(),
-		time.Duration(env.API.Config.TTL.Refresh),
+		time.Duration(*env.API.Config.TTL.Refresh),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test refresh_token: %s", err)
@@ -312,7 +312,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 		"openid profile",
 		"",
 		time.Now(),
-		time.Duration(env.API.Config.TTL.Code),
+		time.Duration(*env.API.Config.TTL.Code),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test refresh_token: %s", err)
@@ -451,7 +451,7 @@ func TestPostToken_PublicClients(t *testing.T) {
 		"openid profile",
 		"something-nonce",
 		time.Now(),
-		time.Duration(env.API.Config.TTL.Code),
+		time.Duration(*env.API.Config.TTL.Code),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)
@@ -464,7 +464,7 @@ func TestPostToken_PublicClients(t *testing.T) {
 		"openid profile",
 		"something-nonce",
 		time.Now(),
-		time.Duration(env.API.Config.TTL.Refresh),
+		time.Duration(*env.API.Config.TTL.Refresh),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test refresh_token: %s", err)
