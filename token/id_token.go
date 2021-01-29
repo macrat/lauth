@@ -118,6 +118,10 @@ func (m Manager) CreateIDToken(issuer *config.URL, subject, audience, nonce, cod
 	})
 }
 
+func (m Manager) CreateSSOToken(issuer *config.URL, subject string, authTime time.Time, expiresIn time.Duration) (string, error) {
+	return m.CreateIDToken(issuer, subject, issuer.String(), "", "", "", nil, authTime, expiresIn)
+}
+
 func (m Manager) ParseIDToken(token string) (IDTokenClaims, error) {
 	var claims IDTokenClaims
 	if _, err := m.parse(token, &claims); err != nil {

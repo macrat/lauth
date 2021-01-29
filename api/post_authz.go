@@ -75,14 +75,9 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		return
 	}
 
-	ssoToken, err := api.TokenManager.CreateIDToken(
+	ssoToken, err := api.TokenManager.CreateSSOToken(
 		api.Config.Issuer,
 		req.User,
-		api.Config.Issuer.String(),
-		"",
-		"",
-		"",
-		nil,
 		time.Now(),
 		time.Duration(api.Config.TTL.SSO),
 	)
