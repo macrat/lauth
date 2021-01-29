@@ -146,6 +146,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 			"",
 			"",
 			"",
+			nil,
 			tt.AuthTime,
 			10*time.Minute,
 		)

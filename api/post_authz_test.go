@@ -156,6 +156,62 @@ func TestPostAuthz(t *testing.T) {
 				if fragment.Get("state") != "this-is-state" {
 					t.Errorf("expected state is \"this-is-state\" but got %#v", fragment.Get("state"))
 				}
+
+				if idToken, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+					t.Errorf("failed to parse id_token: %s", err)
+				} else if len(idToken.ExtraClaims) != 0 {
+					t.Errorf("create id_token without scopes but got some extra claims: %#v", idToken.ExtraClaims)
+				}
+			},
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"id_token"},
+				"scope":         {"profile"},
+				"state":         {"this-is-state"},
+				"username":      {"macrat"},
+				"password":      {"foobar"},
+			},
+			AllowImplicit: true,
+			Code:          http.StatusFound,
+			HasLocation:   true,
+			CheckParams: func(t *testing.T, query, fragment url.Values) {
+				if !reflect.DeepEqual(query, url.Values{}) {
+					t.Errorf("expected query is not set but set %#v", query.Encode())
+				}
+				if fragment.Get("id_token") == "" {
+					t.Errorf("expected returns id_token but not set")
+				} else if code, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+					t.Errorf("failed to parse access_token: %s", err)
+				} else if err := code.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
+					t.Errorf("failed to validate access_token: %s", err)
+				}
+				if fragment.Get("code") != "" {
+					t.Errorf("expected code is not set but set %#v", fragment.Get("code"))
+				}
+				if fragment.Get("access_token") != "" {
+					t.Errorf("expected access_token is not set but set %#v", fragment.Get("access_token"))
+				}
+				if fragment.Get("expires_in") != "3600" {
+					t.Errorf("expected token_type is \"3600\" but got %#v", fragment.Get("expires_in"))
+				}
+				if fragment.Get("state") != "this-is-state" {
+					t.Errorf("expected state is \"this-is-state\" but got %#v", fragment.Get("state"))
+				}
+
+				expectedClaims := token.ExtraClaims{
+					"name":        "SHIDA Yuuma",
+					"given_name":  "yuuma",
+					"family_name": "shida",
+				}
+
+				if idToken, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+					t.Errorf("failed to parse id_token: %s", err)
+				} else if !reflect.DeepEqual(idToken.ExtraClaims, expectedClaims) {
+					t.Errorf("unexpected extra claims: %#v", idToken.ExtraClaims)
+				}
 			},
 		},
 		{

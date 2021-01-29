@@ -18,7 +18,7 @@ func TestIDToken(t *testing.T) {
 	issuer := &config.URL{Scheme: "http", Host: "localhost:8000"}
 	audience := "something"
 
-	idToken, err := tokenManager.CreateIDToken(issuer, "someone", audience, "", "code", "token", time.Now(), 10*time.Minute)
+	idToken, err := tokenManager.CreateIDToken(issuer, "someone", audience, "", "code", "token", nil, time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate token: %s", err)
 	}
@@ -52,7 +52,7 @@ func TestIDToken(t *testing.T) {
 		t.Errorf("unexpected at_hash: %s", claims.AccessTokenHash)
 	}
 
-	idToken2, err := tokenManager.CreateIDToken(issuer, "someone", issuer.String(), "", "", "", time.Now(), 10*time.Minute)
+	idToken2, err := tokenManager.CreateIDToken(issuer, "someone", issuer.String(), "", "", "", nil, time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate token: %s", err)
 	}

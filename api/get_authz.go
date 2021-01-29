@@ -127,7 +127,7 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 			if idToken, err := api.TokenManager.ParseIDToken(token); err != nil || idToken.Validate(issuer, issuer.String()) != nil {
 				c.SetCookie("token", "", 0, "/", issuer.Host, secure, true)
 			} else if req.MaxAge <= 0 || req.MaxAge > time.Now().Unix()-idToken.AuthTime {
-				redirect, errMsg := MakeAuthzTokens(api.TokenManager, api.Config, req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
+				redirect, errMsg := api.makeAuthzTokens(req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
 				if errMsg != nil {
 					errMsg.Redirect(c)
 				} else {

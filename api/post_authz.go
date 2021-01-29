@@ -82,6 +82,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		"",
 		"",
 		"",
+		nil,
 		time.Now(),
 		time.Duration(api.Config.TTL.SSO),
 	)
@@ -98,7 +99,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		)
 	}
 
-	resp, errMsg := MakeAuthzTokens(api.TokenManager, api.Config, req.GetAuthzRequest, req.User, time.Now())
+	resp, errMsg := api.makeAuthzTokens(req.GetAuthzRequest, req.User, time.Now())
 	if errMsg != nil {
 		errMsg.Redirect(c)
 	}

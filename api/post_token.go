@@ -167,6 +167,16 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		return
 	}
 
+	userinfo, err := api.userinfo(code.Subject, scope)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorMessage{
+			Err:         err,
+			Reason:      "server_error",
+			Description: "failed to get user info",
+		})
+		return
+	}
+
 	idToken, err := api.TokenManager.CreateIDToken(
 		api.Config.Issuer,
 		code.Subject,
@@ -174,6 +184,7 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 		code.Nonce,
 		req.Code,
 		accessToken,
+		userinfo,
 		time.Unix(code.AuthTime, 0),
 		time.Duration(api.Config.TTL.Token),
 	)

@@ -1,12 +1,10 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/config"
 	"github.com/macrat/ldapin/ldap"
 )
 
@@ -40,19 +38,8 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 		return
 	}
 
-	conn, err := api.Connector.Connect()
-	if err != nil {
-		log.Print(err)
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
-			Reason:      "server_error",
-			Description: "failed to connecting LDAP server",
-		})
-		return
-	}
-	defer conn.Close()
-
 	scope := ParseStringSet(token.Scope)
-	attrs, err := conn.GetUserAttributes(token.Subject, api.Config.Scopes.AttributesFor(scope.List()))
+	result, err := api.userinfo(token.Subject, scope)
 	if err == ldap.UserNotFoundError {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
 		c.JSON(http.StatusForbidden, ErrorMessage{
@@ -64,14 +51,10 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
 			Reason:      "server_error",
-			Description: "failed to get attributes",
+			Description: "failed to get user info",
 		})
 		return
 	}
-
-	maps := api.Config.Scopes.ClaimMapFor(scope.List())
-	result := config.MappingClaims(attrs, maps)
-	result["sub"] = token.Subject
 
 	c.JSON(http.StatusOK, result)
 }
