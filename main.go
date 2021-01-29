@@ -69,7 +69,7 @@ func DecideListenAddress(issuer *url.URL, listen *net.TCPAddr) string {
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	var codeExpiresIn, tokenExpiresIn config.Duration
+	var codeExpiresIn, tokenExpiresIn, refreshExpiresIn, ssoExpiresIn config.Duration
 	var err error
 	if *CodeTTL != "" {
 		codeExpiresIn, err = config.ParseDuration(*CodeTTL)
@@ -78,6 +78,14 @@ func main() {
 	if *TokenTTL != "" {
 		tokenExpiresIn, err = config.ParseDuration(*TokenTTL)
 		app.FatalIfError(err, "--token-ttl")
+	}
+	if *RefreshTTL != "" {
+		refreshExpiresIn, err = config.ParseDuration(*RefreshTTL)
+		app.FatalIfError(err, "--refresh-ttl")
+	}
+	if *SSOTTL != "" {
+		ssoExpiresIn, err = config.ParseDuration(*SSOTTL)
+		app.FatalIfError(err, "--sso-ttl")
 	}
 
 	if *TLSCertFile != "" && *TLSKeyFile == "" {
@@ -114,8 +122,10 @@ func main() {
 		Issuer: (*config.URL)(*Issuer),
 		Listen: (*config.TCPAddr)(*Listen),
 		TTL: config.TTLConfig{
-			Code:  codeExpiresIn,
-			Token: tokenExpiresIn,
+			Code:    codeExpiresIn,
+			Token:   tokenExpiresIn,
+			Refresh: refreshExpiresIn,
+			SSO:     ssoExpiresIn,
 		},
 		Endpoints: config.EndpointConfig{
 			Authz:    *AuthzEndpoint,
