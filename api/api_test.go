@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/coreos/go-oidc"
 	"github.com/macrat/ldapin/testutil"
@@ -54,5 +55,25 @@ func TestOpenIDConfiguration(t *testing.T) {
 	}
 	if endpoints.TokenURL != fmt.Sprintf("http://%s/token", env.API.Config.Issuer.Host) {
 		t.Errorf("unexpected token endpoint guessed: %#v", endpoints.TokenURL)
+	}
+}
+
+func TestGetCerts(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+
+	token, err := env.API.TokenManager.CreateAccessToken(env.API.Config.Issuer, "someone", "profile", time.Now(), 5*time.Minute)
+	if err != nil {
+		t.Fatalf("failed to generate test token: %s", err)
+	}
+
+	stop := env.Start(t)
+	defer stop()
+
+	jwksURI := env.API.Config.OpenIDConfiguration().JwksEndpoint
+
+	jwks := oidc.NewRemoteKeySet(context.TODO(), jwksURI)
+	_, err = jwks.VerifySignature(context.TODO(), token)
+	if err != nil {
+		t.Errorf("failed verify signature using jwks key: %s", err)
 	}
 }
