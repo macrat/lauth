@@ -189,6 +189,12 @@ func main() {
 	app.FatalIfError(err, "failed to load template")
 	router.SetHTMLTemplate(tmpl)
 
+	router.Use(func(c *gin.Context) {
+		fmt.Println(c.Request.URL)
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Content-Security-Policy", "frame-ancestors 'none'")
+	})
+
 	api.SetRoutes(router)
 	api.SetErrorRoutes(router)
 
