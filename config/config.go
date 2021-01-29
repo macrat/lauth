@@ -16,9 +16,10 @@ var (
 			Host:   "localhost:8000",
 		},
 		TTL: TTLConfig{
-			Code:  Duration(10 * time.Hour),
-			Token: Duration(7 * 24 * time.Hour),
-			SSO:   Duration(14 * 24 * time.Hour),
+			Code:    Duration(5 * time.Hour),
+			Token:   Duration(1 * 24 * time.Hour),
+			Refresh: Duration(7 * 24 * time.Hour),
+			SSO:     Duration(14 * 24 * time.Hour),
 		},
 		Endpoints: EndpointConfig{
 			Authz:    "/login",
@@ -76,9 +77,10 @@ func (c *EndpointConfig) Override(patch EndpointConfig) {
 }
 
 type TTLConfig struct {
-	Code  Duration `yaml:"code"`
-	Token Duration `yaml:"token"`
-	SSO   Duration `yaml:"sso"`
+	Code    Duration `yaml:"code"`
+	Token   Duration `yaml:"token"`
+	Refresh Duration `yaml:"refresh"`
+	SSO     Duration `yaml:"sso"`
 }
 
 func (c *TTLConfig) Override(patch TTLConfig) {
@@ -87,6 +89,9 @@ func (c *TTLConfig) Override(patch TTLConfig) {
 	}
 	if patch.Token > 0 {
 		(*c).Token = patch.Token
+	}
+	if patch.Refresh > 0 {
+		(*c).Refresh = patch.Refresh
 	}
 	if patch.SSO > 0 {
 		(*c).SSO = patch.SSO

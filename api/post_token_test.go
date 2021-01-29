@@ -15,6 +15,76 @@ import (
 func TestPostToken(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
+	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
+		{
+			Request: url.Values{
+				"grant_type":    {"invalid_grant_type"},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "unsupported_grant_type",
+				"error_description": "supported grant_type is authorization_code or refresh_token",
+			},
+		},
+	})
+}
+
+func ResponseValidation(name string, env *testutil.APITestEnvironment, codeHash string) testutil.JSONTester {
+	return func(t *testing.T, body testutil.RawBody) {
+		t.Logf("response validation for \"%s\" test", name)
+
+		var resp api.PostTokenResponse
+		if err := body.Bind(&resp); err != nil {
+			t.Errorf("failed to unmarshal response body: %s", err)
+			return
+		}
+
+		if resp.TokenType != "Bearer" {
+			t.Errorf("token_type is expected \"Bearer\" but got %#v", resp.TokenType)
+		}
+
+		if resp.ExpiresIn != 3600 {
+			t.Errorf("expires_in is expected 3600 but got %#v", resp.ExpiresIn)
+		}
+
+		if resp.Scope != "openid profile" {
+			t.Errorf("scope is expected \"openid profile\" but got %#v", resp.Scope)
+		}
+
+		accessToken, err := env.API.TokenManager.ParseAccessToken(resp.AccessToken)
+		if err != nil {
+			t.Errorf("failed to parse access token: %s", err)
+		}
+		if err = accessToken.Validate(env.API.Config.Issuer); err != nil {
+			t.Errorf("failed to validate access token: %s", err)
+		}
+
+		idToken, err := env.API.TokenManager.ParseIDToken(resp.IDToken)
+		if err != nil {
+			t.Errorf("failed to parse id token: %s", err)
+		}
+		if err = idToken.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
+			t.Errorf("failed to validate id token: %s", err)
+		}
+		if idToken.Nonce != "something-nonce" {
+			t.Errorf("nonce must be \"something-nonce\" but got %#v", idToken.Nonce)
+		}
+
+		if idToken.CodeHash != codeHash {
+			t.Errorf("unexpected c_hash value:\nexpected: %s\n but got: %s", codeHash, idToken.CodeHash)
+		}
+		if idToken.AccessTokenHash != token.TokenHash(resp.AccessToken) {
+			t.Errorf("unexpected at_hash value:\nexpected: %s\n but got: %s", token.TokenHash(resp.AccessToken), idToken.AccessTokenHash)
+		}
+	}
+}
+
+func TestPostToken_Code(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+
 	code, err := env.API.TokenManager.CreateCode(
 		env.API.Config.Issuer,
 		"macrat",
@@ -46,20 +116,6 @@ func TestPostToken(t *testing.T) {
 	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
 		{
 			Request: url.Values{
-				"grant_type":    {"invalid_grant_type"},
-				"code":          {code},
-				"client_id":     {"some_client_id"},
-				"client_secret": {"secret for some-client"},
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-			},
-			Code: http.StatusBadRequest,
-			Body: map[string]interface{}{
-				"error":             "unsupported_grant_type",
-				"error_description": "only supported grant_type is authorization_code",
-			},
-		},
-		{
-			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"client_id":     {"some_client_id"},
 				"client_secret": {"secret for some-client"},
@@ -68,7 +124,22 @@ func TestPostToken(t *testing.T) {
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
 				"error":             "invalid_request",
-				"error_description": "code is required",
+				"error_description": "code is required when use authorization_code grant type",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"refresh_token": {"some-token"},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "can't set refresh_token when use authorization_code grant type",
 			},
 		},
 		{
@@ -212,52 +283,158 @@ func TestPostToken(t *testing.T) {
 				"client_secret": {"secret for some-client"},
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
-			Code: http.StatusOK,
-			CheckBody: func(t *testing.T, body testutil.RawBody) {
-				var resp api.PostTokenResponse
-				if err := body.Bind(&resp); err != nil {
-					t.Errorf("failed to unmarshal response body: %s", err)
-					return
-				}
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("use authorization_code", env, token.TokenHash(code)),
+		},
+	})
+}
 
-				if resp.TokenType != "Bearer" {
-					t.Errorf("token_type is expected \"Bearer\" but got %#v", resp.TokenType)
-				}
+func TestPostToken_RefreshToken(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
 
-				if resp.ExpiresIn != 3600 {
-					t.Errorf("expires_in is expected 3600 but got %#v", resp.ExpiresIn)
-				}
+	refreshToken, err := env.API.TokenManager.CreateRefreshToken(
+		env.API.Config.Issuer,
+		"macrat",
+		"some_client_id",
+		"openid profile",
+		"something-nonce",
+		time.Now(),
+		time.Duration(env.API.Config.TTL.Refresh),
+	)
+	if err != nil {
+		t.Fatalf("failed to generate test refresh_token: %s", err)
+	}
 
-				if resp.Scope != "openid profile" {
-					t.Errorf("scope is expected \"openid profile\" but got %#v", resp.Scope)
-				}
+	invalidRefreshToken, err := env.API.TokenManager.CreateRefreshToken(
+		&config.URL{Host: "another_issuer"},
+		"macrat",
+		"some_client_id",
+		"openid profile",
+		"",
+		time.Now(),
+		time.Duration(env.API.Config.TTL.Code),
+	)
+	if err != nil {
+		t.Fatalf("failed to generate test refresh_token: %s", err)
+	}
 
-				accessToken, err := env.API.TokenManager.ParseAccessToken(resp.AccessToken)
-				if err != nil {
-					t.Errorf("failed to parse access token: %s", err)
-				}
-				if err = accessToken.Validate(env.API.Config.Issuer); err != nil {
-					t.Errorf("failed to validate access token: %s", err)
-				}
-
-				idToken, err := env.API.TokenManager.ParseIDToken(resp.IDToken)
-				if err != nil {
-					t.Errorf("failed to parse id token: %s", err)
-				}
-				if err = idToken.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
-					t.Errorf("failed to validate id token: %s", err)
-				}
-				if idToken.Nonce != "something-nonce" {
-					t.Errorf("nonce must be \"something-nonce\" but got %#v", idToken.Nonce)
-				}
-
-				if idToken.CodeHash != token.TokenHash(code) {
-					t.Errorf("unexpected c_hash value:\nexpected: %s\n but got: %s", token.TokenHash(code), idToken.CodeHash)
-				}
-				if idToken.AccessTokenHash != token.TokenHash(resp.AccessToken) {
-					t.Errorf("unexpected at_hash value:\nexpected: %s\n but got: %s", token.TokenHash(resp.AccessToken), idToken.AccessTokenHash)
-				}
+	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "refresh_token is required when use refresh_token grant type",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"code":          {"some-code"},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "can't set code when use refresh_token grant type",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {"invalid-token"},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "invalid_grant",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {invalidRefreshToken},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "invalid_grant",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "client_id is required if set client_secret",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"client_id":     {"some_client_id"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "client_secret is required",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"client_id":     {"another_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "unauthorized_client",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"invalid secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "unauthorized_client",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("use refresh_token", env, ""),
 		},
 	})
 }
@@ -278,6 +455,19 @@ func TestPostToken_PublicClients(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)
+	}
+
+	refreshToken, err := env.API.TokenManager.CreateRefreshToken(
+		env.API.Config.Issuer,
+		"macrat",
+		"some_client_id",
+		"openid profile",
+		"something-nonce",
+		time.Now(),
+		time.Duration(env.API.Config.TTL.Refresh),
+	)
+	if err != nil {
+		t.Fatalf("failed to generate test refresh_token: %s", err)
 	}
 
 	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
@@ -302,9 +492,8 @@ func TestPostToken_PublicClients(t *testing.T) {
 				"client_secret": {"secret for some-client"},
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
-			Code: http.StatusOK,
-			CheckBody: func(t *testing.T, body testutil.RawBody) {
-			},
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("code / public client with client_secret", env, token.TokenHash(code)),
 		},
 		{
 			Request: url.Values{
@@ -313,9 +502,8 @@ func TestPostToken_PublicClients(t *testing.T) {
 				"client_id":    {"some_client_id"},
 				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
-			Code: http.StatusOK,
-			CheckBody: func(t *testing.T, body testutil.RawBody) {
-			},
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("code / public client without client_secret", env, token.TokenHash(code)),
 		},
 		{
 			Request: url.Values{
@@ -331,13 +519,33 @@ func TestPostToken_PublicClients(t *testing.T) {
 		},
 		{
 			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"client_id":     {"another_client_id"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "invalid_grant",
+			},
+		},
+		{
+			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {code},
 				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
-			Code: http.StatusOK,
-			CheckBody: func(t *testing.T, body testutil.RawBody) {
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("code / public client without client_id and client_secret", env, token.TokenHash(code)),
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("refresh_token / public client without client_id and client_secret", env, ""),
 		},
 	})
 }
