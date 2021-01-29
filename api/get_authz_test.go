@@ -114,6 +114,26 @@ func TestGetAuthz_SSO(t *testing.T) {
 			AuthTime: time.Now().Add(-5 * time.Minute),
 			CanSSO:   false,
 		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"max_age":       {"360"},
+			},
+			AuthTime: time.Now().Add(-5 * time.Minute),
+			CanSSO:   true,
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"max_age":       {"240"},
+			},
+			AuthTime: time.Now().Add(-5 * time.Minute),
+			CanSSO:   false,
+		},
 	}
 
 	env := testutil.NewAPITestEnvironment(t)
