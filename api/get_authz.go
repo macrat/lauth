@@ -19,6 +19,7 @@ type GetAuthzRequest struct {
 	Nonce        string `form:"nonce"         json:"nonce"         xml:"nonce"`
 	Prompt       string `form:"prompt"        json:"prompt"        xml:"prompt"`
 	MaxAge       int64  `form:"max_age"       json:"max_age"       xml:"max_age"`
+	LoginHint    string `form:"login_hint"    json:"login_hint"    xml:"login_hint"`
 	Request      string `form:"request"       json:"request"       xml:"request"`
 	RequestURI   string `form:"request_uri"   json:"request_uri"   xml:"request_uri"`
 }
@@ -197,8 +198,9 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "login.tmpl", gin.H{
-		"endpoints": api.Config.EndpointPaths(),
-		"config":    api.Config,
-		"request":   req,
+		"endpoints":        api.Config.EndpointPaths(),
+		"config":           api.Config,
+		"request":          req,
+		"initial_username": req.LoginHint,
 	})
 }
