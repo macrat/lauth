@@ -201,19 +201,21 @@ func (c *LdapinConfig) EndpointPaths() ResolvedEndpointPaths {
 }
 
 type OpenIDConfiguration struct {
-	Issuer                           string   `json:"issuer"`
-	AuthorizationEndpoint            string   `json:"authorization_endpoint"`
-	TokenEndpoint                    string   `json:"token_endpoint"`
-	UserinfoEndpoint                 string   `json:"userinfo_endpoint"`
-	JwksEndpoint                     string   `json:"jwks_uri"`
-	ScopesSupported                  []string `json:"scopes_supported"`
-	ResponseTypesSupported           []string `json:"response_types_supported"`
-	ResponseModesSupported           []string `json:"response_modes_supported"`
-	GrantTypesSupported              []string `json:"grant_types_supported"`
-	SubjectTypesSupported            []string `json:"subject_types_supported"`
-	IDTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
-	DisplayValuesSupported           []string `json:"display_values_supported"`
-	ClaimsSupported                  []string `json:"claims_supported"`
+	Issuer                            string   `json:"issuer"`
+	AuthorizationEndpoint             string   `json:"authorization_endpoint"`
+	TokenEndpoint                     string   `json:"token_endpoint"`
+	UserinfoEndpoint                  string   `json:"userinfo_endpoint"`
+	JwksEndpoint                      string   `json:"jwks_uri"`
+	ScopesSupported                   []string `json:"scopes_supported"`
+	ResponseTypesSupported            []string `json:"response_types_supported"`
+	ResponseModesSupported            []string `json:"response_modes_supported"`
+	GrantTypesSupported               []string `json:"grant_types_supported"`
+	SubjectTypesSupported             []string `json:"subject_types_supported"`
+	IDTokenSigningAlgValuesSupported  []string `json:"id_token_signing_alg_values_supported"`
+	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
+	DisplayValuesSupported            []string `json:"display_values_supported"`
+	ClaimsSupported                   []string `json:"claims_supported"`
+	RequestURIParameterSupported      bool     `json:"request_uri_parameter_supported"`
 }
 
 func (c *LdapinConfig) OpenIDConfiguration() OpenIDConfiguration {
@@ -233,18 +235,19 @@ func (c *LdapinConfig) OpenIDConfiguration() OpenIDConfiguration {
 	}
 
 	return OpenIDConfiguration{
-		Issuer:                           issuer,
-		AuthorizationEndpoint:            issuer + path.Join("/", c.Endpoints.Authz),
-		TokenEndpoint:                    issuer + path.Join("/", c.Endpoints.Token),
-		UserinfoEndpoint:                 issuer + path.Join("/", c.Endpoints.Userinfo),
-		JwksEndpoint:                     issuer + path.Join("/", c.Endpoints.Jwks),
-		ScopesSupported:                  append(c.Scopes.ScopeNames(), "openid"),
-		ResponseTypesSupported:           responseTypes,
-		ResponseModesSupported:           []string{"query", "fragment"},
-		GrantTypesSupported:              []string{"authorization_code"},
-		SubjectTypesSupported:            []string{"public"},
-		IDTokenSigningAlgValuesSupported: []string{"RS256"},
-		DisplayValuesSupported:           []string{"page"},
+		Issuer:                            issuer,
+		AuthorizationEndpoint:             issuer + path.Join("/", c.Endpoints.Authz),
+		TokenEndpoint:                     issuer + path.Join("/", c.Endpoints.Token),
+		UserinfoEndpoint:                  issuer + path.Join("/", c.Endpoints.Userinfo),
+		JwksEndpoint:                      issuer + path.Join("/", c.Endpoints.Jwks),
+		ScopesSupported:                   append(c.Scopes.ScopeNames(), "openid"),
+		ResponseTypesSupported:            responseTypes,
+		ResponseModesSupported:            []string{"query", "fragment"},
+		GrantTypesSupported:               []string{"authorization_code", "implicit", "refresh_token"},
+		SubjectTypesSupported:             []string{"public"},
+		IDTokenSigningAlgValuesSupported:  []string{"RS256"},
+		TokenEndpointAuthMethodsSupported: []string{"client_secret_pot", "client_secret_basic"},
+		DisplayValuesSupported:            []string{"page"},
 		ClaimsSupported: append(
 			c.Scopes.AllClaims(),
 			"iss",
@@ -254,6 +257,10 @@ func (c *LdapinConfig) OpenIDConfiguration() OpenIDConfiguration {
 			"iat",
 			"typ",
 			"auth_time",
+			"nonce",
+			"c_hash",
+			"at_hash",
 		),
+		RequestURIParameterSupported: false,
 	}
 }
