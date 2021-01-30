@@ -52,10 +52,6 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	report.Set("authn_by", "password")
 	req.Report(report)
 
-	scope := ParseStringSet(req.Scope)
-	scope.Add("openid")
-	req.Scope = scope.String()
-
 	if req.User == "" || req.Password == "" {
 		req.makeRedirectError(nil, InvalidRequest, "missing username or password").Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
