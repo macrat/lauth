@@ -104,7 +104,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	defer conn.Close()
 
 	if err := conn.LoginTest(req.User, req.Password); err != nil {
-		time.Sleep(1 * time.Second)
+		RandomDelay()
 		showLoginForm("invalid username or password")
 		return
 	}
