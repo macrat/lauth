@@ -11,7 +11,7 @@ var (
 		prometheus.SummaryOpts{
 			Namespace: NAMESPACE,
 			Subsystem: "http",
-			Name:      "latency",
+			Name:      "latency_seconds",
 			Help:      "The whole latency of each endpoint. It is includes non-core process like minifying or compression.",
 		},
 		[]string{"method", "path", "status"},
