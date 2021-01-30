@@ -21,8 +21,10 @@ listen: ":8000"
 #
 
 ttl:
-  code: 10m
-  token: 7d
+  login: 1h
+  code: 5m
+  token: 1d
+  refresh: 7d
   sso: 14d
 
 endpoint:
