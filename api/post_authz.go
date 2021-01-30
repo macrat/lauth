@@ -59,6 +59,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	if req.User == "" || req.Password == "" {
 		req.makeRedirectError(nil, InvalidRequest, "missing username or password").Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
+			"endpoints":        api.Config.EndpointPaths(),
 			"config":           api.Config,
 			"request":          req.GetAuthzRequest,
 			"initial_username": req.User,
@@ -81,6 +82,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		time.Sleep(1 * time.Second)
 		req.makeRedirectError(err, InvalidRequest, "invalid username or password").Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
+			"endpoints":        api.Config.EndpointPaths(),
 			"config":           api.Config,
 			"request":          req.GetAuthzRequest,
 			"initial_username": req.User,
