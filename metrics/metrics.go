@@ -82,6 +82,8 @@ func (c *Context) Close() error {
 		c.Labels["status"] = "2xx"
 	case "server_error":
 		c.Labels["status"] = "5xx"
+	case "invalid_grant":
+		c.Labels["status"] = "3xx"
 	default:
 		c.Labels["status"] = "4xx"
 	}
