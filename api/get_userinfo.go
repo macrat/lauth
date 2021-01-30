@@ -22,7 +22,7 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"bearer token is required\"")
 		e := ErrorMessage{
 			Err:         err,
-			Reason:      "invalid_token",
+			Reason:      InvalidToken,
 			Description: "bearer token is required",
 		}
 		e.Report(report)
@@ -39,7 +39,7 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
 		e := ErrorMessage{
 			Err:         err,
-			Reason:      "invalid_token",
+			Reason:      InvalidToken,
 			Description: "token is invalid",
 		}
 		e.Report(report)
@@ -53,14 +53,14 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
 		e := ErrorMessage{
 			Err:         err,
-			Reason:      "invalid_token",
+			Reason:      InvalidToken,
 			Description: "user was not found or disabled",
 		}
 		e.Report(report)
 		e.JSON(c)
 	} else if err != nil {
 		e := ErrorMessage{
-			Reason:      "server_error",
+			Reason:      ServerError,
 			Description: "failed to get user info",
 		}
 		e.Report(report)

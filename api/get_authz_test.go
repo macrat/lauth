@@ -218,7 +218,7 @@ func TestGetAuthz_PublicClients(t *testing.T) {
 			Code:        http.StatusFound,
 			HasLocation: true,
 			Query: url.Values{
-				"error":             {"invalid_request"},
+				"error":             {"unauthorized_client"},
 				"error_description": {"redirect_uri is not registered"},
 			},
 			Fragment: url.Values{},

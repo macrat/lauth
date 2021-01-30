@@ -204,7 +204,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
-				"error": "unauthorized_client",
+				"error": "invalid_client",
 			},
 		},
 		{
@@ -217,7 +217,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
-				"error": "unauthorized_client",
+				"error": "invalid_client",
 			},
 		},
 		{
@@ -271,8 +271,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
-				"error":             "invalid_request",
-				"error_description": "redirect_uri is miss match",
+				"error": "invalid_grant",
 			},
 		},
 		{
@@ -409,7 +408,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
-				"error": "unauthorized_client",
+				"error": "invalid_client",
 			},
 		},
 		{
@@ -422,7 +421,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
-				"error": "unauthorized_client",
+				"error": "invalid_client",
 			},
 		},
 		{

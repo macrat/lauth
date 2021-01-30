@@ -23,7 +23,7 @@ var (
 			Code:        http.StatusFound,
 			HasLocation: true,
 			Query: url.Values{
-				"error":             {"invalid_request"},
+				"error":             {"invalid_client"},
 				"error_description": {"client_id is required"},
 			},
 			Fragment: url.Values{},
@@ -73,7 +73,7 @@ var (
 			Code:        http.StatusFound,
 			HasLocation: true,
 			Query: url.Values{
-				"error":             {"unauthorized_client"},
+				"error":             {"invalid_client"},
 				"error_description": {"client_id is not registered"},
 			},
 			Fragment: url.Values{},
@@ -87,7 +87,7 @@ var (
 			Code:        http.StatusFound,
 			HasLocation: true,
 			Query: url.Values{
-				"error":             {"invalid_request"},
+				"error":             {"unauthorized_client"},
 				"error_description": {"redirect_uri is not registered"},
 			},
 			Fragment: url.Values{},

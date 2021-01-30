@@ -9,14 +9,34 @@ import (
 	"github.com/macrat/ldapin/metrics"
 )
 
+var (
+	AccessDenied            ErrorReason = "access_denied"
+	InvalidClient           ErrorReason = "invalid_client"
+	InvalidGrant            ErrorReason = "invalid_grant"
+	InvalidRequest          ErrorReason = "invalid_request"
+	InvalidScope            ErrorReason = "invalid_scope"
+	ServerError             ErrorReason = "server_error"
+	TemporarilyUnavailable  ErrorReason = "temporarily_unavailable"
+	UnauthorizedClient      ErrorReason = "unauthorized_client"
+	UnsupportedGrantType    ErrorReason = "unsupported_grant_type"
+	UnsupportedResponseType ErrorReason = "unsupported_response_type"
+	InvalidToken            ErrorReason = "invalid_token"
+)
+
+type ErrorReason string
+
+func (e ErrorReason) String() string {
+	return string(e)
+}
+
 type ErrorMessage struct {
-	Err          error    `json:"-"`
-	RedirectURI  *url.URL `json:"-"`
-	ResponseType string   `json:"-"`
-	State        string   `json:"state,omitempty"`
-	Reason       string   `json:"error"`
-	Description  string   `json:"error_description,omitempty"`
-	ErrorURI     string   `json:"error_uri,omitempty"`
+	Err          error       `json:"-"`
+	RedirectURI  *url.URL    `json:"-"`
+	ResponseType string      `json:"-"`
+	State        string      `json:"state,omitempty"`
+	Reason       ErrorReason `json:"error"`
+	Description  string      `json:"error_description,omitempty"`
+	ErrorURI     string      `json:"error_uri,omitempty"`
 }
 
 func (msg ErrorMessage) Unwrap() error {
@@ -44,7 +64,7 @@ func (msg ErrorMessage) Redirect(c *gin.Context) {
 		resp.Set("state", msg.State)
 	}
 
-	resp.Set("error", msg.Reason)
+	resp.Set("error", string(msg.Reason))
 	if msg.Description != "" {
 		resp.Set("error_description", msg.Description)
 	}
@@ -69,6 +89,6 @@ func (msg ErrorMessage) JSON(c *gin.Context) {
 }
 
 func (msg ErrorMessage) Report(c *metrics.Context) {
-	c.Set("error", msg.Reason)
+	c.Set("error", string(msg.Reason))
 	c.Set("error_description", msg.Description)
 }

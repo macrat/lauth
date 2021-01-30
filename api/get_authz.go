@@ -26,14 +26,14 @@ func (req *GetAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
 	if err != nil {
 		return &ErrorMessage{
 			Err:         err,
-			Reason:      "invalid_request",
+			Reason:      InvalidRequest,
 			Description: "failed to parse request",
 		}
 	}
 	return nil
 }
 
-func (req GetAuthzRequest) makeError(err error, reason, description string) *ErrorMessage {
+func (req GetAuthzRequest) makeError(err error, reason ErrorReason, description string) *ErrorMessage {
 	redirectURI, e2 := url.Parse(req.RedirectURI)
 	if e2 != nil {
 		redirectURI = nil
@@ -51,30 +51,30 @@ func (req GetAuthzRequest) makeError(err error, reason, description string) *Err
 
 func (req GetAuthzRequest) Validate(config *config.LdapinConfig) *ErrorMessage {
 	if req.RedirectURI == "" {
-		return req.makeError(nil, "invalid_request", "redirect_uri is required")
+		return req.makeError(nil, InvalidRequest, "redirect_uri is required")
 	}
 
 	if u, err := url.Parse(req.RedirectURI); err != nil {
-		return req.makeError(err, "invalid_request", "redirect_uri is invalid format")
+		return req.makeError(err, InvalidRequest, "redirect_uri is invalid format")
 	} else if !u.IsAbs() {
-		return req.makeError(err, "invalid_request", "redirect_uri is must be absolute URL")
+		return req.makeError(err, InvalidRequest, "redirect_uri is must be absolute URL")
 	}
 
 	if req.ClientID == "" {
-		return req.makeError(nil, "invalid_request", "client_id is required")
+		return req.makeError(nil, InvalidClient, "client_id is required")
 	}
 	if client, ok := config.Clients[req.ClientID]; !ok {
 		if !config.DisableClientAuth {
 			return req.makeError(
 				nil,
-				"unauthorized_client",
+				InvalidClient,
 				"client_id is not registered",
 			)
 		}
 	} else if !client.RedirectURI.Match(req.RedirectURI) {
 		return req.makeError(
 			nil,
-			"invalid_request",
+			UnauthorizedClient,
 			"redirect_uri is not registered",
 		)
 	}
@@ -83,21 +83,21 @@ func (req GetAuthzRequest) Validate(config *config.LdapinConfig) *ErrorMessage {
 	if rt.String() == "" {
 		return req.makeError(
 			nil,
-			"unsupported_response_type",
+			UnsupportedResponseType,
 			"response_type is required",
 		)
 	}
 	if err := rt.Validate("response_type", []string{"code", "token", "id_token"}); err != nil {
 		return req.makeError(
 			err,
-			"unsupported_response_type",
+			UnsupportedResponseType,
 			err.Error(),
 		)
 	}
 	if !config.AllowImplicitFlow && rt.String() != "code" {
 		return req.makeError(
 			nil,
-			"unsupported_response_type",
+			UnsupportedResponseType,
 			"implicit/hybrid flow is disallowed in this server",
 		)
 	}

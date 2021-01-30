@@ -24,7 +24,7 @@ func (req *PostTokenRequest) Bind(c *gin.Context) *ErrorMessage {
 	if err != nil {
 		return &ErrorMessage{
 			Err:         err,
-			Reason:      "invalid_request",
+			Reason:      InvalidRequest,
 			Description: "failed to parse request",
 		}
 	}
@@ -36,32 +36,32 @@ func (req PostTokenRequest) Validate(conf *config.LdapinConfig) *ErrorMessage {
 	case "authorization_code":
 		if req.Code == "" {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "code is required when use authorization_code grant type",
 			}
 		}
 		if req.RefreshToken != "" {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "can't set refresh_token when use authorization_code grant type",
 			}
 		}
 	case "refresh_token":
 		if req.RefreshToken == "" {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "refresh_token is required when use refresh_token grant type",
 			}
 		}
 		if req.Code != "" {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "can't set code when use refresh_token grant type",
 			}
 		}
 	default:
 		return &ErrorMessage{
-			Reason:      "unsupported_grant_type",
+			Reason:      UnsupportedGrantType,
 			Description: "supported grant_type is authorization_code or refresh_token",
 		}
 	}
@@ -69,19 +69,19 @@ func (req PostTokenRequest) Validate(conf *config.LdapinConfig) *ErrorMessage {
 	if req.ClientID == "" {
 		if !conf.DisableClientAuth && req.GrantType != "refresh_token" {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "client_id is required",
 			}
 		} else if req.ClientSecret != "" {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "client_id is required if set client_secret",
 			}
 		}
 	} else if req.ClientSecret == "" {
 		if !conf.DisableClientAuth {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "client_secret is required",
 			}
 		}
@@ -89,7 +89,7 @@ func (req PostTokenRequest) Validate(conf *config.LdapinConfig) *ErrorMessage {
 		client, ok := conf.Clients[req.ClientID]
 		if !ok || client.Secret != req.ClientSecret {
 			return &ErrorMessage{
-				Reason: "unauthorized_client",
+				Reason: InvalidClient,
 			}
 		}
 	}
@@ -97,17 +97,17 @@ func (req PostTokenRequest) Validate(conf *config.LdapinConfig) *ErrorMessage {
 	if req.GrantType == "authorization_code" {
 		if req.RedirectURI == "" {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "redirect_uri is required",
 			}
 		} else if u, err := url.Parse(req.RedirectURI); err != nil {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "redirect_uri is invalid format",
 			}
 		} else if !u.IsAbs() {
 			return &ErrorMessage{
-				Reason:      "invalid_request",
+				Reason:      InvalidRequest,
 				Description: "redirect_uri is must be absolute URL",
 			}
 		}
@@ -137,26 +137,25 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 	if err != nil {
 		return nil, &ErrorMessage{
 			Err:    err,
-			Reason: "invalid_grant",
+			Reason: InvalidGrant,
 		}
 	}
 	if err := code.Validate(api.Config.Issuer); err != nil {
 		return nil, &ErrorMessage{
 			Err:    err,
-			Reason: "invalid_grant",
+			Reason: InvalidGrant,
 		}
 	}
 
 	if req.ClientID != "" && req.ClientID != code.ClientID {
 		return nil, &ErrorMessage{
-			Reason: "invalid_grant",
+			Reason: InvalidGrant,
 		}
 	}
 
 	if req.RedirectURI != code.RedirectURI {
 		return nil, &ErrorMessage{
-			Reason:      "invalid_request",
-			Description: "redirect_uri is miss match",
+			Reason: InvalidGrant,
 		}
 	}
 
@@ -173,7 +172,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 	if err != nil {
 		return nil, &ErrorMessage{
 			Err:         err,
-			Reason:      "server_error",
+			Reason:      ServerError,
 			Description: "failed to generate access_token",
 		}
 	}
@@ -182,7 +181,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 	if err != nil {
 		return nil, &ErrorMessage{
 			Err:         err,
-			Reason:      "server_error",
+			Reason:      ServerError,
 			Description: "failed to get user info",
 		}
 	}
@@ -201,7 +200,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 	if err != nil {
 		return nil, &ErrorMessage{
 			Err:         err,
-			Reason:      "server_error",
+			Reason:      ServerError,
 			Description: "failed to generate access_token",
 		}
 	}
@@ -220,7 +219,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 		if err != nil {
 			return nil, &ErrorMessage{
 				Err:         err,
-				Reason:      "server_error",
+				Reason:      ServerError,
 				Description: "failed to generate refresh_token",
 			}
 		}
@@ -241,19 +240,19 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 	if err != nil {
 		return nil, &ErrorMessage{
 			Err:    err,
-			Reason: "invalid_grant",
+			Reason: InvalidGrant,
 		}
 	}
 	if err := refreshToken.Validate(api.Config.Issuer); err != nil {
 		return nil, &ErrorMessage{
 			Err:    err,
-			Reason: "invalid_grant",
+			Reason: InvalidGrant,
 		}
 	}
 
 	if req.ClientID != "" && req.ClientID != refreshToken.ClientID {
 		return nil, &ErrorMessage{
-			Reason: "invalid_grant",
+			Reason: InvalidGrant,
 		}
 	}
 
@@ -267,7 +266,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 	if err != nil {
 		return nil, &ErrorMessage{
 			Err:         err,
-			Reason:      "server_error",
+			Reason:      ServerError,
 			Description: "failed to generate access_token",
 		}
 	}
@@ -277,7 +276,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 	if err != nil {
 		return nil, &ErrorMessage{
 			Err:         err,
-			Reason:      "server_error",
+			Reason:      ServerError,
 			Description: "failed to get user info",
 		}
 	}
@@ -296,7 +295,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 	if err != nil {
 		return nil, &ErrorMessage{
 			Err:         err,
-			Reason:      "server_error",
+			Reason:      ServerError,
 			Description: "failed to generate access_token",
 		}
 	}
