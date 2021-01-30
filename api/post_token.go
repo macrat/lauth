@@ -164,7 +164,6 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 	}
 
 	scope := ParseStringSet(code.Scope)
-	scope.Add("openid")
 
 	accessToken, err := api.TokenManager.CreateAccessToken(
 		api.Config.Issuer,
@@ -181,31 +180,34 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 		}
 	}
 
-	userinfo, err := api.userinfo(code.Subject, scope)
-	if err != nil {
-		return nil, &ErrorMessage{
-			Err:         err,
-			Reason:      ServerError,
-			Description: "failed to get user info",
+	var idToken string
+	if scope.Has("openid") {
+		userinfo, err := api.userinfo(code.Subject, scope)
+		if err != nil {
+			return nil, &ErrorMessage{
+				Err:         err,
+				Reason:      ServerError,
+				Description: "failed to get user info",
+			}
 		}
-	}
 
-	idToken, err := api.TokenManager.CreateIDToken(
-		api.Config.Issuer,
-		code.Subject,
-		code.ClientID,
-		code.Nonce,
-		req.Code,
-		accessToken,
-		userinfo,
-		time.Unix(code.AuthTime, 0),
-		time.Duration(*api.Config.TTL.Token),
-	)
-	if err != nil {
-		return nil, &ErrorMessage{
-			Err:         err,
-			Reason:      ServerError,
-			Description: "failed to generate access_token",
+		idToken, err = api.TokenManager.CreateIDToken(
+			api.Config.Issuer,
+			code.Subject,
+			code.ClientID,
+			code.Nonce,
+			req.Code,
+			accessToken,
+			userinfo,
+			time.Unix(code.AuthTime, 0),
+			time.Duration(*api.Config.TTL.Token),
+		)
+		if err != nil {
+			return nil, &ErrorMessage{
+				Err:         err,
+				Reason:      ServerError,
+				Description: "failed to generate access_token",
+			}
 		}
 	}
 
@@ -276,31 +278,34 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 	}
 
 	scope := ParseStringSet(refreshToken.Scope)
-	userinfo, err := api.userinfo(refreshToken.Subject, scope)
-	if err != nil {
-		return nil, &ErrorMessage{
-			Err:         err,
-			Reason:      ServerError,
-			Description: "failed to get user info",
+	var idToken string
+	if scope.Has("openid") {
+		userinfo, err := api.userinfo(refreshToken.Subject, scope)
+		if err != nil {
+			return nil, &ErrorMessage{
+				Err:         err,
+				Reason:      ServerError,
+				Description: "failed to get user info",
+			}
 		}
-	}
 
-	idToken, err := api.TokenManager.CreateIDToken(
-		api.Config.Issuer,
-		refreshToken.Subject,
-		refreshToken.ClientID,
-		refreshToken.Nonce,
-		"",
-		accessToken,
-		userinfo,
-		time.Unix(refreshToken.AuthTime, 0),
-		time.Duration(*api.Config.TTL.Token),
-	)
-	if err != nil {
-		return nil, &ErrorMessage{
-			Err:         err,
-			Reason:      ServerError,
-			Description: "failed to generate access_token",
+		idToken, err = api.TokenManager.CreateIDToken(
+			api.Config.Issuer,
+			refreshToken.Subject,
+			refreshToken.ClientID,
+			refreshToken.Nonce,
+			"",
+			accessToken,
+			userinfo,
+			time.Unix(refreshToken.AuthTime, 0),
+			time.Duration(*api.Config.TTL.Token),
+		)
+		if err != nil {
+			return nil, &ErrorMessage{
+				Err:         err,
+				Reason:      ServerError,
+				Description: "failed to generate access_token",
+			}
 		}
 	}
 

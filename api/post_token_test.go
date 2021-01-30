@@ -32,7 +32,7 @@ func TestPostToken(t *testing.T) {
 	})
 }
 
-func ResponseValidation(name string, env *testutil.APITestEnvironment, codeHash string) testutil.JSONTester {
+func ResponseValidation(name string, env *testutil.APITestEnvironment, scope, codeHash string) testutil.JSONTester {
 	return func(t *testing.T, body testutil.RawBody) {
 		t.Logf("response validation for \"%s\" test", name)
 
@@ -50,8 +50,8 @@ func ResponseValidation(name string, env *testutil.APITestEnvironment, codeHash 
 			t.Errorf("expires_in is expected 3600 but got %#v", resp.ExpiresIn)
 		}
 
-		if resp.Scope != "openid profile" {
-			t.Errorf("scope is expected \"openid profile\" but got %#v", resp.Scope)
+		if resp.Scope != scope {
+			t.Errorf("scope is expected %#v but got %#v", scope, resp.Scope)
 		}
 
 		accessToken, err := env.API.TokenManager.ParseAccessToken(resp.AccessToken)
@@ -62,22 +62,28 @@ func ResponseValidation(name string, env *testutil.APITestEnvironment, codeHash 
 			t.Errorf("failed to validate access token: %s", err)
 		}
 
-		idToken, err := env.API.TokenManager.ParseIDToken(resp.IDToken)
-		if err != nil {
-			t.Errorf("failed to parse id token: %s", err)
-		}
-		if err = idToken.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
-			t.Errorf("failed to validate id token: %s", err)
-		}
-		if idToken.Nonce != "something-nonce" {
-			t.Errorf("nonce must be \"something-nonce\" but got %#v", idToken.Nonce)
-		}
+		if !api.ParseStringSet(scope).Has("openid") {
+			if resp.IDToken != "" {
+				t.Errorf("openid is not includes in scope but got id_token")
+			}
+		} else {
+			idToken, err := env.API.TokenManager.ParseIDToken(resp.IDToken)
+			if err != nil {
+				t.Errorf("failed to parse id token: %s", err)
+			}
+			if err = idToken.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
+				t.Errorf("failed to validate id token: %s", err)
+			}
+			if idToken.Nonce != "something-nonce" {
+				t.Errorf("nonce must be \"something-nonce\" but got %#v", idToken.Nonce)
+			}
 
-		if idToken.CodeHash != codeHash {
-			t.Errorf("unexpected c_hash value:\nexpected: %s\n but got: %s", codeHash, idToken.CodeHash)
-		}
-		if idToken.AccessTokenHash != token.TokenHash(resp.AccessToken) {
-			t.Errorf("unexpected at_hash value:\nexpected: %s\n but got: %s", token.TokenHash(resp.AccessToken), idToken.AccessTokenHash)
+			if idToken.CodeHash != codeHash {
+				t.Errorf("unexpected c_hash value:\nexpected: %s\n but got: %s", codeHash, idToken.CodeHash)
+			}
+			if idToken.AccessTokenHash != token.TokenHash(resp.AccessToken) {
+				t.Errorf("unexpected at_hash value:\nexpected: %s\n but got: %s", token.TokenHash(resp.AccessToken), idToken.AccessTokenHash)
+			}
 		}
 	}
 }
@@ -91,6 +97,20 @@ func TestPostToken_Code(t *testing.T) {
 		"some_client_id",
 		"http://some-client.example.com/callback",
 		"openid profile",
+		"something-nonce",
+		time.Now(),
+		time.Duration(*env.API.Config.TTL.Code),
+	)
+	if err != nil {
+		t.Fatalf("failed to generate test code: %s", err)
+	}
+
+	codeWithoutOpenID, err := env.API.TokenManager.CreateCode(
+		env.API.Config.Issuer,
+		"macrat",
+		"some_client_id",
+		"http://some-client.example.com/callback",
+		"profile",
 		"something-nonce",
 		time.Now(),
 		time.Duration(*env.API.Config.TTL.Code),
@@ -309,7 +329,7 @@ func TestPostToken_Code(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use authorization_code and client_secret", env, token.TokenHash(code)),
+			CheckBody: ResponseValidation("use authorization_code and client_secret", env, "openid profile", token.TokenHash(code)),
 		},
 		{
 			Request: url.Values{
@@ -319,7 +339,17 @@ func TestPostToken_Code(t *testing.T) {
 			},
 			Token:     "Basic c29tZV9jbGllbnRfaWQ6c2VjcmV0IGZvciBzb21lLWNsaWVudA==",
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use authorization_code and Authorization header", env, token.TokenHash(code)),
+			CheckBody: ResponseValidation("use authorization_code and Authorization header with openid scope", env, "openid profile", token.TokenHash(code)),
+		},
+		{
+			Request: url.Values{
+				"grant_type":   {"authorization_code"},
+				"code":         {codeWithoutOpenID},
+				"redirect_uri": {"http://some-client.example.com/callback"},
+			},
+			Token:     "Basic c29tZV9jbGllbnRfaWQ6c2VjcmV0IGZvciBzb21lLWNsaWVudA==",
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("use authorization_code and Authorization header without openid scope", env, "profile", token.TokenHash(code)),
 		},
 	})
 }
@@ -332,6 +362,19 @@ func TestPostToken_RefreshToken(t *testing.T) {
 		"macrat",
 		"some_client_id",
 		"openid profile",
+		"something-nonce",
+		time.Now(),
+		time.Duration(*env.API.Config.TTL.Refresh),
+	)
+	if err != nil {
+		t.Fatalf("failed to generate test refresh_token: %s", err)
+	}
+
+	refreshTokenWithoutOpenID, err := env.API.TokenManager.CreateRefreshToken(
+		env.API.Config.Issuer,
+		"macrat",
+		"some_client_id",
+		"profile",
 		"something-nonce",
 		time.Now(),
 		time.Duration(*env.API.Config.TTL.Refresh),
@@ -469,7 +512,18 @@ func TestPostToken_RefreshToken(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use refresh_token", env, ""),
+			CheckBody: ResponseValidation("use refresh_token with openid scope", env, "openid profile", ""),
+		},
+		{
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshTokenWithoutOpenID},
+				"client_id":     {"some_client_id"},
+				"client_secret": {"secret for some-client"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+			},
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("use refresh_token without openid scope", env, "profile", ""),
 		},
 	})
 }
@@ -528,7 +582,7 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("code / public client with client_secret", env, token.TokenHash(code)),
+			CheckBody: ResponseValidation("code / public client with client_secret", env, "openid profile", token.TokenHash(code)),
 		},
 		{
 			Request: url.Values{
@@ -538,7 +592,7 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("code / public client without client_secret", env, token.TokenHash(code)),
+			CheckBody: ResponseValidation("code / public client without client_secret", env, "openid profile", token.TokenHash(code)),
 		},
 		{
 			Request: url.Values{
@@ -571,7 +625,7 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("code / public client without client_id and client_secret", env, token.TokenHash(code)),
+			CheckBody: ResponseValidation("code / public client without client_id and client_secret", env, "openid profile", token.TokenHash(code)),
 		},
 		{
 			Request: url.Values{
@@ -580,7 +634,7 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("refresh_token / public client without client_id and client_secret", env, ""),
+			CheckBody: ResponseValidation("refresh_token / public client without client_id and client_secret", env, "openid profile", ""),
 		},
 	})
 }
