@@ -35,6 +35,7 @@ var (
 	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").PlaceHolder(config.DefaultConfig.Endpoints.Userinfo).String()
 	JwksEndpoint     = app.Flag("jwks-uri", "Path to jwks uri.").Envar("LDAPIN_JWKS_URI").PlaceHolder(config.DefaultConfig.Endpoints.Jwks).String()
 
+	LoginTTL   = app.Flag("login-ttl", "Time limit to input username and password on the login page.").Envar("LDAPIN_LOGIN_TTL").PlaceHolder("1h").String()
 	CodeTTL    = app.Flag("code-ttl", "TTL for code.").Envar("LDAPIN_CODE_TTL").PlaceHolder("5m").String()
 	TokenTTL   = app.Flag("token-ttl", "TTL for access_token and id_token.").Envar("LDAPIN_TOKEN_TTL").PlaceHolder("1d").String()
 	RefreshTTL = app.Flag("refresh-ttl", "TTL for refresh_token. If set 0, refresh_token will not create.").Envar("LDAPIN_REFRESH_TTL").PlaceHolder("7d").String()
@@ -74,8 +75,12 @@ func DecideListenAddress(issuer *url.URL, listen *net.TCPAddr) string {
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	var codeExpiresIn, tokenExpiresIn, refreshExpiresIn, ssoExpiresIn *config.Duration
+	var loginExpiresIn, codeExpiresIn, tokenExpiresIn, refreshExpiresIn, ssoExpiresIn *config.Duration
 	var err error
+	if *LoginTTL != "" {
+		loginExpiresIn, err = config.ParseDuration(*LoginTTL)
+		app.FatalIfError(err, "--login-ttl")
+	}
 	if *CodeTTL != "" {
 		codeExpiresIn, err = config.ParseDuration(*CodeTTL)
 		app.FatalIfError(err, "--code-ttl")
@@ -127,6 +132,7 @@ func main() {
 		Issuer: (*config.URL)(*Issuer),
 		Listen: (*config.TCPAddr)(*Listen),
 		TTL: config.TTLConfig{
+			Login:   loginExpiresIn,
 			Code:    codeExpiresIn,
 			Token:   tokenExpiresIn,
 			Refresh: refreshExpiresIn,
@@ -148,6 +154,9 @@ func main() {
 	})
 	addr := DecideListenAddress((*url.URL)(conf.Issuer), (*net.TCPAddr)(conf.Listen))
 
+	if *conf.TTL.Login <= 0 {
+		app.Fatalf("--login-ttl can't set 0 or less.")
+	}
 	if *conf.TTL.Code <= 0 {
 		app.Fatalf("--code-ttl can't set 0 or less.")
 	}

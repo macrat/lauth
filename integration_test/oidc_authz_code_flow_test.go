@@ -44,6 +44,12 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 	authQuery.Set("username", "macrat")
 	authQuery.Set("password", "foobar")
 
+	session, err := env.API.MakeLoginSession("::1", "some_client_id")
+	if err != nil {
+		t.Fatalf("failed to create login session: %s", err)
+	}
+	authQuery.Set("session", session)
+
 	resp := env.Post("/authz", "", authQuery)
 
 	if resp.Code != http.StatusFound {

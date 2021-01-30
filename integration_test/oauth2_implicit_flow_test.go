@@ -16,6 +16,11 @@ func TestOAuth2ImplicitFlow(t *testing.T) {
 
 	clientID := "some_client_id"
 
+	session, err := env.API.MakeLoginSession("::1", "some_client_id")
+	if err != nil {
+		t.Fatalf("failed to create login session: %s", err)
+	}
+
 	resp := env.Post("/authz", "", url.Values{
 		"response_type": {"token"},
 		"redirect_uri":  {"http://some-client.example.com/callback"},
@@ -23,6 +28,7 @@ func TestOAuth2ImplicitFlow(t *testing.T) {
 		"scope":         {"phone"},
 		"username":      {"macrat"},
 		"password":      {"foobar"},
+		"session":       {session},
 	})
 	if resp.Code != http.StatusFound {
 		t.Fatalf("unexpected status code: %d", resp.Code)

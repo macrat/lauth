@@ -9,7 +9,7 @@ type OIDCClaims struct {
 	jwt.StandardClaims
 
 	Type     string `json:"typ"`
-	AuthTime int64  `json:"auth_time"`
+	AuthTime int64  `json:"auth_time,omitempty"`
 }
 
 func (claims OIDCClaims) Validate(issuer *config.URL, audience string) error {

@@ -151,6 +151,9 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 	report := metrics.StartGetAuthz()
 	defer report.Close()
 
+	c.Header("Cache-Control", "no-store")
+	c.Header("Pragma", "no-cache")
+
 	var req GetAuthzRequest
 	if err := (&req).BindAndValidate(c, api.Config); err != nil {
 		err.Report(report)
@@ -171,9 +174,6 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 			} else if req.MaxAge <= 0 || req.MaxAge > time.Now().Unix()-idToken.AuthTime {
 				report.Set("authn_by", "sso_token")
 
-				c.Header("Cache-Control", "no-store")
-				c.Header("Pragma", "no-cache")
-
 				redirect, errMsg := api.makeAuthzTokens(req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
 				if errMsg != nil {
 					errMsg.Report(report)
@@ -187,11 +187,15 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 	}
 
 	if ParseStringSet(req.Prompt).Has("none") {
-		e := req.makeRedirectError(
-			nil,
-			"login_required",
-			"",
-		)
+		e := req.makeRedirectError(nil, "login_required", "")
+		e.Report(report)
+		e.Redirect(c)
+		return
+	}
+
+	loginToken, err := api.MakeLoginSession(c.ClientIP(), req.ClientID)
+	if err != nil {
+		e := req.makeRedirectError(err, "server_error", "failed to create session")
 		e.Report(report)
 		e.Redirect(c)
 		return
@@ -202,5 +206,6 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 		"config":           api.Config,
 		"request":          req,
 		"initial_username": req.LoginHint,
+		"session_token":    loginToken,
 	})
 }

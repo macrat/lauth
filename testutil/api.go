@@ -52,6 +52,7 @@ func MakeLdapinConfig() *config.LdapinConfig {
 			Host:   fmt.Sprintf("localhost:%d", FindAvailTCPPort()),
 		},
 		TTL: config.TTLConfig{
+			Login:   config.NewDuration(1 * time.Hour),
 			Code:    config.NewDuration(1 * time.Minute),
 			Token:   config.NewDuration(1 * time.Hour),
 			Refresh: config.NewDuration(6 * time.Hour),
@@ -129,6 +130,7 @@ func (env *APITestEnvironment) DoRequest(r *http.Request) *httptest.ResponseReco
 
 func (env *APITestEnvironment) Get(path, token string, query url.Values) *httptest.ResponseRecorder {
 	r, _ := http.NewRequest("GET", path+"?"+query.Encode(), nil)
+	r.RemoteAddr = "[::1]:54321"
 
 	if token != "" {
 		r.Header.Set("Authorization", token)
@@ -139,6 +141,7 @@ func (env *APITestEnvironment) Get(path, token string, query url.Values) *httpte
 
 func (env *APITestEnvironment) Post(path, token string, body url.Values) *httptest.ResponseRecorder {
 	r, _ := http.NewRequest("POST", path, strings.NewReader(body.Encode()))
+	r.RemoteAddr = "[::1]:54321"
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	if token != "" {

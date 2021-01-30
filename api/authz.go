@@ -79,3 +79,12 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 	}
 	return redirectURI, nil
 }
+
+func (api LdapinAPI) MakeLoginSession(clientIP, clientID string) (string, error) {
+	return api.TokenManager.CreateLoginToken(
+		api.Config.Issuer,
+		clientIP,
+		clientID,
+		time.Duration(*api.Config.TTL.Login),
+	)
+}

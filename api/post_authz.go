@@ -14,8 +14,9 @@ import (
 type PostAuthzRequest struct {
 	GetAuthzRequest
 
-	User     string `form:"username" json:"username" xml:"username"`
-	Password string `form:"password" json:"password" xml:"password"`
+	User       string `form:"username" json:"username" xml:"username"`
+	Password   string `form:"password" json:"password" xml:"password"`
+	LoginToken string `form:"session"  json:"session"  xml:"session"`
 }
 
 func (req *PostAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
@@ -52,15 +53,43 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	report.Set("authn_by", "password")
 	req.Report(report)
 
-	if req.User == "" || req.Password == "" {
-		req.makeRedirectError(nil, InvalidRequest, "missing username or password").Report(report)
+	showLoginForm := func(description string) {
+		loginToken, err := api.MakeLoginSession(c.ClientIP(), req.ClientID)
+		if err != nil {
+			e := req.makeRedirectError(err, "server_error", "failed to create session")
+			e.Report(report)
+			e.Redirect(c)
+			return
+		}
+
+		req.makeRedirectError(nil, InvalidRequest, description).Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"endpoints":        api.Config.EndpointPaths(),
 			"config":           api.Config,
 			"request":          req.GetAuthzRequest,
 			"initial_username": req.User,
-			"error":            "missing_username_or_password",
+			"error":            description,
+			"session_token":    loginToken,
 		})
+	}
+
+	if req.LoginToken == "" {
+		showLoginForm("invalid session")
+		return
+	} else {
+		loginToken, err := api.TokenManager.ParseLoginToken(req.LoginToken)
+		if err == nil {
+			err = loginToken.Validate(api.Config.Issuer)
+		}
+
+		if err != nil || loginToken.Subject != c.ClientIP() || loginToken.ClientID != req.ClientID {
+			showLoginForm("invalid session")
+			return
+		}
+	}
+
+	if req.User == "" || req.Password == "" {
+		showLoginForm("missing username or password")
 		return
 	}
 
@@ -76,14 +105,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 
 	if err := conn.LoginTest(req.User, req.Password); err != nil {
 		time.Sleep(1 * time.Second)
-		req.makeRedirectError(err, InvalidRequest, "invalid username or password").Report(report)
-		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
-			"endpoints":        api.Config.EndpointPaths(),
-			"config":           api.Config,
-			"request":          req.GetAuthzRequest,
-			"initial_username": req.User,
-			"error":            "invalid_username_or_password",
-		})
+		showLoginForm("invalid username or password")
 		return
 	}
 

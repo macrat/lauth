@@ -15,12 +15,28 @@ func TestPostAuthz(t *testing.T) {
 
 	env.RedirectTest(t, "GET", "/authz", authzEndpointCommonTests)
 
+	session, err := env.API.MakeLoginSession("::1", "some_client_id")
+	if err != nil {
+		t.Fatalf("faield to make login session: %s", err)
+	}
+
+	anotherBrowserSession, err := env.API.MakeLoginSession("10.2.3.4", "some_client_id")
+	if err != nil {
+		t.Fatalf("faield to make login session: %s", err)
+	}
+
+	anotherClientSession, err := env.API.MakeLoginSession("::1", "another_client_id")
+	if err != nil {
+		t.Fatalf("faield to make login session: %s", err)
+	}
+
 	env.RedirectTest(t, "POST", "/authz", []testutil.RedirectTest{
 		{
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
+				"session":       {session},
 			},
 			Code: http.StatusForbidden,
 		},
@@ -30,6 +46,7 @@ func TestPostAuthz(t *testing.T) {
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
+				"session":       {session},
 			},
 			Code: http.StatusForbidden,
 		},
@@ -39,6 +56,7 @@ func TestPostAuthz(t *testing.T) {
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"password":      {"foobar"},
+				"session":       {session},
 			},
 			Code: http.StatusForbidden,
 		},
@@ -49,6 +67,7 @@ func TestPostAuthz(t *testing.T) {
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"invalid"},
+				"session":       {session},
 			},
 			Code: http.StatusForbidden,
 		},
@@ -59,6 +78,39 @@ func TestPostAuthz(t *testing.T) {
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
+			},
+			Code: http.StatusForbidden,
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"username":      {"macrat"},
+				"password":      {"foobar"},
+				"session":       {anotherBrowserSession},
+			},
+			Code: http.StatusForbidden,
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"username":      {"macrat"},
+				"password":      {"foobar"},
+				"session":       {anotherClientSession},
+			},
+			Code: http.StatusForbidden,
+		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"username":      {"macrat"},
+				"password":      {"foobar"},
+				"session":       {session},
 			},
 			AllowImplicit: false,
 			Code:          http.StatusFound,
@@ -89,6 +141,7 @@ func TestPostAuthz(t *testing.T) {
 				"response_type": {"token"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
+				"session":       {session},
 			},
 			AllowImplicit: true,
 			Code:          http.StatusFound,
@@ -129,6 +182,7 @@ func TestPostAuthz(t *testing.T) {
 				"state":         {"this-is-state"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
+				"session":       {session},
 			},
 			AllowImplicit: true,
 			Code:          http.StatusFound,
@@ -173,6 +227,7 @@ func TestPostAuthz(t *testing.T) {
 				"state":         {"this-is-state"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
+				"session":       {session},
 			},
 			AllowImplicit: true,
 			Code:          http.StatusFound,
@@ -221,6 +276,7 @@ func TestPostAuthz(t *testing.T) {
 				"response_type": {"token id_token"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
+				"session":       {session},
 			},
 			AllowImplicit: true,
 			Code:          http.StatusFound,
@@ -253,6 +309,7 @@ func TestPostAuthz(t *testing.T) {
 				"response_type": {"code id_token"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
+				"session":       {session},
 			},
 			AllowImplicit: true,
 			Code:          http.StatusFound,

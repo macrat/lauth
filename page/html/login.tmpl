@@ -136,6 +136,7 @@
 
     <body>
         <form action="{{ .endpoints.Authz }}" method="POST" aria-label="login" onsubmit="document.getElementById('login-btn').disabled = true">
+            <input type="hidden" name="session" value="{{ .session_token }}" />
             <input type="hidden" name="response_type" value="{{ .request.ResponseType }}" />
             <input type="hidden" name="client_id" value="{{ .request.ClientID }}" />
             <input type="hidden" name="redirect_uri" value="{{ .request.RedirectURI }}" />

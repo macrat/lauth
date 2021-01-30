@@ -14,6 +14,11 @@ func TestOIDCImplicitFlow(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 	env.API.Config.AllowImplicitFlow = true
 
+	session, err := env.API.MakeLoginSession("::1", "some_client_id")
+	if err != nil {
+		t.Fatalf("failed to create login session: %s", err)
+	}
+
 	clientID := "some_client_id"
 	nonce := "This Is Nonce"
 
@@ -25,6 +30,7 @@ func TestOIDCImplicitFlow(t *testing.T) {
 		"scope":         {"phone"},
 		"username":      {"macrat"},
 		"password":      {"foobar"},
+		"session":       {session},
 	})
 	if resp.Code != http.StatusFound {
 		t.Fatalf("unexpected status code: %d", resp.Code)
