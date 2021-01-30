@@ -46,14 +46,14 @@ func TestGetUserinfo(t *testing.T) {
 
 	env.JSONTest(t, "GET", "/userinfo", []testutil.JSONTest{
 		{
-			Token: noScopeToken,
+			Token: "Bearer " + noScopeToken,
 			Code:  http.StatusOK,
 			Body: map[string]interface{}{
 				"sub": "macrat",
 			},
 		},
 		{
-			Token: multiScopeToken,
+			Token: "Bearer " + multiScopeToken,
 			Code:  http.StatusOK,
 			Body: map[string]interface{}{
 				"sub":         "macrat",
@@ -64,7 +64,7 @@ func TestGetUserinfo(t *testing.T) {
 			},
 		},
 		{
-			Token: "invalid token",
+			Token: "Bearer invalid token",
 			Code:  http.StatusForbidden,
 			Body: map[string]interface{}{
 				"error":             "invalid_token",
@@ -79,7 +79,15 @@ func TestGetUserinfo(t *testing.T) {
 			},
 		},
 		{
-			Token: nobodyToken,
+			Token: "Basic c29tZV9jbGllbnRfaWQ6c2VjcmV0IGZvciBzb21lLWNsaWVudA==",
+			Code:  http.StatusForbidden,
+			Body: map[string]interface{}{
+				"error":             "invalid_token",
+				"error_description": "bearer token is required",
+			},
+		},
+		{
+			Token: "Bearer " + nobodyToken,
 			Code:  http.StatusForbidden,
 			Body: map[string]interface{}{
 				"error":             "invalid_token",

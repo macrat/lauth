@@ -28,6 +28,10 @@ func (req *PostTokenRequest) Bind(c *gin.Context) *ErrorMessage {
 			Description: "failed to parse request",
 		}
 	}
+	if u, p, ok := c.Request.BasicAuth(); ok {
+		req.ClientID = u
+		req.ClientSecret = p
+	}
 	return nil
 }
 

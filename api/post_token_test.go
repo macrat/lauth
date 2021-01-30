@@ -196,6 +196,32 @@ func TestPostToken_Code(t *testing.T) {
 		},
 		{
 			Request: url.Values{
+				"grant_type":   {"authorization_code"},
+				"code":         {code},
+				"redirect_uri": {"http://some-client.example.com/callback"},
+			},
+			Token: "Basic OnNlY3JldCBmb3Igc29tZS1jbGllbnQ=",
+			Code:  http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "client_id is required",
+			},
+		},
+		{
+			Request: url.Values{
+				"grant_type":   {"authorization_code"},
+				"code":         {code},
+				"redirect_uri": {"http://some-client.example.com/callback"},
+			},
+			Token: "Basic c29tZV9jbGllbnRfaWQ6",
+			Code:  http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error":             "invalid_request",
+				"error_description": "client_secret is required",
+			},
+		},
+		{
+			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
 				"client_id":     {"another_client_id"},
@@ -283,7 +309,17 @@ func TestPostToken_Code(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use authorization_code", env, token.TokenHash(code)),
+			CheckBody: ResponseValidation("use authorization_code and client_secret", env, token.TokenHash(code)),
+		},
+		{
+			Request: url.Values{
+				"grant_type":   {"authorization_code"},
+				"code":         {code},
+				"redirect_uri": {"http://some-client.example.com/callback"},
+			},
+			Token:     "Basic c29tZV9jbGllbnRfaWQ6c2VjcmV0IGZvciBzb21lLWNsaWVudA==",
+			Code:      http.StatusOK,
+			CheckBody: ResponseValidation("use authorization_code and Authorization header", env, token.TokenHash(code)),
 		},
 	})
 }

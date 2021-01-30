@@ -52,7 +52,7 @@ func TestOIDCImplicitFlow(t *testing.T) {
 		t.Fatalf("failed to get access_token")
 	}
 
-	resp = env.Get("/userinfo", accessToken, nil)
+	resp = env.Get("/userinfo", "Bearer "+accessToken, nil)
 	if resp.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", resp.Code)
 	}

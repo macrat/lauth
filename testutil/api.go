@@ -131,7 +131,7 @@ func (env *APITestEnvironment) Get(path, token string, query url.Values) *httpte
 	r, _ := http.NewRequest("GET", path+"?"+query.Encode(), nil)
 
 	if token != "" {
-		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		r.Header.Set("Authorization", token)
 	}
 
 	return env.DoRequest(r)
@@ -142,7 +142,7 @@ func (env *APITestEnvironment) Post(path, token string, body url.Values) *httpte
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	if token != "" {
-		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		r.Header.Set("Authorization", token)
 	}
 
 	return env.DoRequest(r)
