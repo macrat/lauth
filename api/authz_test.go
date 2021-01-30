@@ -20,13 +20,8 @@ var (
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"response_type": {"code"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
-			Query: url.Values{
-				"error":             {"invalid_client"},
-				"error_description": {"client_id is required"},
-			},
-			Fragment: url.Values{},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
 		},
 		{
 			Request: url.Values{
@@ -70,13 +65,8 @@ var (
 				"client_id":     {"another_client_id"},
 				"response_type": {"code"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
-			Query: url.Values{
-				"error":             {"invalid_client"},
-				"error_description": {"client_id is not registered"},
-			},
-			Fragment: url.Values{},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
 		},
 		{
 			Request: url.Values{
@@ -84,13 +74,8 @@ var (
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
-			Query: url.Values{
-				"error":             {"unauthorized_client"},
-				"error_description": {"redirect_uri is not registered"},
-			},
-			Fragment: url.Values{},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
 		},
 		{
 			Request: url.Values{

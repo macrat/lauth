@@ -206,8 +206,6 @@ func TestGetAuthz_AnonymousClients(t *testing.T) {
 			},
 			Code:        http.StatusOK,
 			HasLocation: false,
-			Query:       url.Values{},
-			Fragment:    url.Values{},
 		},
 		{
 			Request: url.Values{
@@ -215,13 +213,8 @@ func TestGetAuthz_AnonymousClients(t *testing.T) {
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
-			Query: url.Values{
-				"error":             {"unauthorized_client"},
-				"error_description": {"redirect_uri is not registered"},
-			},
-			Fragment: url.Values{},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
 		},
 		{
 			Request: url.Values{
@@ -231,8 +224,6 @@ func TestGetAuthz_AnonymousClients(t *testing.T) {
 			},
 			Code:        http.StatusOK,
 			HasLocation: false,
-			Query:       url.Values{},
-			Fragment:    url.Values{},
 		},
 	})
 }

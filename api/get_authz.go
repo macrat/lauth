@@ -33,7 +33,7 @@ func (req *GetAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
 	return nil
 }
 
-func (req GetAuthzRequest) makeError(err error, reason ErrorReason, description string) *ErrorMessage {
+func (req GetAuthzRequest) makeRedirectError(err error, reason ErrorReason, description string) *ErrorMessage {
 	redirectURI, e2 := url.Parse(req.RedirectURI)
 	if e2 != nil {
 		redirectURI = nil
@@ -49,30 +49,40 @@ func (req GetAuthzRequest) makeError(err error, reason ErrorReason, description 
 	}
 }
 
+func (req GetAuthzRequest) makeNonRedirectError(err error, reason ErrorReason, description string) *ErrorMessage {
+	return &ErrorMessage{
+		Err:          err,
+		ResponseType: req.ResponseType,
+		State:        req.State,
+		Reason:       reason,
+		Description:  description,
+	}
+}
+
 func (req GetAuthzRequest) Validate(config *config.LdapinConfig) *ErrorMessage {
 	if req.RedirectURI == "" {
-		return req.makeError(nil, InvalidRequest, "redirect_uri is required")
+		return req.makeNonRedirectError(nil, InvalidRequest, "redirect_uri is required")
 	}
 
 	if u, err := url.Parse(req.RedirectURI); err != nil {
-		return req.makeError(err, InvalidRequest, "redirect_uri is invalid format")
+		return req.makeNonRedirectError(err, InvalidRequest, "redirect_uri is invalid format")
 	} else if !u.IsAbs() {
-		return req.makeError(err, InvalidRequest, "redirect_uri is must be absolute URL")
+		return req.makeNonRedirectError(err, InvalidRequest, "redirect_uri is must be absolute URL")
 	}
 
 	if req.ClientID == "" {
-		return req.makeError(nil, InvalidClient, "client_id is required")
+		return req.makeNonRedirectError(nil, InvalidClient, "client_id is required")
 	}
 	if client, ok := config.Clients[req.ClientID]; !ok {
 		if !config.DisableClientAuth {
-			return req.makeError(
+			return req.makeNonRedirectError(
 				nil,
 				InvalidClient,
 				"client_id is not registered",
 			)
 		}
 	} else if !client.RedirectURI.Match(req.RedirectURI) {
-		return req.makeError(
+		return req.makeNonRedirectError(
 			nil,
 			UnauthorizedClient,
 			"redirect_uri is not registered",
@@ -81,21 +91,21 @@ func (req GetAuthzRequest) Validate(config *config.LdapinConfig) *ErrorMessage {
 
 	rt := ParseStringSet(req.ResponseType)
 	if rt.String() == "" {
-		return req.makeError(
+		return req.makeRedirectError(
 			nil,
 			UnsupportedResponseType,
 			"response_type is required",
 		)
 	}
 	if err := rt.Validate("response_type", []string{"code", "token", "id_token"}); err != nil {
-		return req.makeError(
+		return req.makeRedirectError(
 			err,
 			UnsupportedResponseType,
 			err.Error(),
 		)
 	}
 	if !config.AllowImplicitFlow && rt.String() != "code" {
-		return req.makeError(
+		return req.makeRedirectError(
 			nil,
 			UnsupportedResponseType,
 			"implicit/hybrid flow is disallowed in this server",
@@ -156,7 +166,7 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 	}
 
 	if ParseStringSet(req.Prompt).Has("none") {
-		e := req.makeError(
+		e := req.makeRedirectError(
 			nil,
 			"login_required",
 			"",

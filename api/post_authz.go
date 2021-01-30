@@ -54,7 +54,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	req.Scope = scope.String()
 
 	if req.User == "" || req.Password == "" {
-		req.makeError(nil, InvalidRequest, "missing username or password").Report(report)
+		req.makeRedirectError(nil, InvalidRequest, "missing username or password").Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,
 			"request":          req.GetAuthzRequest,
@@ -67,7 +67,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	conn, err := api.Connector.Connect()
 	if err != nil {
 		log.Print(err)
-		e := req.makeError(err, ServerError, "failed to connecting LDAP server")
+		e := req.makeRedirectError(err, ServerError, "failed to connecting LDAP server")
 		e.Report(report)
 		e.Redirect(c)
 		return
@@ -75,7 +75,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	defer conn.Close()
 
 	if err := conn.LoginTest(req.User, req.Password); err != nil {
-		req.makeError(err, InvalidRequest, "invalid username or password").Report(report)
+		req.makeRedirectError(err, InvalidRequest, "invalid username or password").Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,
 			"request":          req.GetAuthzRequest,
