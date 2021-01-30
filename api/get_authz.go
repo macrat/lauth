@@ -167,7 +167,7 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 			issuer := api.Config.Issuer
 			secure := issuer.Scheme == "https"
 			if idToken, err := api.TokenManager.ParseIDToken(token); err != nil || idToken.Validate(issuer, issuer.String()) != nil {
-				c.SetCookie("token", "", 0, "/", issuer.Host, secure, true)
+				c.SetCookie("token", "", 0, "/", (*url.URL)(issuer).Hostname(), secure, true)
 			} else if req.MaxAge <= 0 || req.MaxAge > time.Now().Unix()-idToken.AuthTime {
 				report.Set("authn_by", "sso_token")
 
