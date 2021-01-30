@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/ldapin/metrics"
 )
 
 type ErrorMessage struct {
@@ -54,4 +55,20 @@ func (msg ErrorMessage) Redirect(c *gin.Context) {
 		msg.RedirectURI.RawQuery = resp.Encode()
 	}
 	c.Redirect(http.StatusFound, msg.RedirectURI.String())
+}
+
+func (msg ErrorMessage) JSON(c *gin.Context) {
+	switch msg.Reason {
+	case "server_error":
+		c.JSON(http.StatusInternalServerError, msg)
+	case "invalid_token":
+		c.JSON(http.StatusForbidden, msg)
+	default:
+		c.JSON(http.StatusBadRequest, msg)
+	}
+}
+
+func (msg ErrorMessage) Report(c *metrics.Context) {
+	c.Set("error", msg.Reason)
+	c.Set("error_description", msg.Description)
 }

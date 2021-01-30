@@ -61,11 +61,11 @@ func (api *LdapinAPI) GetConfiguration(c *gin.Context) {
 func (api *LdapinAPI) GetCerts(c *gin.Context) {
 	keys, err := api.TokenManager.JWKs()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		ErrorMessage{
 			Err:         err,
 			Reason:      "server_error",
 			Description: "failed to get key informations",
-		})
+		}.JSON(c)
 		return
 	}
 

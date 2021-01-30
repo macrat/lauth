@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/config"
+	"github.com/macrat/ldapin/metrics"
 )
 
 type PostAuthzRequest struct {
@@ -37,17 +38,23 @@ func (req *PostAuthzRequest) BindAndValidate(c *gin.Context, config *config.Ldap
 }
 
 func (api *LdapinAPI) PostAuthz(c *gin.Context) {
+	report := metrics.StartPostAuthz()
+	defer report.Close()
+
 	var req PostAuthzRequest
 	if err := (&req).BindAndValidate(c, api.Config); err != nil {
 		err.Redirect(c)
 		return
 	}
+	report.Set("authn_by", "password")
+	req.Report(report)
 
 	scope := ParseStringSet(req.Scope)
 	scope.Add("openid")
 	req.Scope = scope.String()
 
 	if req.User == "" || req.Password == "" {
+		req.makeError(nil, "invalid_request", "missing username or password").Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,
 			"request":          req.GetAuthzRequest,
@@ -60,12 +67,15 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	conn, err := api.Connector.Connect()
 	if err != nil {
 		log.Print(err)
-		req.makeError(err, "server_error", "failed to connecting LDAP server").Redirect(c)
+		e := req.makeError(err, "server_error", "failed to connecting LDAP server")
+		e.Report(report)
+		e.Redirect(c)
 		return
 	}
 	defer conn.Close()
 
 	if err := conn.LoginTest(req.User, req.Password); err != nil {
+		req.makeError(err, "invalid_request", "invalid username or password").Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,
 			"request":          req.GetAuthzRequest,
@@ -98,6 +108,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 
 	resp, errMsg := api.makeAuthzTokens(req.GetAuthzRequest, req.User, time.Now())
 	if errMsg != nil {
+		errMsg.Report(report)
 		errMsg.Redirect(c)
 	}
 

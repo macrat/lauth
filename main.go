@@ -12,9 +12,9 @@ import (
 	"github.com/macrat/ldapin/api"
 	"github.com/macrat/ldapin/config"
 	"github.com/macrat/ldapin/ldap"
+	"github.com/macrat/ldapin/metrics"
 	"github.com/macrat/ldapin/page"
 	"github.com/macrat/ldapin/token"
-	"github.com/macrat/ldapin/metrics"
 )
 
 var (
@@ -213,12 +213,13 @@ func main() {
 		c.Header("Content-Security-Policy", "frame-ancestors 'none'")
 	})
 
+	router.GET("/metrics", gin.WrapH(metrics.Handler()))
 	api.SetRoutes(router)
 	api.SetErrorRoutes(router)
 
 	server := &http.Server{
 		Addr:    addr,
-		Handler: HTTPCompressor(router),
+		Handler: metrics.Middleware(HTTPCompressor(router)),
 	}
 	if *TLSCertFile != "" {
 		err = server.ListenAndServeTLS(*TLSCertFile, *TLSKeyFile)

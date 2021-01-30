@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/ldap"
+	"github.com/macrat/ldapin/metrics"
 )
 
 type GetUserInfoHeader struct {
@@ -13,13 +14,19 @@ type GetUserInfoHeader struct {
 }
 
 func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
+	report := metrics.StartUserinfo()
+	defer report.Close()
+
 	var header GetUserInfoHeader
 	if err := c.ShouldBindHeader(&header); err != nil || !strings.HasPrefix(header.Authorization, "Bearer ") {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"bearer token is required\"")
-		c.JSON(http.StatusForbidden, ErrorMessage{
+		e := ErrorMessage{
+			Err:         err,
 			Reason:      "invalid_token",
 			Description: "bearer token is required",
-		})
+		}
+		e.Report(report)
+		e.JSON(c)
 		return
 	}
 
@@ -30,11 +37,13 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 	}
 	if err != nil {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
-		c.JSON(http.StatusForbidden, ErrorMessage{
+		e := ErrorMessage{
 			Err:         err,
 			Reason:      "invalid_token",
 			Description: "token is invalid",
-		})
+		}
+		e.Report(report)
+		e.JSON(c)
 		return
 	}
 
@@ -42,19 +51,21 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 	result, err := api.userinfo(token.Subject, scope)
 	if err == ldap.UserNotFoundError {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
-		c.JSON(http.StatusForbidden, ErrorMessage{
+		e := ErrorMessage{
 			Err:         err,
 			Reason:      "invalid_token",
 			Description: "user was not found or disabled",
-		})
-		return
+		}
+		e.Report(report)
+		e.JSON(c)
 	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		e := ErrorMessage{
 			Reason:      "server_error",
 			Description: "failed to get user info",
-		})
-		return
+		}
+		e.Report(report)
+		e.JSON(c)
+	} else {
+		c.JSON(http.StatusOK, result)
 	}
-
-	c.JSON(http.StatusOK, result)
 }

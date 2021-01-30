@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/config"
+	"github.com/macrat/ldapin/metrics"
 )
 
 type PostTokenRequest struct {
@@ -131,36 +132,32 @@ type PostTokenResponse struct {
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
-func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) {
+func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*PostTokenResponse, *ErrorMessage) {
 	code, err := api.TokenManager.ParseCode(req.Code)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:    err,
 			Reason: "invalid_grant",
-		})
-		return
+		}
 	}
 	if err := code.Validate(api.Config.Issuer); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:    err,
 			Reason: "invalid_grant",
-		})
-		return
+		}
 	}
 
 	if req.ClientID != "" && req.ClientID != code.ClientID {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		return nil, &ErrorMessage{
 			Reason: "invalid_grant",
-		})
-		return
+		}
 	}
 
 	if req.RedirectURI != code.RedirectURI {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		return nil, &ErrorMessage{
 			Reason:      "invalid_request",
 			Description: "redirect_uri is miss match",
-		})
-		return
+		}
 	}
 
 	scope := ParseStringSet(code.Scope)
@@ -174,22 +171,20 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) {
 		time.Duration(*api.Config.TTL.Token),
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:         err,
 			Reason:      "server_error",
 			Description: "failed to generate access_token",
-		})
-		return
+		}
 	}
 
 	userinfo, err := api.userinfo(code.Subject, scope)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:         err,
 			Reason:      "server_error",
 			Description: "failed to get user info",
-		})
-		return
+		}
 	}
 
 	idToken, err := api.TokenManager.CreateIDToken(
@@ -204,12 +199,11 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) {
 		time.Duration(*api.Config.TTL.Token),
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:         err,
 			Reason:      "server_error",
 			Description: "failed to generate access_token",
-		})
-		return
+		}
 	}
 
 	refreshToken := ""
@@ -224,47 +218,43 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) {
 			time.Duration(*api.Config.TTL.Refresh),
 		)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
+			return nil, &ErrorMessage{
 				Err:         err,
 				Reason:      "server_error",
 				Description: "failed to generate refresh_token",
-			})
-			return
+			}
 		}
 	}
 
-	c.JSON(http.StatusOK, PostTokenResponse{
+	return &PostTokenResponse{
 		TokenType:    "Bearer",
 		AccessToken:  accessToken,
 		IDToken:      idToken,
 		ExpiresIn:    api.Config.TTL.Token.IntSeconds(),
 		Scope:        code.Scope,
 		RefreshToken: refreshToken,
-	})
+	}, nil
 }
 
-func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequest) {
+func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequest) (*PostTokenResponse, *ErrorMessage) {
 	refreshToken, err := api.TokenManager.ParseRefreshToken(req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:    err,
 			Reason: "invalid_grant",
-		})
-		return
+		}
 	}
 	if err := refreshToken.Validate(api.Config.Issuer); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:    err,
 			Reason: "invalid_grant",
-		})
-		return
+		}
 	}
 
 	if req.ClientID != "" && req.ClientID != refreshToken.ClientID {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		return nil, &ErrorMessage{
 			Reason: "invalid_grant",
-		})
-		return
+		}
 	}
 
 	accessToken, err := api.TokenManager.CreateAccessToken(
@@ -275,23 +265,21 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 		time.Duration(*api.Config.TTL.Token),
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:         err,
 			Reason:      "server_error",
 			Description: "failed to generate access_token",
-		})
-		return
+		}
 	}
 
 	scope := ParseStringSet(refreshToken.Scope)
 	userinfo, err := api.userinfo(refreshToken.Subject, scope)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:         err,
 			Reason:      "server_error",
 			Description: "failed to get user info",
-		})
-		return
+		}
 	}
 
 	idToken, err := api.TokenManager.CreateIDToken(
@@ -306,33 +294,47 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 		time.Duration(*api.Config.TTL.Token),
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		return nil, &ErrorMessage{
 			Err:         err,
 			Reason:      "server_error",
 			Description: "failed to generate access_token",
-		})
-		return
+		}
 	}
 
-	c.JSON(http.StatusOK, PostTokenResponse{
+	return &PostTokenResponse{
 		TokenType:   "Bearer",
 		AccessToken: accessToken,
 		IDToken:     idToken,
 		ExpiresIn:   api.Config.TTL.Token.IntSeconds(),
 		Scope:       refreshToken.Scope,
-	})
+	}, nil
 }
 
 func (api *LdapinAPI) PostToken(c *gin.Context) {
+	report := metrics.StartPostToken()
+	defer report.Close()
+
 	var req PostTokenRequest
 	if err := (&req).BindAndValidate(c, api.Config); err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
+	report.Set("grant_type", req.GrantType)
+	report.Set("client_id", req.ClientID)
+
+	var resp *PostTokenResponse
+	var err *ErrorMessage
 	if req.GrantType == "authorization_code" {
-		api.postTokenWithCode(c, req)
+		resp, err = api.postTokenWithCode(c, req)
 	} else {
-		api.postTokenWithRefreshToken(c, req)
+		resp, err = api.postTokenWithRefreshToken(c, req)
+	}
+	if err != nil {
+		err.Report(report)
+		err.JSON(c)
+	} else if resp != nil {
+		report.Set("scope", resp.Scope)
+		c.JSON(http.StatusOK, resp)
 	}
 }

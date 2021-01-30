@@ -16,6 +16,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pquerna/cachecontrol v0.0.0-20201205024021-ac21108117ac // indirect
+	github.com/prometheus/client_golang v1.9.0
 	github.com/rakyll/statik v0.1.7
 	github.com/tdewolff/minify/v2 v2.9.11
 	github.com/xhit/go-str2duration/v2 v2.0.0
@@ -24,7 +25,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 )
 
 replace github.com/macrat/ldapin/api => ./api

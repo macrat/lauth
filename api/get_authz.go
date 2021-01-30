@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/config"
+	"github.com/macrat/ldapin/metrics"
 )
 
 type GetAuthzRequest struct {
@@ -111,12 +112,25 @@ func (req *GetAuthzRequest) BindAndValidate(c *gin.Context, config *config.Ldapi
 	return req.Validate(config)
 }
 
+func (req *GetAuthzRequest) Report(c *metrics.Context) {
+	c.Set("client_id", req.ClientID)
+	c.Set("response_type", req.ResponseType)
+	c.Set("scope", req.Scope)
+	c.Set("prompt", req.Prompt)
+}
+
 func (api *LdapinAPI) GetAuthz(c *gin.Context) {
+	report := metrics.StartGetAuthz()
+	defer report.Close()
+
 	var req GetAuthzRequest
 	if err := (&req).BindAndValidate(c, api.Config); err != nil {
+		err.Report(report)
 		err.Redirect(c)
 		return
 	}
+	req.Report(report)
+	report.Set("authn_by", "password")
 
 	prompt := ParseStringSet(req.Prompt)
 
@@ -127,8 +141,11 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 			if idToken, err := api.TokenManager.ParseIDToken(token); err != nil || idToken.Validate(issuer, issuer.String()) != nil {
 				c.SetCookie("token", "", 0, "/", issuer.Host, secure, true)
 			} else if req.MaxAge <= 0 || req.MaxAge > time.Now().Unix()-idToken.AuthTime {
+				report.Set("authn_by", "sso_token")
+
 				redirect, errMsg := api.makeAuthzTokens(req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
 				if errMsg != nil {
+					errMsg.Report(report)
 					errMsg.Redirect(c)
 				} else {
 					c.Redirect(http.StatusFound, redirect.String())
@@ -139,11 +156,13 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 	}
 
 	if ParseStringSet(req.Prompt).Has("none") {
-		req.makeError(
+		e := req.makeError(
 			nil,
 			"login_required",
 			"",
-		).Redirect(c)
+		)
+		e.Report(report)
+		e.Redirect(c)
 		return
 	}
 
