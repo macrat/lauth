@@ -78,6 +78,7 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	defer conn.Close()
 
 	if err := conn.LoginTest(req.User, req.Password); err != nil {
+		time.Sleep(1 * time.Second)
 		req.makeRedirectError(err, InvalidRequest, "invalid username or password").Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
 			"config":           api.Config,

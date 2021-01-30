@@ -86,6 +86,8 @@
                 position: absolute;
                 right: .4em;
                 height: 1.7em;
+                opacity: 1;
+                transition: opacity .2s;
             }
             button path {
                 stroke: #fff;
@@ -97,6 +99,21 @@
             }
             button:focus path {
                 stroke: #669;
+            }
+
+            button:disabled #login-icon {
+                opacity: 0;
+            }
+            button:not(:disabled) #loading-icon {
+                opacity: 0;
+            }
+
+            #loading-icon {
+                animation: rotate 2s linear infinite;
+            }
+            @keyframes rotate {
+                from { transform: rotate(0deg); }
+                  to { transform: rotate(360deg); }
             }
 
             #alert {
@@ -118,7 +135,7 @@
     </head>
 
     <body>
-        <form action="{{ .endpoints.Authz }}" method="POST" aria-label="login">
+        <form action="{{ .endpoints.Authz }}" method="POST" aria-label="login" onsubmit="document.getElementById('login-btn').disabled = true">
             <input type="hidden" name="response_type" value="{{ .request.ResponseType }}" />
             <input type="hidden" name="client_id" value="{{ .request.ClientID }}" />
             <input type="hidden" name="redirect_uri" value="{{ .request.RedirectURI }}" />
@@ -148,9 +165,10 @@
                 <input name="password" aria-label="password" required type="password" />
             </label>
 
-            <button type="submit"{{ if .error }} class="shaking"{{ end }}>
+            <button id="login-btn" type="submit"{{ if .error }} class="shaking"{{ end }}>
                 LOGIN
-                <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path stroke-linecap='round' stroke-width='38' d='M268 112l144 144-144 144M392 256H100'/></svg>
+                <svg id="login-icon" xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path stroke-linecap='round' stroke-width='38' d='M268 112l144 144-144 144M392 256H100'/></svg>
+                <svg id="loading-icon" xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path d='M434.67 285.59v-29.8c0-98.73-80.24-178.79-179.2-178.79a179 179 0 00-140.14 67.36m-38.53 82v29.8C76.8 355 157 435 256 435a180.45 180.45 0 00140-66.92' stroke-linecap='round' stroke-linejoin='round' stroke-width='32'/><path stroke-linecap='round' stroke-linejoin='round' stroke-width='32' d='M32 256l44-44 46 44M480 256l-44 44-46-44'/></svg>
             </button>
         </form>
 
