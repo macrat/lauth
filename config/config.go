@@ -43,6 +43,9 @@ var (
 				{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
 			},
 		},
+		Metrics: MetricsConfig{
+			Path: "/metrics",
+		},
 		DisableClientAuth: false,
 		AllowImplicitFlow: false,
 	}
@@ -103,6 +106,24 @@ type ClientConfig map[string]struct {
 	RedirectURI PatternSet `yaml:"redirect_uri"`
 }
 
+type MetricsConfig struct {
+	Path     string `yaml:"path"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+func (c *MetricsConfig) Override(patch MetricsConfig) {
+	if patch.Path != "" {
+		(*c).Path = patch.Path
+	}
+	if patch.Username != "" {
+		(*c).Username = patch.Username
+	}
+	if patch.Password != "" {
+		(*c).Password = patch.Password
+	}
+}
+
 type LdapinConfig struct {
 	Issuer            *URL           `yaml:"issuer"`
 	Listen            *TCPAddr       `yaml:"listen"`
@@ -110,6 +131,7 @@ type LdapinConfig struct {
 	Endpoints         EndpointConfig `yaml:"endpoint"`
 	Scopes            ScopeConfig    `yaml:"scope"`
 	Clients           ClientConfig   `yaml:"client"`
+	Metrics           MetricsConfig  `yaml:"metrics"`
 	DisableClientAuth bool           `yaml:"disable_client_auth"`
 	AllowImplicitFlow bool           `yaml:"allow_implicit_flow"`
 }
@@ -136,6 +158,7 @@ func (c *LdapinConfig) Override(patch *LdapinConfig) {
 
 	(&c.TTL).Override(patch.TTL)
 	(&c.Endpoints).Override(patch.Endpoints)
+	(&c.Metrics).Override(patch.Metrics)
 
 	if patch.Scopes != nil {
 		(*c).Scopes = patch.Scopes

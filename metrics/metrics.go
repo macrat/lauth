@@ -91,6 +91,19 @@ func (c *Context) Close() error {
 	return nil
 }
 
-func Handler() http.Handler {
-	return promhttp.Handler()
+func Handler(username, password string) http.Handler {
+	handler := promhttp.Handler()
+	if username == "" {
+		return handler
+	} else {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			u, p, ok := r.BasicAuth()
+			if !ok || u != username || p != password {
+				w.Header().Set("WWW-Authenticate", "Basic realm=\"Prometheus Metrics\"")
+				w.WriteHeader(http.StatusUnauthorized)
+			} else {
+				handler.ServeHTTP(w, r)
+			}
+		})
+	}
 }

@@ -61,3 +61,8 @@ client:
       - http://*.example.com/**
 
 disable_client_auth: false
+
+metrics:
+  path: /metrics
+  username: prometheus-user
+  password: password for basic auth

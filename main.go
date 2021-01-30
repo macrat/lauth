@@ -48,6 +48,10 @@ var (
 	LoginPage = app.Flag("login-page", "Templte file for login page.").Envar("LDAPIN_LOGIN_PAGE").PlaceHolder("FILE").File()
 	ErrorPage = app.Flag("error-page", "Templte file for error page.").Envar("LDAPIN_ERROR_PAGE").PlaceHolder("FILE").File()
 
+	MetricsPath     = app.Flag("metrics-path", "Path to Prometheus metrics.").Envar("LDAPIN_METRICS_PATH").PlaceHolder(config.DefaultConfig.Metrics.Path).String()
+	MetricsUsername = app.Flag("metrics-username", "Basic auth username to access to Prometheus metrics. Disable auth if empty.").Envar("LDAPIN_METRICS_USERNAME").PlaceHolder("USERNAME").String()
+	MetricsPassword = app.Flag("metrics-password", "Basic auth password to access to Prometheus metrics. Disable auth if empty.").Envar("LDAPIN_METRICS_PASSWORD").PlaceHolder("PASSWORD").String()
+
 	Config  = app.Flag("config", "Load options from YAML file.").Envar("LDAPIN_CONFIG").PlaceHolder("FILE").File()
 	Verbose = app.Flag("verbose", "Enable debug mode.").Envar("LDAPIN_VERBOSE").Bool()
 )
@@ -134,6 +138,11 @@ func main() {
 			Userinfo: *UserinfoEndpoint,
 			Jwks:     *JwksEndpoint,
 		},
+		Metrics: config.MetricsConfig{
+			Path:     *MetricsPath,
+			Username: *MetricsUsername,
+			Password: *MetricsPassword,
+		},
 		DisableClientAuth: *DisableClientAuth,
 		AllowImplicitFlow: *AllowImplicitFlow,
 	})
@@ -144,6 +153,15 @@ func main() {
 	}
 	if *conf.TTL.Token <= 0 {
 		app.Fatalf("--token-ttl can't set 0 or less.")
+	}
+
+	if conf.Metrics.Path == "" {
+		app.Fatalf("--metrics-path can't set empty.")
+	}
+	if conf.Metrics.Username != "" && conf.Metrics.Password == "" {
+		app.Fatalf("--metrics-username is required when set --metrics-password.")
+	} else if conf.Metrics.Username == "" && conf.Metrics.Password != "" {
+		app.Fatalf("--metrics-password is required when set --metrics-username.")
 	}
 
 	fmt.Printf("OpenID Provider \"%s\" started on %s\n", conf.Issuer, addr)
@@ -213,7 +231,8 @@ func main() {
 		c.Header("Content-Security-Policy", "frame-ancestors 'none'")
 	})
 
-	router.GET("/metrics", gin.WrapH(metrics.Handler()))
+	router.GET(conf.Metrics.Path, gin.WrapH(metrics.Handler(conf.Metrics.Username, conf.Metrics.Password)))
+
 	api.SetRoutes(router)
 	api.SetErrorRoutes(router)
 
