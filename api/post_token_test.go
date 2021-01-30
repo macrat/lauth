@@ -474,7 +474,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 	})
 }
 
-func TestPostToken_PublicClients(t *testing.T) {
+func TestPostToken_AnonymousClients(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 	env.API.Config.DisableClientAuth = true
 

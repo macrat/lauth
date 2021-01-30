@@ -193,7 +193,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 	}
 }
 
-func TestGetAuthz_PublicClients(t *testing.T) {
+func TestGetAuthz_AnonymousClients(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 	env.API.Config.DisableClientAuth = true
 
