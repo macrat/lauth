@@ -322,6 +322,9 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 	report := metrics.StartPostToken()
 	defer report.Close()
 
+	c.Header("Cache-Control", "no-store")
+	c.Header("Pragma", "no-cache")
+
 	var req PostTokenRequest
 	if err := (&req).BindAndValidate(c, api.Config); err != nil {
 		c.JSON(http.StatusBadRequest, err)

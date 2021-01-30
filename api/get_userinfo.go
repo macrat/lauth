@@ -17,6 +17,9 @@ func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
 	report := metrics.StartUserinfo()
 	defer report.Close()
 
+	c.Header("Cache-Control", "no-store")
+	c.Header("Pragma", "no-cache")
+
 	var header GetUserInfoHeader
 	if err := c.ShouldBindHeader(&header); err != nil || !strings.HasPrefix(header.Authorization, "Bearer ") {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"bearer token is required\"")

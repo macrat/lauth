@@ -153,6 +153,9 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 			} else if req.MaxAge <= 0 || req.MaxAge > time.Now().Unix()-idToken.AuthTime {
 				report.Set("authn_by", "sso_token")
 
+				c.Header("Cache-Control", "no-store")
+				c.Header("Pragma", "no-cache")
+
 				redirect, errMsg := api.makeAuthzTokens(req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
 				if errMsg != nil {
 					errMsg.Report(report)

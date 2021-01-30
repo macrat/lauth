@@ -41,6 +41,9 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	report := metrics.StartPostAuthz()
 	defer report.Close()
 
+	c.Header("Cache-Control", "no-store")
+	c.Header("Pragma", "no-cache")
+
 	var req PostAuthzRequest
 	if err := (&req).BindAndValidate(c, api.Config); err != nil {
 		err.Redirect(c)
