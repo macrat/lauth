@@ -19,6 +19,8 @@ type GetAuthzRequest struct {
 	Nonce        string `form:"nonce"         json:"nonce"         xml:"nonce"`
 	Prompt       string `form:"prompt"        json:"prompt"        xml:"prompt"`
 	MaxAge       int64  `form:"max_age"       json:"max_age"       xml:"max_age"`
+	Request      string `form:"request"       json:"request"       xml:"request"`
+	RequestURI   string `form:"request_uri"   json:"request_uri"   xml:"request_uri"`
 }
 
 func (req *GetAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
@@ -86,6 +88,21 @@ func (req GetAuthzRequest) Validate(config *config.LdapinConfig) *ErrorMessage {
 			nil,
 			UnauthorizedClient,
 			"redirect_uri is not registered",
+		)
+	}
+
+	if req.Request != "" {
+		return req.makeRedirectError(
+			nil,
+			RequestNotSupported,
+			"",
+		)
+	}
+	if req.RequestURI != "" {
+		return req.makeRedirectError(
+			nil,
+			RequestURINotSupported,
+			"",
 		)
 	}
 

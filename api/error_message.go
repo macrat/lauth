@@ -15,12 +15,14 @@ var (
 	InvalidGrant            ErrorReason = "invalid_grant"
 	InvalidRequest          ErrorReason = "invalid_request"
 	InvalidScope            ErrorReason = "invalid_scope"
+	InvalidToken            ErrorReason = "invalid_token"
+	RequestNotSupported     ErrorReason = "request_not_supported"
+	RequestURINotSupported  ErrorReason = "request_uri_not_supported"
 	ServerError             ErrorReason = "server_error"
 	TemporarilyUnavailable  ErrorReason = "temporarily_unavailable"
 	UnauthorizedClient      ErrorReason = "unauthorized_client"
 	UnsupportedGrantType    ErrorReason = "unsupported_grant_type"
 	UnsupportedResponseType ErrorReason = "unsupported_response_type"
-	InvalidToken            ErrorReason = "invalid_token"
 )
 
 type ErrorReason string

@@ -113,6 +113,32 @@ var (
 				"error_description": {"implicit/hybrid flow is disallowed in this server"},
 			},
 		},
+		{
+			Request: url.Values{
+				"redirect_uri": {"http://some-client.example.com/callback"},
+				"client_id":    {"some_client_id"},
+				"request":      {"request-jwt"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error": {"request_not_supported"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Request: url.Values{
+				"redirect_uri": {"http://some-client.example.com/callback"},
+				"client_id":    {"some_client_id"},
+				"request_uri":  {"http://some-client.example.com/request.jwt"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error": {"request_uri_not_supported"},
+			},
+			Fragment: url.Values{},
+		},
 	}
 )
 
