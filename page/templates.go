@@ -7,12 +7,13 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/macrat/ldapin/config"
 	"github.com/rakyll/statik/fs"
 
 	_ "github.com/macrat/ldapin/page/statik"
 )
 
-func Load(loginPage, errorPage *os.File) (*template.Template, error) {
+func Load(conf config.TemplateConfig) (*template.Template, error) {
 	statikFs, err := fs.New()
 	if err != nil {
 		return nil, err
@@ -42,8 +43,8 @@ func Load(loginPage, errorPage *os.File) (*template.Template, error) {
 		return nil, err
 	}
 
-	if loginPage != nil {
-		raw, err := ioutil.ReadAll(loginPage)
+	if conf.LoginPage != "" {
+		raw, err := ioutil.ReadFile(conf.LoginPage)
 		if err != nil {
 			return nil, err
 		}
@@ -53,8 +54,8 @@ func Load(loginPage, errorPage *os.File) (*template.Template, error) {
 		}
 	}
 
-	if errorPage != nil {
-		raw, err := ioutil.ReadAll(errorPage)
+	if conf.ErrorPage != "" {
+		raw, err := ioutil.ReadFile(conf.ErrorPage)
 		if err != nil {
 			return nil, err
 		}

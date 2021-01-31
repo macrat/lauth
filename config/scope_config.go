@@ -1,7 +1,5 @@
 package config
 
-type ScopeConfig map[string][]ClaimConfig
-
 func (sc ScopeConfig) ScopeNames() []string {
 	var ss []string
 	for scope := range sc {

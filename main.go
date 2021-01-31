@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net"
+	"log"
 	"net/http"
-	"net/url"
 	"os"
+	"time"
 
-	"github.com/alecthomas/kingpin"
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/api"
 	"github.com/macrat/ldapin/config"
@@ -15,166 +14,20 @@ import (
 	"github.com/macrat/ldapin/metrics"
 	"github.com/macrat/ldapin/page"
 	"github.com/macrat/ldapin/token"
+	"github.com/spf13/cobra"
 )
 
-var (
-	app = kingpin.New("ldapin", "The simple OpenID Provider for LDAP like an ActiveDirectory.")
-
-	Issuer  = app.Flag("issuer", "Issuer URL.").Envar("LDAPIN_ISSUER").PlaceHolder(config.DefaultConfig.Issuer.String()).URL()
-	Listen  = app.Flag("listen", "Listen address and port. In default, use the same port as the Issuer URL.").Envar("LDAPIN_LISTEN").TCP()
-	SignKey = app.Flag("sign-key", "RSA private key for signing to token. If omit this, automate generate key for one time use.").Envar("LDAPIN_SIGN_KEY").PlaceHolder("FILE").File()
-
-	AllowImplicitFlow = app.Flag("allow-implicit-flow", "Allow implicit/hybrid flow. It's may use for the SPA site or native application.").Envar("LDAPIN_ALLOW_IMPLICIT_FLOW").Bool()
-	DisableClientAuth = app.Flag("disable-client-auth", "Allow use token endpoint without client authentication.").Envar("LDAPIN_DISABLE_CLIENT_AUTH").Bool()
-
-	TLSCertFile = app.Flag("tls-cert", "Cert file for TLS encryption.").Envar("LDAPIN_TLS_CERT").PlaceHolder("FILE").ExistingFile()
-	TLSKeyFile  = app.Flag("tls-key", "Key file for TLS encryption.").Envar("LDAPIN_TLS_KEY").PlaceHolder("FILE").ExistingFile()
-
-	AuthzEndpoint    = app.Flag("authz-endpoint", "Path to authorization endpoint.").Envar("LDAPIN_AUTHz_ENDPOINT").PlaceHolder(config.DefaultConfig.Endpoints.Authz).String()
-	TokenEndpoint    = app.Flag("token-endpoint", "Path to token endpoint.").Envar("LDAPIN_TOKEN_ENDPOINT").PlaceHolder(config.DefaultConfig.Endpoints.Token).String()
-	UserinfoEndpoint = app.Flag("userinfo-endpoint", "Path to userinfo endpoint.").Envar("LDAPIN_USERINFO_ENDPOINT").PlaceHolder(config.DefaultConfig.Endpoints.Userinfo).String()
-	JwksEndpoint     = app.Flag("jwks-uri", "Path to jwks uri.").Envar("LDAPIN_JWKS_URI").PlaceHolder(config.DefaultConfig.Endpoints.Jwks).String()
-
-	LoginTTL   = app.Flag("login-ttl", "Time limit to input username and password on the login page.").Envar("LDAPIN_LOGIN_TTL").PlaceHolder("1h").String()
-	CodeTTL    = app.Flag("code-ttl", "TTL for code.").Envar("LDAPIN_CODE_TTL").PlaceHolder("5m").String()
-	TokenTTL   = app.Flag("token-ttl", "TTL for access_token and id_token.").Envar("LDAPIN_TOKEN_TTL").PlaceHolder("1d").String()
-	RefreshTTL = app.Flag("refresh-ttl", "TTL for refresh_token. If set 0, refresh_token will not create.").Envar("LDAPIN_REFRESH_TTL").PlaceHolder("7d").String()
-	SSOTTL     = app.Flag("sso-ttl", "TTL for single sign-on. If set 0, always ask the username and password to the end-user.").Envar("LDAPIN_SSO_TTL").PlaceHolder("14d").String()
-
-	LdapAddress     = app.Flag("ldap", "URL of LDAP server like \"ldap://USER_DN:PASSWORD@ldap.example.com\".").Envar("LDAP_ADDRESS").PlaceHolder("ADDRESS").Required().URL()
-	LdapBaseDN      = app.Flag("ldap-base-dn", "The base DN for search user account in LDAP like \"OU=somewhere,DC=example,DC=local\".").Envar("LDAP_BASE_DN").PlaceHolder("DN").Required().String() // TODO: make it automate set same OU as bind user if omit.
-	LdapIDAttribute = app.Flag("ldap-id-attribute", "ID attribute name in LDAP.").Envar("LDAP_ID_ATTRIBUTE").Default("sAMAccountName").String()
-	LdapDisableTLS  = app.Flag("ldap-disable-tls", "Disable use TLS when connecting to the LDAP server. THIS IS INSECURE.").Envar("LDAP_DISABLE_TLS").Bool()
-
-	LoginPage = app.Flag("login-page", "Templte file for login page.").Envar("LDAPIN_LOGIN_PAGE").PlaceHolder("FILE").File()
-	ErrorPage = app.Flag("error-page", "Templte file for error page.").Envar("LDAPIN_ERROR_PAGE").PlaceHolder("FILE").File()
-
-	MetricsPath     = app.Flag("metrics-path", "Path to Prometheus metrics.").Envar("LDAPIN_METRICS_PATH").PlaceHolder(config.DefaultConfig.Metrics.Path).String()
-	MetricsUsername = app.Flag("metrics-username", "Basic auth username to access to Prometheus metrics. Disable auth if empty.").Envar("LDAPIN_METRICS_USERNAME").PlaceHolder("USERNAME").String()
-	MetricsPassword = app.Flag("metrics-password", "Basic auth password to access to Prometheus metrics. Disable auth if empty.").Envar("LDAPIN_METRICS_PASSWORD").PlaceHolder("PASSWORD").String()
-
-	Config  = app.Flag("config", "Load options from YAML file.").Envar("LDAPIN_CONFIG").PlaceHolder("FILE").File()
-	Verbose = app.Flag("verbose", "Enable debug mode.").Envar("LDAPIN_VERBOSE").Bool()
-)
-
-func DecideListenAddress(issuer *url.URL, listen *net.TCPAddr) string {
-	if listen != nil {
-		return listen.String()
-	}
-
-	if issuer.Port() != "" {
-		return fmt.Sprintf(":%s", issuer.Port())
-	}
-
-	if issuer.Scheme == "https" {
-		return ":443"
-	}
-	return ":80"
-}
-
-func main() {
-	kingpin.MustParse(app.Parse(os.Args[1:]))
-
-	var loginExpiresIn, codeExpiresIn, tokenExpiresIn, refreshExpiresIn, ssoExpiresIn *config.Duration
-	var err error
-	if *LoginTTL != "" {
-		loginExpiresIn, err = config.ParseDuration(*LoginTTL)
-		app.FatalIfError(err, "--login-ttl")
-	}
-	if *CodeTTL != "" {
-		codeExpiresIn, err = config.ParseDuration(*CodeTTL)
-		app.FatalIfError(err, "--code-ttl")
-	}
-	if *TokenTTL != "" {
-		tokenExpiresIn, err = config.ParseDuration(*TokenTTL)
-		app.FatalIfError(err, "--token-ttl")
-	}
-	if *RefreshTTL != "" {
-		refreshExpiresIn, err = config.ParseDuration(*RefreshTTL)
-		app.FatalIfError(err, "--refresh-ttl")
-	}
-	if *SSOTTL != "" {
-		ssoExpiresIn, err = config.ParseDuration(*SSOTTL)
-		app.FatalIfError(err, "--sso-ttl")
-	}
-
-	if *TLSCertFile != "" && *TLSKeyFile == "" {
-		app.Fatalf("--tls-key is required when set --tls-cert")
-	} else if *TLSCertFile == "" && *TLSKeyFile != "" {
-		app.Fatalf("--tls-cert is required when set --tls-key")
-	}
-	if *TLSCertFile != "" && *TLSKeyFile != "" && (*Issuer).Scheme != "https" {
-		app.Fatalf("Please set https URL for --issuer when use TLS.")
-	}
-
-	if *Verbose {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
+func serve(conf *config.Config) {
 	router := gin.Default()
 
-	ldapUser := (*LdapAddress).User.Username()
-	ldapPassword, _ := (*LdapAddress).User.Password()
-	if ldapUser == "" && ldapPassword == "" {
-		app.Fatalf("--ldap is must be has user and password information.")
-		return
-	}
-
-	conf := config.DefaultConfig
-	if *Config != nil {
-		loaded, err := config.LoadConfig(*Config)
-		app.FatalIfError(err, "failed to load config file")
-		conf.Override(loaded)
-	}
-	conf.Override(&config.LdapinConfig{
-		Issuer: (*config.URL)(*Issuer),
-		Listen: (*config.TCPAddr)(*Listen),
-		TTL: config.TTLConfig{
-			Login:   loginExpiresIn,
-			Code:    codeExpiresIn,
-			Token:   tokenExpiresIn,
-			Refresh: refreshExpiresIn,
-			SSO:     ssoExpiresIn,
-		},
-		Endpoints: config.EndpointConfig{
-			Authz:    *AuthzEndpoint,
-			Token:    *TokenEndpoint,
-			Userinfo: *UserinfoEndpoint,
-			Jwks:     *JwksEndpoint,
-		},
-		Metrics: config.MetricsConfig{
-			Path:     *MetricsPath,
-			Username: *MetricsUsername,
-			Password: *MetricsPassword,
-		},
-		DisableClientAuth: *DisableClientAuth,
-		AllowImplicitFlow: *AllowImplicitFlow,
-	})
-	addr := DecideListenAddress((*url.URL)(conf.Issuer), (*net.TCPAddr)(conf.Listen))
-
-	if *conf.TTL.Login <= 0 {
-		app.Fatalf("--login-ttl can't set 0 or less.")
-	}
-	if *conf.TTL.Code <= 0 {
-		app.Fatalf("--code-ttl can't set 0 or less.")
-	}
-	if *conf.TTL.Token <= 0 {
-		app.Fatalf("--token-ttl can't set 0 or less.")
-	}
-
-	if conf.Metrics.Path == "" {
-		app.Fatalf("--metrics-path can't set empty.")
-	}
-	if conf.Metrics.Username != "" && conf.Metrics.Password == "" {
-		app.Fatalf("--metrics-username is required when set --metrics-password.")
-	} else if conf.Metrics.Username == "" && conf.Metrics.Password != "" {
-		app.Fatalf("--metrics-password is required when set --metrics-username.")
-	}
-
-	fmt.Printf("OpenID Provider \"%s\" started on %s\n", conf.Issuer, addr)
+	fmt.Printf("OpenID Provider \"%s\" started on %s\n", conf.Issuer, conf.Listen)
 	fmt.Println()
+
+	if debug {
+		fmt.Fprintln(os.Stderr, "WARNING  Debug mode is enabled.")
+		fmt.Fprintln(os.Stderr, "         Logs will include credentials or sensitive data.")
+		fmt.Fprintln(os.Stderr, "")
+	}
 
 	if conf.Issuer.Scheme == "http" {
 		fmt.Fprintln(os.Stderr, "DANGER  Serve OAuth2/OpenID service over no encrypted HTTP.")
@@ -184,7 +37,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "")
 	}
 
-	if (*LdapAddress).Scheme == "ldap" && *LdapDisableTLS {
+	if conf.LDAP.Server.Scheme == "ldap" && conf.LDAP.DisableTLS {
 		fmt.Fprintln(os.Stderr, "DANGER  Communication with LDAP server won't encryption.")
 		fmt.Fprintln(os.Stderr, "        An attacker in your network can peek at user credentials or profile.")
 		fmt.Fprintln(os.Stderr, "        Please consider removing --ldap-disable-tls option.")
@@ -205,24 +58,39 @@ func main() {
 		fmt.Fprintln(os.Stderr, "")
 	}
 
-	connector := ldap.SimpleConnector{
-		ServerURL:   *LdapAddress,
-		User:        ldapUser,
-		Password:    ldapPassword,
-		IDAttribute: *LdapIDAttribute,
-		BaseDN:      *LdapBaseDN,
-		DisableTLS:  *LdapDisableTLS,
+	if debug {
+		fmt.Println("---")
+		confYAML, _ := conf.AsYAML()
+		fmt.Print(confYAML)
+		fmt.Println("---")
 	}
-	_, err = connector.Connect()
-	app.FatalIfError(err, "failed to connect LDAP server")
 
 	var tokenManager token.Manager
-	if *SignKey != nil {
-		tokenManager, err = token.NewManagerFromFile(*SignKey)
-		app.FatalIfError(err, "failed to read private key for sign")
+	if conf.SignKey != "" {
+		f, err := os.Open(conf.SignKey)
+		if err != nil {
+			log.Fatalf("failed to open sign key: %s", err)
+		}
+
+		tokenManager, err = token.NewManagerFromFile(f)
+		if err != nil {
+			log.Fatalf("failed to read sign key: %s", err)
+		}
 	} else {
+		var err error
+
 		tokenManager, err = token.GenerateManager()
-		app.FatalIfError(err, "failed to generate private key for sign")
+		if err != nil {
+			log.Fatalf("failed to generate private key for sign: %s", err)
+		}
+	}
+
+	connector := ldap.SimpleConnector{
+		Config: &conf.LDAP,
+	}
+	_, err := connector.Connect()
+	if err != nil {
+		log.Fatalf("failed to connect LDAP server: %s", err)
 	}
 
 	api := &api.LdapinAPI{
@@ -231,8 +99,10 @@ func main() {
 		Config:       conf,
 	}
 
-	tmpl, err := page.Load(*LoginPage, *ErrorPage)
-	app.FatalIfError(err, "failed to load template")
+	tmpl, err := page.Load(conf.Templates)
+	if err != nil {
+		log.Fatalf("failed to load template: %s", err)
+	}
 	router.SetHTMLTemplate(tmpl)
 
 	router.Use(func(c *gin.Context) {
@@ -246,14 +116,96 @@ func main() {
 	api.SetErrorRoutes(router)
 
 	server := &http.Server{
-		Addr:    addr,
+		Addr:    conf.Listen.String(),
 		Handler: metrics.Middleware(HTTPCompressor(router)),
 	}
-	if *TLSCertFile != "" {
-		err = server.ListenAndServeTLS(*TLSCertFile, *TLSKeyFile)
-		app.FatalIfError(err, "failed to start server")
+	if conf.TLS.Cert != "" {
+		err = server.ListenAndServeTLS(conf.TLS.Cert, conf.TLS.Key)
 	} else {
 		err = server.ListenAndServe()
-		app.FatalIfError(err, "failed to start server")
+	}
+	if err != nil {
+		log.Fatalf("failed to start server: %s", err)
+	}
+}
+
+var (
+	configFile = ""
+	debug      = false
+	conf       = &config.Config{}
+	cmd        = &cobra.Command{
+		Use:   "ldapin",
+		Short: "The simple OpenID Provider for LDAP like an ActiveDirectory.",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			err := conf.Load(configFile, cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			return conf.Validate()
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			if debug {
+				gin.SetMode(gin.DebugMode)
+			} else {
+				gin.SetMode(gin.ReleaseMode)
+			}
+
+			serve(conf)
+		},
+	}
+)
+
+func init() {
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.VarP(&config.URL{Scheme: "http", Host: "localhost:8000"}, "issuer", "i", "Issuer URL.")
+	flags.Var(&config.TCPAddr{}, "listen", "Listen address and port. In default, use the same port as the Issuer URL.")
+	flags.StringP("sign-key", "s", "", "RSA private key for signing to token. If omit this, automate generate key for one time use.")
+
+	flags.Bool("allow-implicit-flow", false, "Allow implicit/hybrid flow. It's may use for the SPA site or native application.")
+	flags.Bool("disable-client-auth", false, "Allow use token endpoint without client authentication.")
+
+	flags.String("tls-cert", "", "Cert file for TLS encryption.")
+	flags.String("tls-key", "", "Key file for TLS encryption.")
+
+	flags.String("authz-endpoint", "/login", "Path to authorization endpoint.")
+	flags.String("token-endpoint", "/login/token", "Path to token endpoint.")
+	flags.String("userinfo-endpoint", "/login/userinfo", "Path to userinfo endpoint.")
+	flags.String("jwks-uri", "/login/jwks", "Path to jwks uri.")
+
+	loginExpire := config.Duration(1 * time.Hour)
+	flags.Var(&loginExpire, "login-expire", "Time limit to input username and password on the login page.")
+	codeExpire := config.Duration(5 * time.Minute)
+	flags.Var(&codeExpire, "code-expire", "Expiration for code.")
+	tokenExpire := config.Duration(24 * time.Hour)
+	flags.Var(&tokenExpire, "token-expire", "Expiration for access_token and id_token.")
+	refreshExpire := config.Duration(7 * 24 * time.Hour)
+	flags.Var(&refreshExpire, "refresh-expire", "Expiration for refresh_token. If set 0, refresh_token will not create.")
+	ssoExpire := config.Duration(14 * 24 * time.Hour)
+	flags.Var(&ssoExpire, "sso-expire", "Expiration for single sign-on. If set 0, always ask the username and password to the end-user.")
+
+	flags.VarP(&config.URL{}, "ldap", "l", "URL of LDAP server. You can include user credentials like \"ldap://USER_DN:PASSWORD@ldap.example.com\".")
+	flags.String("ldap-user", "", "User DN for connecting to LDAP. You can use \"DOMAIN\\username\" style if using ActiveDirectory.")
+	flags.String("ldap-password", "", "Password for connecting to LDAP.")
+	flags.String("ldap-base-dn", "", "The base DN for search user account in LDAP like \"OU=somewhere,DC=example,DC=local\".")
+	flags.String("ldap-id-attribute", "sAMAccountName", "ID attribute name in LDAP.")
+	flags.Bool("ldap-disable-tls", false, "Disable use TLS when connecting to the LDAP server. THIS IS INSECURE.")
+
+	flags.String("login-page", "", "Templte file for login page.")
+	flags.String("error-page", "", "Templte file for error page.")
+
+	flags.String("metrics-path", "/metrics", "Path to Prometheus metrics.")
+	flags.String("metrics-username", "", "Basic auth username to access to Prometheus metrics. If omit, disable authentication.")
+	flags.String("metrics-password", "", "Basic auth password to access to Prometheus metrics. If omit, disable authentication.")
+
+	flags.StringVarP(&configFile, "config", "c", "", "Load options from YAML file.")
+	flags.BoolVar(&debug, "debug", false, "Enable debug output. This is insecure for production use.")
+}
+
+func main() {
+	if cmd.Execute() != nil {
+		os.Exit(1)
 	}
 }

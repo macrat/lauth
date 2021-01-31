@@ -35,7 +35,7 @@ func (req *PostTokenRequest) Bind(c *gin.Context) *ErrorMessage {
 	return nil
 }
 
-func (req PostTokenRequest) Validate(conf *config.LdapinConfig) *ErrorMessage {
+func (req PostTokenRequest) Validate(conf *config.Config) *ErrorMessage {
 	switch req.GrantType {
 	case "authorization_code":
 		if req.Code == "" {
@@ -120,7 +120,7 @@ func (req PostTokenRequest) Validate(conf *config.LdapinConfig) *ErrorMessage {
 	return nil
 }
 
-func (req *PostTokenRequest) BindAndValidate(c *gin.Context, conf *config.LdapinConfig) *ErrorMessage {
+func (req *PostTokenRequest) BindAndValidate(c *gin.Context, conf *config.Config) *ErrorMessage {
 	if err := req.Bind(c); err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 		code.Subject,
 		scope.String(),
 		time.Unix(code.AuthTime, 0),
-		time.Duration(*api.Config.TTL.Token),
+		time.Duration(api.Config.Expire.Token),
 	)
 	if err != nil {
 		return nil, &ErrorMessage{
@@ -200,7 +200,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 			accessToken,
 			userinfo,
 			time.Unix(code.AuthTime, 0),
-			time.Duration(*api.Config.TTL.Token),
+			time.Duration(api.Config.Expire.Token),
 		)
 		if err != nil {
 			return nil, &ErrorMessage{
@@ -212,7 +212,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 	}
 
 	refreshToken := ""
-	if *api.Config.TTL.Refresh > 0 {
+	if api.Config.Expire.Refresh > 0 {
 		refreshToken, err = api.TokenManager.CreateRefreshToken(
 			api.Config.Issuer,
 			code.Subject,
@@ -220,7 +220,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 			code.Scope,
 			code.Nonce,
 			time.Unix(code.AuthTime, 0),
-			time.Duration(*api.Config.TTL.Refresh),
+			time.Duration(api.Config.Expire.Refresh),
 		)
 		if err != nil {
 			return nil, &ErrorMessage{
@@ -235,7 +235,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 		TokenType:    "Bearer",
 		AccessToken:  accessToken,
 		IDToken:      idToken,
-		ExpiresIn:    api.Config.TTL.Token.IntSeconds(),
+		ExpiresIn:    api.Config.Expire.Token.IntSeconds(),
 		Scope:        code.Scope,
 		RefreshToken: refreshToken,
 	}, nil
@@ -267,7 +267,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 		refreshToken.Subject,
 		refreshToken.Scope,
 		time.Unix(refreshToken.AuthTime, 0),
-		time.Duration(*api.Config.TTL.Token),
+		time.Duration(api.Config.Expire.Token),
 	)
 	if err != nil {
 		return nil, &ErrorMessage{
@@ -298,7 +298,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 			accessToken,
 			userinfo,
 			time.Unix(refreshToken.AuthTime, 0),
-			time.Duration(*api.Config.TTL.Token),
+			time.Duration(api.Config.Expire.Token),
 		)
 		if err != nil {
 			return nil, &ErrorMessage{
@@ -313,7 +313,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 		TokenType:   "Bearer",
 		AccessToken: accessToken,
 		IDToken:     idToken,
-		ExpiresIn:   api.Config.TTL.Token.IntSeconds(),
+		ExpiresIn:   api.Config.Expire.Token.IntSeconds(),
 		Scope:       refreshToken.Scope,
 	}, nil
 }

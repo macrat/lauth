@@ -31,7 +31,7 @@ func (req *PostAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
 	return nil
 }
 
-func (req *PostAuthzRequest) BindAndValidate(c *gin.Context, config *config.LdapinConfig) *ErrorMessage {
+func (req *PostAuthzRequest) BindAndValidate(c *gin.Context, config *config.Config) *ErrorMessage {
 	if err := req.Bind(c); err != nil {
 		return err
 	}
@@ -109,19 +109,19 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 		return
 	}
 
-	if *api.Config.TTL.SSO > 0 {
+	if api.Config.Expire.SSO > 0 {
 		ssoToken, err := api.TokenManager.CreateSSOToken(
 			api.Config.Issuer,
 			req.User,
 			time.Now(),
-			time.Duration(*api.Config.TTL.SSO),
+			time.Duration(api.Config.Expire.SSO),
 		)
 		if err == nil {
 			secure := api.Config.Issuer.Scheme == "https"
 			c.SetCookie(
 				"token",
 				ssoToken,
-				int(api.Config.TTL.SSO.IntSeconds()),
+				int(api.Config.Expire.SSO.IntSeconds()),
 				"/",
 				(*url.URL)(api.Config.Issuer).Hostname(),
 				secure,

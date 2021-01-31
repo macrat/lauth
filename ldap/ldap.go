@@ -4,9 +4,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"net/url"
 
-	"github.com/go-ldap/ldap"
+	"github.com/go-ldap/ldap/v3"
+	"github.com/macrat/ldapin/config"
 )
 
 var (
@@ -26,27 +26,22 @@ type Session interface {
 }
 
 type SimpleConnector struct {
-	ServerURL   *url.URL
-	User        string
-	Password    string
-	IDAttribute string
-	BaseDN      string
-	DisableTLS  bool
+	Config *config.LDAPConfig
 }
 
 func (c SimpleConnector) Connect() (Session, error) {
-	conn, err := ldap.DialURL(c.ServerURL.String())
+	conn, err := ldap.DialURL(c.Config.Server.String())
 	if err != nil {
 		return nil, err
 	}
 
-	err = conn.Bind(c.User, c.Password)
+	err = conn.Bind(c.Config.User, c.Config.Password)
 	if err != nil {
 		conn.Close()
 		return nil, err
 	}
 
-	if c.ServerURL.Scheme != "ldaps" && !c.DisableTLS {
+	if c.Config.Server.Scheme != "ldaps" && !c.Config.DisableTLS {
 		err = conn.StartTLS(&tls.Config{InsecureSkipVerify: true})
 		if err != nil {
 			conn.Close()
@@ -56,8 +51,8 @@ func (c SimpleConnector) Connect() (Session, error) {
 
 	return &SimpleSession{
 		conn:        conn,
-		IDAttribute: c.IDAttribute,
-		BaseDN:      c.BaseDN,
+		IDAttribute: c.Config.IDAttribute,
+		BaseDN:      c.Config.BaseDN,
 	}, nil
 }
 

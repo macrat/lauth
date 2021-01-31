@@ -23,7 +23,7 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 			req.Scope,
 			req.Nonce,
 			authTime,
-			time.Duration(*api.Config.TTL.Code),
+			time.Duration(api.Config.Expire.Code),
 		)
 		if err != nil {
 			return nil, req.makeRedirectError(err, ServerError, "failed to generate code")
@@ -36,7 +36,7 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 			subject,
 			req.Scope,
 			authTime,
-			time.Duration(*api.Config.TTL.Token),
+			time.Duration(api.Config.Expire.Token),
 		)
 		if err != nil {
 			return nil, req.makeRedirectError(err, ServerError, "failed to generate access_token")
@@ -44,7 +44,7 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 		resp.Set("token_type", "Bearer")
 		resp.Set("access_token", token)
 		resp.Set("scope", req.Scope)
-		resp.Set("expires_in", api.Config.TTL.Token.StrSeconds())
+		resp.Set("expires_in", api.Config.Expire.Token.StrSeconds())
 	}
 	if rt.Has("id_token") {
 		scope := ParseStringSet(req.Scope)
@@ -62,13 +62,13 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 			resp.Get("access_token"),
 			userinfo,
 			authTime,
-			time.Duration(*api.Config.TTL.Token),
+			time.Duration(api.Config.Expire.Token),
 		)
 		if err != nil {
 			return nil, req.makeRedirectError(err, ServerError, "failed to generate id_token")
 		}
 		resp.Set("id_token", token)
-		resp.Set("expires_in", api.Config.TTL.Token.StrSeconds())
+		resp.Set("expires_in", api.Config.Expire.Token.StrSeconds())
 	}
 
 	redirectURI, _ := url.Parse(req.RedirectURI)
@@ -85,6 +85,6 @@ func (api LdapinAPI) MakeLoginSession(clientIP, clientID string) (string, error)
 		api.Config.Issuer,
 		clientIP,
 		clientID,
-		time.Duration(*api.Config.TTL.Login),
+		time.Duration(api.Config.Expire.Login),
 	)
 }

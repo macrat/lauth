@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -10,34 +9,28 @@ import (
 	"github.com/macrat/ldapin/config"
 )
 
-func TestConfig_Override(t *testing.T) {
-	conf := &config.LdapinConfig{}
-
-	if !reflect.DeepEqual(conf, &config.LdapinConfig{}) {
-		t.Errorf("expected empty but got %#v", conf)
+func TestTakeOptions(t *testing.T) {
+	type Child struct {
+		Hello string `yaml:"hello"                flag:"child-hello"`
+		World int    `yaml:"world_conf,omitempty" flag:"child-world"`
+	}
+	type Config struct {
+		Child     Child  `yaml:"child"`
+		Parent    string `yaml:"parent"     flag:"parent-flag"`
+		NoInclude string `yaml:"no_include"`
 	}
 
-	conf.Override(&config.LdapinConfig{
-		TTL: config.TTLConfig{
-			Code: config.NewDuration(42 * time.Minute),
-		},
-	})
-	if !reflect.DeepEqual(conf, &config.LdapinConfig{TTL: config.TTLConfig{Code: config.NewDuration(42 * time.Minute)}}) {
-		t.Errorf("expected set code ttl but got %#v", conf)
+	result := map[string]string{}
+	config.TakeOptions("", reflect.TypeOf(Config{}), result)
+
+	expect := map[string]string{
+		"child.hello":      "child-hello",
+		"child.world_conf": "child-world",
+		"parent":           "parent-flag",
 	}
 
-	conf.Override(&config.LdapinConfig{
-		TTL: config.TTLConfig{
-			Code: config.NewDuration(0 * time.Minute),
-		},
-	})
-	if !reflect.DeepEqual(conf, &config.LdapinConfig{TTL: config.TTLConfig{Code: config.NewDuration(0 * time.Minute)}}) {
-		t.Errorf("expected set code ttl but got %#v", conf)
-	}
-
-	conf.Override(config.DefaultConfig)
-	if !reflect.DeepEqual(conf, config.DefaultConfig) {
-		t.Errorf("expected equals default config but got %#v", conf)
+	if !reflect.DeepEqual(result, expect) {
+		t.Errorf("unexpected options:\nexpected: %#v\n but got: %#v", expect, result)
 	}
 }
 
@@ -46,12 +39,16 @@ func TestLoadConfig(t *testing.T) {
 issuer: http://example.com:1234
 listen: ":4200"
 
-ttl:
+expire:
   code: 5m
   token: 42d
+
+ldap:
+  server: ldap://someone:secure@ldap.example.com
 `)
-	conf, err := config.LoadConfig(raw)
-	if err != nil {
+	conf := &config.Config{}
+
+	if err := conf.ReadFrom(raw); err != nil {
 		t.Fatalf("failed to load config: %s", err)
 	}
 
@@ -63,29 +60,55 @@ ttl:
 		t.Errorf("unexpected listen address: %s", conf.Listen)
 	}
 
-	if time.Duration(*conf.TTL.Code) != 5*time.Minute {
-		t.Errorf("unexpected code TTL: %d", conf.TTL.Code)
+	if time.Duration(conf.Expire.Code) != 5*time.Minute {
+		t.Errorf("unexpected code Expire: %d", conf.Expire.Code)
 	}
 
-	if time.Duration(*conf.TTL.Token) != 42*24*time.Hour {
-		t.Errorf("unexpected token TTL: %d", conf.TTL.Token)
+	if time.Duration(conf.Expire.Token) != 42*24*time.Hour {
+		t.Errorf("unexpected token Expire: %d", conf.Expire.Token)
+	}
+
+	if !reflect.DeepEqual(conf.Scopes, config.DefaultScopes) {
+		t.Errorf("unexpected scopes: %#v", conf.Scopes)
+	}
+
+	if conf.LDAP.User != "someone" {
+		t.Errorf("unexpected LDAP user: %s", conf.LDAP.User)
+	}
+
+	if conf.LDAP.Password != "secure" {
+		t.Errorf("unexpected LDAP password: %s", conf.LDAP.Password)
+	}
+
+	raw = strings.NewReader(`
+ldap:
+  server: ldap://someone:secure@ldap.example.com
+  user: anotherone
+  password: secret
+`)
+	if err := conf.ReadFrom(raw); err != nil {
+		t.Fatalf("failed to load config: %s", err)
+	}
+
+	if conf.LDAP.User != "anotherone" {
+		t.Errorf("unexpected LDAP user: %s", conf.LDAP.User)
+	}
+
+	if conf.LDAP.Password != "secret" {
+		t.Errorf("unexpected LDAP password: %s", conf.LDAP.Password)
 	}
 }
 
 func TestConfigExampleLoadable(t *testing.T) {
-	f, err := os.Open("../config.example.yml")
-	if err != nil {
-		t.Fatalf("failed to open example config: %s", err)
-	}
+	conf := &config.Config{}
 
-	_, err = config.LoadConfig(f)
-	if err != nil {
+	if err := conf.Load("../config.example.yml", nil); err != nil {
 		t.Errorf("failed to load example config: %s", err)
 	}
 }
 
-func TestLdapinConfig_EndpointPaths(t *testing.T) {
-	conf := config.LdapinConfig{
+func TestConfig_EndpointPaths(t *testing.T) {
+	conf := config.Config{
 		Issuer: &config.URL{Scheme: "https", Host: "test.example.com", Path: "/path/to"},
 		Endpoints: config.EndpointConfig{
 			Authz:    "/login",
@@ -118,8 +141,8 @@ func TestLdapinConfig_EndpointPaths(t *testing.T) {
 	}
 }
 
-func TestLdapinConfig_OpenIDConfiguration(t *testing.T) {
-	conf := config.LdapinConfig{
+func TestConfig_OpenIDConfiguration(t *testing.T) {
+	conf := config.Config{
 		Issuer: &config.URL{Scheme: "https", Host: "test.example.com", Path: "/path/to"},
 		Endpoints: config.EndpointConfig{
 			Authz:    "/login",

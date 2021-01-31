@@ -1,109 +1,61 @@
 package config
 
 import (
+	"encoding"
+	"errors"
+	"fmt"
 	"io"
-	"io/ioutil"
+	"net/url"
 	"path"
-	"time"
+	"reflect"
+	"strings"
 
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
 var (
-	DefaultConfig = &LdapinConfig{
-		Issuer: &URL{
-			Scheme: "http",
-			Host:   "localhost:8000",
+	DefaultScopes = ScopeConfig{
+		"profile": []ClaimConfig{
+			{Claim: "name", Attribute: "displayName", Type: "string"},
+			{Claim: "given_name", Attribute: "givenName", Type: "string"},
+			{Claim: "family_name", Attribute: "sn", Type: "string"},
 		},
-		TTL: TTLConfig{
-			Login:   NewDuration(1 * time.Hour),
-			Code:    NewDuration(5 * time.Minute),
-			Token:   NewDuration(1 * 24 * time.Hour),
-			Refresh: NewDuration(7 * 24 * time.Hour),
-			SSO:     NewDuration(14 * 24 * time.Hour),
+		"email": []ClaimConfig{
+			{Claim: "email", Attribute: "mail", Type: "string"},
 		},
-		Endpoints: EndpointConfig{
-			Authz:    "/login",
-			Token:    "/login/token",
-			Userinfo: "/login/userinfo",
-			Jwks:     "/login/jwks",
+		"phone": []ClaimConfig{
+			{Claim: "phone_number", Attribute: "telephoneNumber", Type: "string"},
 		},
-		Scopes: ScopeConfig{
-			"profile": []ClaimConfig{
-				{Claim: "name", Attribute: "displayName", Type: "string"},
-				{Claim: "given_name", Attribute: "givenName", Type: "string"},
-				{Claim: "family_name", Attribute: "sn", Type: "string"},
-			},
-			"email": []ClaimConfig{
-				{Claim: "email", Attribute: "mail", Type: "string"},
-			},
-			"phone": []ClaimConfig{
-				{Claim: "phone_number", Attribute: "telephoneNumber", Type: "string"},
-			},
-			"groups": []ClaimConfig{
-				{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
-			},
+		"groups": []ClaimConfig{
+			{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
 		},
-		Metrics: MetricsConfig{
-			Path: "/metrics",
-		},
-		DisableClientAuth: false,
-		AllowImplicitFlow: false,
 	}
 )
 
 type ClaimConfig struct {
 	Claim     string `yaml:"claim"`
 	Attribute string `yaml:"attribute"`
-	Type      string `yaml:"type"`
+	Type      string `yaml:"type,omitempty"`
 }
+
+type ScopeConfig map[string][]ClaimConfig
 
 type EndpointConfig struct {
-	Authz    string `yaml:"authorization"`
-	Token    string `yaml:"token"`
-	Userinfo string `yaml:"userinfo"`
-	Jwks     string `yaml:"jwks"`
+	Authz    string `yaml:"authorization" flag:"authz-endpoint"`
+	Token    string `yaml:"token"         flag:"token-endpoint"`
+	Userinfo string `yaml:"userinfo"      flag:"userinfo-endpoint"`
+	Jwks     string `yaml:"jwks"          flag:"jwks-uri"`
 }
 
-func (c *EndpointConfig) Override(patch EndpointConfig) {
-	if patch.Authz != "" {
-		(*c).Authz = patch.Authz
-	}
-	if patch.Token != "" {
-		(*c).Token = patch.Token
-	}
-	if patch.Userinfo != "" {
-		(*c).Userinfo = patch.Userinfo
-	}
-	if patch.Jwks != "" {
-		(*c).Jwks = patch.Jwks
-	}
-}
-
-type TTLConfig struct {
-	Login   *Duration `yaml:"login"`
-	Code    *Duration `yaml:"code"`
-	Token   *Duration `yaml:"token"`
-	Refresh *Duration `yaml:"refresh"`
-	SSO     *Duration `yaml:"sso"`
-}
-
-func (c *TTLConfig) Override(patch TTLConfig) {
-	if patch.Login != nil {
-		(*c).Login = patch.Login
-	}
-	if patch.Code != nil {
-		(*c).Code = patch.Code
-	}
-	if patch.Token != nil {
-		(*c).Token = patch.Token
-	}
-	if patch.Refresh != nil {
-		(*c).Refresh = patch.Refresh
-	}
-	if patch.SSO != nil {
-		(*c).SSO = patch.SSO
-	}
+type ExpireConfig struct {
+	Login   Duration `yaml:"login"   flag:"login-expire"`
+	Code    Duration `yaml:"code"    flag:"code-expire"`
+	Token   Duration `yaml:"token"   flag:"token-expire"`
+	Refresh Duration `yaml:"refresh" flag:"refresh-expire"`
+	SSO     Duration `yaml:"sso"     flag:"sso-expire"`
 }
 
 type ClientConfig map[string]struct {
@@ -112,74 +64,205 @@ type ClientConfig map[string]struct {
 }
 
 type MetricsConfig struct {
-	Path     string `yaml:"path"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Path     string `yaml:"path"               flag:"metrics-path"`
+	Username string `yaml:"username,omitempty" flag:"metrics-username"`
+	Password string `yaml:"password,omitempty" flag:"metrics-password"`
 }
 
-func (c *MetricsConfig) Override(patch MetricsConfig) {
-	if patch.Path != "" {
-		(*c).Path = patch.Path
-	}
-	if patch.Username != "" {
-		(*c).Username = patch.Username
-	}
-	if patch.Password != "" {
-		(*c).Password = patch.Password
-	}
+type TLSConfig struct {
+	Cert string `yaml:"cert,omitempty" flag:"tls-cert"`
+	Key  string `yaml:"key,omitempty"  flag:"tls-key"`
 }
 
-type LdapinConfig struct {
-	Issuer            *URL           `yaml:"issuer"`
-	Listen            *TCPAddr       `yaml:"listen"`
-	TTL               TTLConfig      `yaml:"ttl"`
+type LDAPConfig struct {
+	Server      *URL   `yaml:"server"       flag:"ldap"`
+	User        string `yaml:"user"         flag:"ldap-user"`
+	Password    string `yaml:"password"     flag:"ldap-password"`
+	BaseDN      string `yaml:"base_dn"      flag:"ldap-base-dn"`
+	IDAttribute string `yaml:"id_attribute" flag:"ldap-id-attribute"`
+	DisableTLS  bool   `yaml:"disable_tls"  flag:"ldap-disable-tls"`
+}
+
+type TemplateConfig struct {
+	LoginPage string `yaml:"login_page,omitempty" flag:"login-page"`
+	ErrorPage string `yaml:"error_page,omitempty" flag:"error-page"`
+}
+
+type Config struct {
+	Issuer            *URL           `yaml:"issuer"             flag:"issuer"`
+	Listen            *TCPAddr       `yaml:"listen,omitempty"   flag:"listen"`
+	SignKey           string         `yaml:"sign_key,omitempty" flag:"sign-key"`
+	TLS               TLSConfig      `yaml:"tls,omitempty"`
+	LDAP              LDAPConfig     `yaml:"ldap"`
+	Expire            ExpireConfig   `yaml:"expire"`
 	Endpoints         EndpointConfig `yaml:"endpoint"`
-	Scopes            ScopeConfig    `yaml:"scope"`
-	Clients           ClientConfig   `yaml:"client"`
+	Scopes            ScopeConfig    `yaml:"scope,omitempty"`
+	Clients           ClientConfig   `yaml:"client,omitempty"`
 	Metrics           MetricsConfig  `yaml:"metrics"`
-	DisableClientAuth bool           `yaml:"disable_client_auth"`
-	AllowImplicitFlow bool           `yaml:"allow_implicit_flow"`
+	Templates         TemplateConfig `yaml:"template,omitempty"`
+	DisableClientAuth bool           `yaml:"disable_client_auth" flag:"disable-client-auth"`
+	AllowImplicitFlow bool           `yaml:"allow_implicit_flow" flag:"allow-implicit-flow"`
 }
 
-func LoadConfig(f io.Reader) (*LdapinConfig, error) {
-	raw, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
+func TakeOptions(prefix string, typ reflect.Type, result map[string]string) {
+	for i := 0; i < typ.NumField(); i++ {
+		f := typ.Field(i)
+		name := strings.Split(f.Tag.Get("yaml"), ",")[0]
+		flag := f.Tag.Get("flag")
 
-	var conf LdapinConfig
-	err = yaml.Unmarshal(raw, &conf)
-	if err != nil {
-		return nil, err
-	}
+		if name != "" {
+			key := prefix + name
 
-	return &conf, nil
+			if flag != "" {
+				result[key] = flag
+			} else if f.Type.Kind() == reflect.Struct {
+				TakeOptions(key+".", f.Type, result)
+			}
+		}
+	}
 }
 
-func (c *LdapinConfig) Override(patch *LdapinConfig) {
-	if patch.Issuer != nil && patch.Issuer.String() != "" {
-		(*c).Issuer = patch.Issuer
+func BindFlags(vip *viper.Viper, flags *pflag.FlagSet) {
+	options := map[string]string{}
+	TakeOptions("", reflect.TypeOf(Config{}), options)
+	for k, v := range options {
+		f := flags.Lookup(v)
+		if f == nil {
+			panic(fmt.Sprintf("flag %s is not found", v))
+		}
+		vip.BindPFlag(k, f)
+	}
+}
+
+func (c *Config) unmarshal(vip *viper.Viper) error {
+	err := vip.Unmarshal(c, func(m *mapstructure.DecoderConfig) {
+		m.TagName = "yaml"
+		m.DecodeHook = func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+			if f.Kind() != reflect.String {
+				return data, nil
+			}
+			result := reflect.New(t).Interface()
+			unmarshaller, ok := result.(encoding.TextUnmarshaler)
+			if !ok {
+				return data, nil
+			}
+			if err := unmarshaller.UnmarshalText([]byte(data.(string))); err != nil {
+				return nil, err
+			}
+			return result, nil
+		}
+	})
+	if err != nil {
+		return err
 	}
 
-	(&c.TTL).Override(patch.TTL)
-	(&c.Endpoints).Override(patch.Endpoints)
-	(&c.Metrics).Override(patch.Metrics)
+	c.Listen = DecideListenAddress(c.Issuer, c.Listen)
 
-	if patch.Scopes != nil {
-		(*c).Scopes = patch.Scopes
+	if c.Scopes == nil {
+		c.Scopes = DefaultScopes
 	}
 
-	if patch.Clients != nil {
-		(*c).Clients = patch.Clients
+	if c.LDAP.Server != nil {
+		if c.LDAP.User == "" {
+			c.LDAP.User = c.LDAP.Server.User.Username()
+		}
+		if c.LDAP.Password == "" {
+			c.LDAP.Password, _ = c.LDAP.Server.User.Password()
+		}
+		c.LDAP.Server.User = nil
 	}
 
-	if patch.DisableClientAuth {
-		(*c).DisableClientAuth = patch.DisableClientAuth
+	return nil
+}
+
+type EnvReplacer struct{}
+
+func (r EnvReplacer) Replace(s string) string {
+	return strings.ReplaceAll(s, ".", "_")
+}
+
+func (c *Config) Load(file string, flags *pflag.FlagSet) error {
+	var replacer EnvReplacer
+	vip := viper.NewWithOptions(viper.EnvKeyReplacer(replacer))
+
+	if flags != nil {
+		BindFlags(vip, flags)
+	}
+	vip.AutomaticEnv()
+
+	vip.SetConfigType("yaml")
+
+	if file != "" {
+		vip.SetConfigFile(file)
+		if err := vip.ReadInConfig(); err != nil {
+			return err
+		}
 	}
 
-	if patch.AllowImplicitFlow {
-		(*c).AllowImplicitFlow = patch.AllowImplicitFlow
+	return c.unmarshal(vip)
+}
+
+func (c *Config) ReadFrom(config io.Reader) error {
+	vip := viper.New()
+
+	vip.SetConfigType("yaml")
+
+	if err := vip.ReadConfig(config); err != nil {
+		return err
 	}
+
+	return c.unmarshal(vip)
+}
+
+func (c *Config) Validate() error {
+	if c.Issuer.String() == "" {
+		return errors.New("Issuer URL is required.")
+	} else if !(*url.URL)(c.Issuer).IsAbs() {
+		return errors.New("Issuer URL must be absolute URL.")
+	}
+
+	if c.TLS.Cert != "" && c.TLS.Key == "" {
+		return errors.New("TLS Key is required when set TLS Cert.")
+	} else if c.TLS.Cert == "" && c.TLS.Key != "" {
+		return errors.New("TLS Cert is required when set TLS Key.")
+	}
+	if c.TLS.Cert != "" && c.TLS.Key != "" && c.Issuer.Scheme != "https" {
+		return errors.New("Please set https URL for Issuer URL when use TLS.")
+	}
+
+	if c.LDAP.Server.String() == "" {
+		return errors.New("LDAP Server address is required.")
+	}
+	if c.LDAP.User == "" {
+		return errors.New("LDAP User is required.")
+	}
+	if c.LDAP.Password == "" {
+		return errors.New("LDAP Password is required.")
+	}
+	if c.LDAP.BaseDN == "" {
+		return errors.New("LDAP Base DN is required.")
+	}
+
+	if c.Expire.Login <= 0 {
+		return errors.New("Expiration of Login can't set 0 or less.")
+	}
+	if c.Expire.Code <= 0 {
+		return errors.New("Expiration of Code can't set 0 or less.")
+	}
+	if c.Expire.Token <= 0 {
+		return errors.New("Expiration of Token can't set 0 or less.")
+	}
+
+	if c.Metrics.Path == "" {
+		return errors.New("Metrics Path can't set empty.")
+	}
+	if c.Metrics.Username != "" && c.Metrics.Password == "" {
+		return errors.New("Metrics Username is required when set Metrics Password.")
+	} else if c.Metrics.Username == "" && c.Metrics.Password != "" {
+		return errors.New("Metrics Password is required when set Metrics Username.")
+	}
+
+	return nil
 }
 
 type ResolvedEndpointPaths struct {
@@ -190,7 +273,7 @@ type ResolvedEndpointPaths struct {
 	Jwks                string
 }
 
-func (c *LdapinConfig) EndpointPaths() ResolvedEndpointPaths {
+func (c *Config) EndpointPaths() ResolvedEndpointPaths {
 	return ResolvedEndpointPaths{
 		OpenIDConfiguration: path.Join(c.Issuer.Path, "/.well-known/openid-configuration"),
 		Authz:               path.Join(c.Issuer.Path, c.Endpoints.Authz),
@@ -218,7 +301,7 @@ type OpenIDConfiguration struct {
 	RequestURIParameterSupported      bool     `json:"request_uri_parameter_supported"`
 }
 
-func (c *LdapinConfig) OpenIDConfiguration() OpenIDConfiguration {
+func (c *Config) OpenIDConfiguration() OpenIDConfiguration {
 	issuer := c.Issuer.String()
 
 	responseTypes := []string{"code"}
@@ -263,4 +346,12 @@ func (c *LdapinConfig) OpenIDConfiguration() OpenIDConfiguration {
 		),
 		RequestURIParameterSupported: false,
 	}
+}
+
+func (c *Config) AsYAML() (string, error) {
+	y, err := yaml.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+	return string(y), nil
 }

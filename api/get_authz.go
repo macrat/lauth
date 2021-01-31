@@ -62,7 +62,7 @@ func (req GetAuthzRequest) makeNonRedirectError(err error, reason ErrorReason, d
 	}
 }
 
-func (req GetAuthzRequest) Validate(config *config.LdapinConfig) *ErrorMessage {
+func (req GetAuthzRequest) Validate(config *config.Config) *ErrorMessage {
 	if req.RedirectURI == "" {
 		return req.makeNonRedirectError(nil, InvalidRequest, "redirect_uri is required")
 	}
@@ -133,7 +133,7 @@ func (req GetAuthzRequest) Validate(config *config.LdapinConfig) *ErrorMessage {
 	return nil
 }
 
-func (req *GetAuthzRequest) BindAndValidate(c *gin.Context, config *config.LdapinConfig) *ErrorMessage {
+func (req *GetAuthzRequest) BindAndValidate(c *gin.Context, config *config.Config) *ErrorMessage {
 	if err := req.Bind(c); err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 
 	prompt := ParseStringSet(req.Prompt)
 
-	if !prompt.Has("login") && !prompt.Has("consent") && !prompt.Has("select_account") && *api.Config.TTL.SSO > 0 {
+	if !prompt.Has("login") && !prompt.Has("consent") && !prompt.Has("select_account") && api.Config.Expire.SSO > 0 {
 		if token, err := c.Cookie("token"); err == nil {
 			issuer := api.Config.Issuer
 			secure := issuer.Scheme == "https"

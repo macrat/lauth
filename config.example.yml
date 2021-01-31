@@ -1,26 +1,23 @@
 issuer: http://localhost:8000
 listen: ":8000"
 
-# TODO: Support those options
-#
-#sign_key: /path/to/jwt-sign.key
-#
-#ldap:
-#  server: ldap://ldap.example.com
-#  base_dn: OU=somewhere,DC=example,DC=local
-#  id_attribute: sAMAccountName
-#  disable_tls: false
-#
-#tls:
-#  cert: /path/to/tls.crt
-#  key: /path/to/tls.key
-#
-#template:
-#  login_page: /path/to/login-template.html
-#  error_page: /path/to/error-template.html
-#
+sign_key: /path/to/jwt-sign.key
 
-ttl:
+ldap:
+  server: ldap://ldap.example.com
+  base_dn: OU=somewhere,DC=example,DC=local
+  id_attribute: sAMAccountName
+  disable_tls: false
+
+tls:
+  cert: /path/to/tls.crt
+  key: /path/to/tls.key
+
+template:
+  login_page: /path/to/login-template.html
+  error_page: /path/to/error-template.html
+
+expire:
   login: 1h
   code: 5m
   token: 1d

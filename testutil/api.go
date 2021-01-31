@@ -45,52 +45,38 @@ func MakeTestRouter() *gin.Engine {
 	return router
 }
 
-func MakeLdapinConfig() *config.LdapinConfig {
-	return &config.LdapinConfig{
-		Issuer: &config.URL{
-			Scheme: "http",
-			Host:   fmt.Sprintf("localhost:%d", FindAvailTCPPort()),
-		},
-		TTL: config.TTLConfig{
-			Login:   config.NewDuration(1 * time.Hour),
-			Code:    config.NewDuration(1 * time.Minute),
-			Token:   config.NewDuration(1 * time.Hour),
-			Refresh: config.NewDuration(6 * time.Hour),
-			SSO:     config.NewDuration(10 * time.Minute),
-		},
-		Endpoints: config.EndpointConfig{
-			Authz:    "/authz",
-			Token:    "/token",
-			Userinfo: "/userinfo",
-			Jwks:     "/certs",
-		},
-		Scopes: config.ScopeConfig{
-			"profile": {
-				{Claim: "name", Attribute: "displayName", Type: "string"},
-				{Claim: "given_name", Attribute: "givenName", Type: "string"},
-				{Claim: "family_name", Attribute: "sn", Type: "string"},
-			},
-			"email": {
-				{Claim: "email", Attribute: "mail", Type: "string"},
-			},
-			"phone": {
-				{Claim: "phone_number", Attribute: "telephoneNumber", Type: "string"},
-			},
-			"groups": {
-				{Claim: "groups", Attribute: "memberOf", Type: "[]string"},
-			},
-		},
-		Clients: config.ClientConfig{
-			"some_client_id": {
-				Secret: "secret for some-client",
-				RedirectURI: []config.Pattern{
-					MustParsePattern("http://some-client.example.com/callback"),
-				},
-			},
-		},
-		DisableClientAuth: false,
-		AllowImplicitFlow: false,
+func MakeConfig() *config.Config {
+	conf := &config.Config{}
+	port := FindAvailTCPPort()
+	err := conf.ReadFrom(strings.NewReader(fmt.Sprintf(`
+issuer: http://localhost:%d
+listen: 127.0.0.1:%d
+
+expire:
+  login: 30m
+  code: 1m
+  token: 1h
+  refresh: 6h
+  sso: 10m
+
+endpoint:
+  authorization: /authz
+  token: /token
+  userinfo: /userinfo
+  jwks: /certs
+
+client:
+  some_client_id:
+    secret: secret for some-client
+    redirect_uri:
+      - http://some-client.example.com/callback
+`, port, port)))
+
+	if err != nil {
+		panic(err.Error())
 	}
+
+	return conf
 }
 
 type APITestEnvironment struct {
@@ -110,7 +96,7 @@ func NewAPITestEnvironment(t *testing.T) *APITestEnvironment {
 
 	api := &api.LdapinAPI{
 		Connector:    LDAP,
-		Config:       MakeLdapinConfig(),
+		Config:       MakeConfig(),
 		TokenManager: tokenManager,
 	}
 	api.SetRoutes(router)

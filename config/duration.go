@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -19,7 +20,30 @@ func ParseDuration(text string) (*Duration, error) {
 }
 
 func (d Duration) String() string {
-	return d.String()
+	if d == 0 {
+		return "0"
+	}
+
+	units := []struct {
+		Unit   string
+		Thresh time.Duration
+	}{
+		{"w", 7 * 24 * time.Hour},
+		{"d", 24 * time.Hour},
+		{"h", time.Hour},
+		{"m", time.Minute},
+		{"s", time.Second},
+	}
+
+	remain := time.Duration(d)
+	str := ""
+	for _, u := range units {
+		if remain >= u.Thresh {
+			str += fmt.Sprintf("%d%s", remain/u.Thresh, u.Unit)
+			remain = remain % u.Thresh
+		}
+	}
+	return str
 }
 
 func (d Duration) IntSeconds() int64 {
@@ -38,4 +62,12 @@ func (d *Duration) UnmarshalText(text []byte) error {
 	d2, err := ParseDuration(string(text))
 	*d = *d2
 	return err
+}
+
+func (d *Duration) Set(str string) error {
+	return d.UnmarshalText([]byte(str))
+}
+
+func (d Duration) Type() string {
+	return "duration"
 }

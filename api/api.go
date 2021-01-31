@@ -12,7 +12,7 @@ import (
 
 type LdapinAPI struct {
 	Connector    ldap.Connector
-	Config       *config.LdapinConfig
+	Config       *config.Config
 	TokenManager token.Manager
 }
 
