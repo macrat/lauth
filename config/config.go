@@ -219,54 +219,56 @@ func (c *Config) ReadFrom(config io.Reader) error {
 }
 
 func (c *Config) Validate() error {
+	var es ParseErrorSet
+
 	if c.Issuer.String() == "" {
-		return errors.New("Issuer URL is required.")
+		es = append(es, errors.New("--issuer: Issuer URL is required."))
 	} else if !(*url.URL)(c.Issuer).IsAbs() {
-		return errors.New("Issuer URL must be absolute URL.")
+		es = append(es, errors.New("--issuer: Issuer URL must be absolute URL."))
 	}
 
 	if c.TLS.Cert != "" && c.TLS.Key == "" {
-		return errors.New("TLS Key is required when set TLS Cert.")
+		es = append(es, errors.New("--tls-key: TLS Key is required when set TLS Cert."))
 	} else if c.TLS.Cert == "" && c.TLS.Key != "" {
-		return errors.New("TLS Cert is required when set TLS Key.")
+		es = append(es, errors.New("--tls-cert: TLS Cert is required when set TLS Key."))
 	}
 	if c.TLS.Cert != "" && c.TLS.Key != "" && c.Issuer.Scheme != "https" {
-		return errors.New("Please set https URL for Issuer URL when use TLS.")
+		es = append(es, errors.New("--issuer: Please set https URL for Issuer URL when use TLS."))
 	}
 
 	if c.LDAP.Server.String() == "" {
-		return errors.New("LDAP Server address is required.")
+		es = append(es, errors.New("--ldap: LDAP Server address is required."))
 	}
 	if c.LDAP.User == "" {
-		return errors.New("LDAP User is required.")
+		es = append(es, errors.New("--ldap-user: LDAP User is required."))
 	}
 	if c.LDAP.Password == "" {
-		return errors.New("LDAP Password is required.")
+		es = append(es, errors.New("--ldap-password: LDAP Password is required."))
 	}
 	if c.LDAP.BaseDN == "" {
-		return errors.New("Failed to guess LDAP Base DN by LDAP User.")
+		es = append(es, errors.New("--ldap-base-dn: LDAP Base DN is required if using user that non DN style."))
 	}
 
 	if c.Expire.Login <= 0 {
-		return errors.New("Expiration of Login can't set 0 or less.")
+		es = append(es, errors.New("--login-expire: Expiration of Login can't set 0 or less."))
 	}
 	if c.Expire.Code <= 0 {
-		return errors.New("Expiration of Code can't set 0 or less.")
+		es = append(es, errors.New("--code-expire: Expiration of Code can't set 0 or less."))
 	}
 	if c.Expire.Token <= 0 {
-		return errors.New("Expiration of Token can't set 0 or less.")
+		es = append(es, errors.New("--token-expire: Expiration of Token can't set 0 or less."))
 	}
 
 	if c.Metrics.Path == "" {
-		return errors.New("Metrics Path can't set empty.")
+		es = append(es, errors.New("--metrics-path: Metrics Path can't set empty."))
 	}
 	if c.Metrics.Username != "" && c.Metrics.Password == "" {
-		return errors.New("Metrics Username is required when set Metrics Password.")
+		es = append(es, errors.New("--metrics-username: Metrics Username is required when set Metrics Password."))
 	} else if c.Metrics.Username == "" && c.Metrics.Password != "" {
-		return errors.New("Metrics Password is required when set Metrics Username.")
+		es = append(es, errors.New("--metrics-password: Metrics Password is required when set Metrics Username."))
 	}
 
-	return nil
+	return es
 }
 
 type ResolvedEndpointPaths struct {
