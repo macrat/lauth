@@ -172,6 +172,10 @@ func (c *Config) unmarshal(vip *viper.Viper) error {
 		c.LDAP.Server.User = nil
 	}
 
+	if c.LDAP.BaseDN == "" {
+		c.LDAP.BaseDN, _ = GetDCByDN(c.LDAP.User)
+	}
+
 	return nil
 }
 
@@ -240,7 +244,7 @@ func (c *Config) Validate() error {
 		return errors.New("LDAP Password is required.")
 	}
 	if c.LDAP.BaseDN == "" {
-		return errors.New("LDAP Base DN is required.")
+		return errors.New("Failed to guess LDAP Base DN by LDAP User.")
 	}
 
 	if c.Expire.Login <= 0 {
