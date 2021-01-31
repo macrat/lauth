@@ -268,7 +268,10 @@ func (c *Config) Validate() error {
 		es = append(es, errors.New("--metrics-password: Metrics Password is required when set Metrics Username."))
 	}
 
-	return es
+	if len(es) > 0 {
+		return es
+	}
+	return nil
 }
 
 type ResolvedEndpointPaths struct {
