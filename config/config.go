@@ -206,7 +206,7 @@ func (c *Config) Load(file string, flags *pflag.FlagSet) error {
 	return c.unmarshal(vip)
 }
 
-func (c *Config) ReadFrom(config io.Reader) error {
+func (c *Config) ReadReader(config io.Reader) error {
 	vip := viper.New()
 
 	vip.SetConfigType("yaml")

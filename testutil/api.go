@@ -48,7 +48,7 @@ func MakeTestRouter() *gin.Engine {
 func MakeConfig() *config.Config {
 	conf := &config.Config{}
 	port := FindAvailTCPPort()
-	err := conf.ReadFrom(strings.NewReader(fmt.Sprintf(`
+	err := conf.ReadReader(strings.NewReader(fmt.Sprintf(`
 issuer: http://localhost:%d
 listen: 127.0.0.1:%d
 

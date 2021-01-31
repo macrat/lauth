@@ -48,7 +48,7 @@ ldap:
 `)
 	conf := &config.Config{}
 
-	if err := conf.ReadFrom(raw); err != nil {
+	if err := conf.ReadReader(raw); err != nil {
 		t.Fatalf("failed to load config: %s", err)
 	}
 
@@ -86,7 +86,7 @@ ldap:
   user: anotherone
   password: secret
 `)
-	if err := conf.ReadFrom(raw); err != nil {
+	if err := conf.ReadReader(raw); err != nil {
 		t.Fatalf("failed to load config: %s", err)
 	}
 
