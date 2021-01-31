@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/config"
 	"github.com/macrat/ldapin/metrics"
+	"github.com/rs/zerolog/log"
 )
 
 type PostAuthzRequest struct {
@@ -95,7 +95,10 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 
 	conn, err := api.Connector.Connect()
 	if err != nil {
-		log.Print(err)
+		log.Error().
+			Err(err).
+			Msg("failed to connecting LDAP server")
+
 		e := req.makeRedirectError(err, ServerError, "failed to connecting LDAP server")
 		e.Report(report)
 		e.Redirect(c)

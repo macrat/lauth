@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -14,11 +13,14 @@ import (
 	"github.com/macrat/ldapin/metrics"
 	"github.com/macrat/ldapin/page"
 	"github.com/macrat/ldapin/token"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
 func serve(conf *config.Config) {
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	fmt.Printf("OpenID Provider \"%s\" started on %s\n", conf.Issuer, conf.Listen)
 	fmt.Println()
@@ -67,30 +69,36 @@ func serve(conf *config.Config) {
 
 	var tokenManager token.Manager
 	if conf.SignKey != "" {
+		log.Info().Msg("loading sign key")
+
 		f, err := os.Open(conf.SignKey)
 		if err != nil {
-			log.Fatalf("failed to open sign key: %s", err)
+			log.Fatal().Msgf("failed to open sign key: %s", err)
 		}
 
 		tokenManager, err = token.NewManagerFromFile(f)
 		if err != nil {
-			log.Fatalf("failed to read sign key: %s", err)
+			log.Fatal().Msgf("failed to read sign key: %s", err)
 		}
 	} else {
-		var err error
+		log.Info().Msg("generating RSA key for signing")
 
+		var err error
 		tokenManager, err = token.GenerateManager()
 		if err != nil {
-			log.Fatalf("failed to generate private key for sign: %s", err)
+			log.Fatal().Msgf("failed to generate private key for sign: %s", err)
 		}
 	}
 
+	log.Info().
+		Str("ldap_server", conf.LDAP.Server.String()).
+		Msg("connecting to LDAP server")
 	connector := ldap.SimpleConnector{
 		Config: &conf.LDAP,
 	}
 	_, err := connector.Connect()
 	if err != nil {
-		log.Fatalf("failed to connect LDAP server: %s", err)
+		log.Fatal().Msgf("failed to connect LDAP server: %s", err)
 	}
 
 	api := &api.LdapinAPI{
@@ -99,9 +107,13 @@ func serve(conf *config.Config) {
 		Config:       conf,
 	}
 
+	log.Info().
+		Str("login_page", conf.Templates.LoginPage).
+		Str("error_page", conf.Templates.ErrorPage).
+		Msg("loading HTML templates")
 	tmpl, err := page.Load(conf.Templates)
 	if err != nil {
-		log.Fatalf("failed to load template: %s", err)
+		log.Fatal().Msgf("failed to load template: %s", err)
 	}
 	router.SetHTMLTemplate(tmpl)
 
@@ -115,6 +127,8 @@ func serve(conf *config.Config) {
 	api.SetRoutes(router)
 	api.SetErrorRoutes(router)
 
+	log.Info().Msg("ready to serve")
+
 	server := &http.Server{
 		Addr:    conf.Listen.String(),
 		Handler: metrics.Middleware(HTTPCompressor(router)),
@@ -125,7 +139,7 @@ func serve(conf *config.Config) {
 		err = server.ListenAndServe()
 	}
 	if err != nil {
-		log.Fatalf("failed to start server: %s", err)
+		log.Fatal().Msgf("%s", err)
 	}
 }
 
@@ -137,6 +151,13 @@ var (
 		Use:   "ldapin",
 		Short: "The simple OpenID Provider for LDAP like an ActiveDirectory.",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			zerolog.ErrorFieldName = "error_reason"
+			if debug {
+				log.Level(zerolog.DebugLevel)
+			} else {
+				log.Level(zerolog.InfoLevel)
+			}
+
 			err := conf.Load(configFile, cmd.Flags())
 			if err != nil {
 				return err

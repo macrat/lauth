@@ -1,15 +1,17 @@
 package api
 
 import (
-	"log"
-
 	"github.com/macrat/ldapin/config"
+	"github.com/rs/zerolog/log"
 )
 
 func (api LdapinAPI) userinfo(subject string, scope *StringSet) (map[string]interface{}, error) {
 	conn, err := api.Connector.Connect()
 	if err != nil {
-		log.Printf("failed to connect LDAP server: %s", err)
+		log.Error().
+			Err(err).
+			Msg("failed to connecting LDAP server")
+
 		return nil, err
 	}
 	defer conn.Close()

@@ -37,9 +37,7 @@ func FindAvailTCPPort() int {
 }
 
 func MakeTestRouter() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
-
-	router := gin.New()
+	router := gin.Default()
 	router.LoadHTMLGlob("../page/html/*.tmpl")
 
 	return router

@@ -6,6 +6,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -13,15 +15,17 @@ const (
 )
 
 type EndpointMetrics struct {
+	Name    string
 	Labels  []string
 	Latency *prometheus.SummaryVec
 	Count   *prometheus.CounterVec
 }
 
 func NewEndpointMetrics(name string, labels []string) *EndpointMetrics {
-	labels = append(labels, "error", "error_description", "status")
+	labels = append(labels, "status", "error", "error_description")
 
 	return &EndpointMetrics{
+		Name:   name,
 		Labels: labels,
 		Latency: prometheus.NewSummaryVec(
 			prometheus.SummaryOpts{
@@ -50,6 +54,7 @@ func (em *EndpointMetrics) MustRegister() {
 }
 
 type Context struct {
+	Error   error
 	Metrics *EndpointMetrics
 	Labels  prometheus.Labels
 	timer   *prometheus.Timer
@@ -72,8 +77,25 @@ func (c *Context) Set(key, value string) {
 	c.Labels[key] = value
 }
 
+func (c *Context) SetError(err error, reason, description string) {
+	c.Error = err
+	c.Labels["error"] = reason
+	c.Labels["error_description"] = description
+}
+
 func (c *Context) Observe(v float64) {
 	c.Metrics.Latency.With(c.Labels).Observe(v)
+}
+
+func (c *Context) writeLog(e *zerolog.Event) *zerolog.Event {
+	e.Str("endpoint", c.Metrics.Name)
+	for _, l := range c.Metrics.Labels {
+		e.Str(l, c.Labels[l])
+	}
+	if c.Error != nil {
+		e.Err(c.Error)
+	}
+	return e
 }
 
 func (c *Context) Close() error {
@@ -88,8 +110,19 @@ func (c *Context) Close() error {
 		c.Labels["status"] = "4xx"
 	}
 	c.Metrics.Count.With(c.Labels).Inc()
-	c.timer.ObserveDuration()
+	duration := c.timer.ObserveDuration()
 	c.timer = nil
+
+	if c.Labels["error"] != "" {
+		c.writeLog(log.Error()).
+			Float64("latency_seconds", duration.Seconds()).
+			Send()
+	} else {
+		c.writeLog(log.Info()).
+			Float64("latency_seconds", duration.Seconds()).
+			Send()
+	}
+
 	return nil
 }
 

@@ -91,6 +91,5 @@ func (msg ErrorMessage) JSON(c *gin.Context) {
 }
 
 func (msg ErrorMessage) Report(c *metrics.Context) {
-	c.Set("error", string(msg.Reason))
-	c.Set("error_description", msg.Description)
+	c.SetError(msg.Err, string(msg.Reason), msg.Description)
 }

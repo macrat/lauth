@@ -14,6 +14,7 @@ require (
 	github.com/pquerna/cachecontrol v0.0.0-20201205024021-ac21108117ac // indirect
 	github.com/prometheus/client_golang v1.9.0
 	github.com/rakyll/statik v0.1.7
+	github.com/rs/zerolog v1.20.0
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
