@@ -37,6 +37,8 @@ replace github.com/macrat/ldapin/page => ./page
 
 replace github.com/macrat/ldapin/page/statik => ./page/statik
 
+replace github.com/macrat/ldapin/secret => ./secret
+
 replace github.com/macrat/ldapin/testutil => ./testutil
 
 replace github.com/macrat/ldapin/token => ./token

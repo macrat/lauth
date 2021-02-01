@@ -12,6 +12,7 @@ import (
 	"github.com/macrat/ldapin/ldap"
 	"github.com/macrat/ldapin/metrics"
 	"github.com/macrat/ldapin/page"
+	"github.com/macrat/ldapin/secret"
 	"github.com/macrat/ldapin/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -175,9 +176,42 @@ var (
 			serve(conf)
 		},
 	}
+	clientSecret = ""
+	clientCmd    = &cobra.Command{
+		Use: "gen-client CLIENT_ID",
+		Short: "Generate config for client",
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			var sec, hash []byte
+			if clientSecret != "" {
+				sec = []byte(clientSecret)
+				h, err := secret.Hash(sec)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "failed to hash secret: %s", err)
+				}
+				hash = h
+			} else {
+				s, err := secret.Generate()
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "failed to generate secret: %s", err)
+				}
+				sec, hash = s.Secret, s.Hash
+			}
+			fmt.Printf("# Please load this by --config option.\n")
+			fmt.Printf("# client_id = \"%s\"\n", args[0])
+			fmt.Printf("# client_secret = \"%s\" (please don't this line in config file)\n", sec)
+			fmt.Printf("\n")
+			fmt.Printf("client:\n")
+			fmt.Printf("  %s:\n", args[0])
+			fmt.Printf("    secret: %s\n", hash)
+		},
+	}
 )
 
 func init() {
+	cmd.AddCommand(clientCmd)
+	clientCmd.Flags().StringVar(&clientSecret, "secret", "", "Client secret value. Generate random secret if omit. Not recommend use this option.")
+
 	flags := cmd.Flags()
 	flags.SortFlags = false
 

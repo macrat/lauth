@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/config"
 	"github.com/macrat/ldapin/metrics"
+	"github.com/macrat/ldapin/secret"
 )
 
 type PostTokenRequest struct {
@@ -93,7 +94,7 @@ func (req PostTokenRequest) Validate(conf *config.Config) *ErrorMessage {
 		client, ok := conf.Clients[req.ClientID]
 		if !ok {
 			return &ErrorMessage{Reason: InvalidClient}
-		} else if err := CompareSecret(client.Secret, req.ClientSecret); err != nil {
+		} else if err := secret.Compare(client.Secret, req.ClientSecret); err != nil {
 			return &ErrorMessage{Err: err, Reason: InvalidClient}
 		}
 	}

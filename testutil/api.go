@@ -66,7 +66,7 @@ endpoint:
 
 client:
   some_client_id:
-    secret: $2y$05$qA7h0boC.66l/bHndznDEeZ7MJUIIsNmD4aUeM3dtmwc2WLd0.vPa # hash of "secret for some-client"
+    secret: $2a$10$gKOvDAJeJCtoMW8DeLdxuOH/tqd2FxsM6hmupzZTW0XsiQhe282Te # hash of "secret for some-client"
     redirect_uri:
       - http://some-client.example.com/callback
 `, port, port)))
