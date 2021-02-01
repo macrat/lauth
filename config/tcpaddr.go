@@ -42,6 +42,10 @@ func DecideListenAddress(issuer *URL, listen *TCPAddr) *TCPAddr {
 		return listen
 	}
 
+	if issuer == nil {
+		return nil
+	}
+
 	if p, err := strconv.Atoi((*url.URL)(issuer).Port()); err == nil && p != 0 {
 		return &TCPAddr{
 			Port: p,
