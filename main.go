@@ -152,10 +152,13 @@ var (
 		Short: "The simple OpenID Provider for LDAP like an ActiveDirectory.",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			zerolog.ErrorFieldName = "error_reason"
+
 			if debug {
-				log.Level(zerolog.DebugLevel)
+				zerolog.SetGlobalLevel(zerolog.DebugLevel)
+				gin.SetMode(gin.DebugMode)
 			} else {
-				log.Level(zerolog.InfoLevel)
+				zerolog.SetGlobalLevel(zerolog.InfoLevel)
+				gin.SetMode(gin.ReleaseMode)
 			}
 
 			err := conf.Load(configFile, cmd.Flags())
@@ -166,12 +169,6 @@ var (
 			return conf.Validate()
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			if debug {
-				gin.SetMode(gin.DebugMode)
-			} else {
-				gin.SetMode(gin.ReleaseMode)
-			}
-
 			serve(conf)
 		},
 	}

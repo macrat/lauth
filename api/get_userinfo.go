@@ -14,7 +14,7 @@ type GetUserInfoHeader struct {
 }
 
 func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
-	report := metrics.StartUserinfo()
+	report := metrics.StartUserinfo(c)
 	defer report.Close()
 
 	c.Header("Cache-Control", "no-store")

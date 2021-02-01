@@ -90,6 +90,6 @@ func (msg ErrorMessage) JSON(c *gin.Context) {
 	}
 }
 
-func (msg ErrorMessage) Report(c *metrics.Context) {
-	c.SetError(msg.Err, string(msg.Reason), msg.Description)
+func (msg ErrorMessage) Report(r metrics.ErrorReporter) {
+	r.SetError(msg.Err, string(msg.Reason), msg.Description)
 }

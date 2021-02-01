@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -13,6 +14,10 @@ import (
 const (
 	NAMESPACE = "ldapin"
 )
+
+type ErrorReporter interface {
+	SetError(err error, reason, description string)
+}
 
 type EndpointMetrics struct {
 	Name    string
@@ -57,10 +62,13 @@ type Context struct {
 	Error   error
 	Metrics *EndpointMetrics
 	Labels  prometheus.Labels
+	Method  string
+	Path    string
+	Remote  string
 	timer   *prometheus.Timer
 }
 
-func (em *EndpointMetrics) Start() *Context {
+func (em *EndpointMetrics) Start(ctx *gin.Context) *Context {
 	ls := make(prometheus.Labels)
 	for _, l := range em.Labels {
 		ls[l] = ""
@@ -68,6 +76,9 @@ func (em *EndpointMetrics) Start() *Context {
 	c := &Context{
 		Metrics: em,
 		Labels:  ls,
+		Method:  ctx.Request.Method,
+		Path:    ctx.Request.URL.Path,
+		Remote:  ctx.ClientIP(),
 	}
 	c.timer = prometheus.NewTimer(c)
 	return c
@@ -88,13 +99,21 @@ func (c *Context) Observe(v float64) {
 }
 
 func (c *Context) writeLog(e *zerolog.Event) *zerolog.Event {
+	e.Str("method", c.Method)
+	e.Str("path", c.Path)
+	e.Str("remote_addr", c.Remote)
 	e.Str("endpoint", c.Metrics.Name)
+
 	for _, l := range c.Metrics.Labels {
-		e.Str(l, c.Labels[l])
+		if l != "method" {
+			e.Str(l, c.Labels[l])
+		}
 	}
+
 	if c.Error != nil {
 		e.Err(c.Error)
 	}
+
 	return e
 }
 

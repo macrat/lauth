@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/config"
 	"github.com/macrat/ldapin/metrics"
+	"github.com/rs/zerolog/log"
 )
 
 type GetAuthzRequest struct {
@@ -148,7 +149,7 @@ func (req *GetAuthzRequest) Report(c *metrics.Context) {
 }
 
 func (api *LdapinAPI) GetAuthz(c *gin.Context) {
-	report := metrics.StartGetAuthz()
+	report := metrics.StartAuthz(c)
 	defer report.Close()
 
 	c.Header("Cache-Control", "no-store")
@@ -180,6 +181,9 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 					errMsg.Report(report)
 					errMsg.Redirect(c)
 				} else {
+					log.Debug().
+						Str("username", idToken.Subject).
+						Msg("logged in with SSO token")
 					c.Redirect(http.StatusFound, redirect.String())
 				}
 				return

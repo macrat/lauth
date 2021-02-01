@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -154,12 +155,14 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 
 	if req.ClientID != "" && req.ClientID != code.ClientID {
 		return nil, &ErrorMessage{
+			Err:    errors.New("incorrect redirect_id"),
 			Reason: InvalidGrant,
 		}
 	}
 
 	if req.RedirectURI != code.RedirectURI {
 		return nil, &ErrorMessage{
+			Err:    errors.New("incorrect redirect_uri"),
 			Reason: InvalidGrant,
 		}
 	}
@@ -259,6 +262,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 
 	if req.ClientID != "" && req.ClientID != refreshToken.ClientID {
 		return nil, &ErrorMessage{
+			Err:    errors.New("incorrect redirect_id"),
 			Reason: InvalidGrant,
 		}
 	}
@@ -320,7 +324,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 }
 
 func (api *LdapinAPI) PostToken(c *gin.Context) {
-	report := metrics.StartPostToken()
+	report := metrics.StartToken(c)
 	defer report.Close()
 
 	c.Header("Cache-Control", "no-store")

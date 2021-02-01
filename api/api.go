@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/ldapin/config"
 	"github.com/macrat/ldapin/ldap"
+	"github.com/macrat/ldapin/metrics"
 	"github.com/macrat/ldapin/token"
 )
 
@@ -29,6 +30,9 @@ func (api *LdapinAPI) SetRoutes(r gin.IRoutes) {
 
 func (api *LdapinAPI) SetErrorRoutes(r *gin.Engine) {
 	r.NoRoute(func(c *gin.Context) {
+		report := metrics.StartLogging(c)
+		defer report.Close()
+
 		endpoints := api.Config.EndpointPaths()
 
 		methodNotAllowed := ErrorMessage{
@@ -38,34 +42,46 @@ func (api *LdapinAPI) SetErrorRoutes(r *gin.Engine) {
 
 		switch c.Request.URL.Path {
 		case endpoints.Authz:
+			methodNotAllowed.Report(report)
 			c.HTML(http.StatusMethodNotAllowed, "error.tmpl", gin.H{
 				"error": methodNotAllowed,
 			})
 		case endpoints.OpenIDConfiguration, endpoints.Token, endpoints.Userinfo, endpoints.Jwks:
+			methodNotAllowed.Report(report)
 			c.JSON(http.StatusMethodNotAllowed, methodNotAllowed)
 		default:
+			notFound := ErrorMessage{
+				Reason:      "page_not_found",
+				Description: "requested page is not found",
+			}
+			notFound.Report(report)
 			c.HTML(http.StatusNotFound, "error.tmpl", gin.H{
-				"error": ErrorMessage{
-					Reason:      "page_not_found",
-					Description: "requested page is not found",
-				},
+				"error": notFound,
 			})
 		}
 	})
 }
 
 func (api *LdapinAPI) GetConfiguration(c *gin.Context) {
+	report := metrics.StartLogging(c)
+	defer report.Close()
+
 	c.IndentedJSON(200, api.Config.OpenIDConfiguration())
 }
 
 func (api *LdapinAPI) GetCerts(c *gin.Context) {
+	report := metrics.StartLogging(c)
+	defer report.Close()
+
 	keys, err := api.TokenManager.JWKs()
 	if err != nil {
-		ErrorMessage{
+		e := ErrorMessage{
 			Err:         err,
 			Reason:      "server_error",
 			Description: "failed to get key informations",
-		}.JSON(c)
+		}
+		e.Report(report)
+		e.JSON(c)
 		return
 	}
 

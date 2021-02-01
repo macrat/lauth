@@ -39,7 +39,7 @@ func (req *PostAuthzRequest) BindAndValidate(c *gin.Context, config *config.Conf
 }
 
 func (api *LdapinAPI) PostAuthz(c *gin.Context) {
-	report := metrics.StartPostAuthz()
+	report := metrics.StartAuthz(c)
 	defer report.Close()
 
 	c.Header("Cache-Control", "no-store")
@@ -137,7 +137,12 @@ func (api *LdapinAPI) PostAuthz(c *gin.Context) {
 	if errMsg != nil {
 		errMsg.Report(report)
 		errMsg.Redirect(c)
+		return
 	}
+
+	log.Debug().
+		Str("username", req.User).
+		Msg("logged in with username and password")
 
 	c.Redirect(http.StatusFound, resp.String())
 }
