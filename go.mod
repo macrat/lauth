@@ -20,7 +20,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/tdewolff/minify/v2 v2.9.11
 	github.com/xhit/go-str2duration/v2 v2.0.0
-	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620 // indirect
+	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	gopkg.in/square/go-jose.v2 v2.5.1

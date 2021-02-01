@@ -91,10 +91,10 @@ func (req PostTokenRequest) Validate(conf *config.Config) *ErrorMessage {
 		}
 	} else {
 		client, ok := conf.Clients[req.ClientID]
-		if !ok || client.Secret != req.ClientSecret {
-			return &ErrorMessage{
-				Reason: InvalidClient,
-			}
+		if !ok {
+			return &ErrorMessage{Reason: InvalidClient}
+		} else if err := CompareSecret(client.Secret, req.ClientSecret); err != nil {
+			return &ErrorMessage{Err: err, Reason: InvalidClient}
 		}
 	}
 

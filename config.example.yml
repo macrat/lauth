@@ -54,7 +54,7 @@ scope:
 
 client:
   http://example.com:
-    secret: this is secret key
+    secret: $2y$05$ctB3fgxdzGEXICdJCsb1qOkl3169uhjq0UC5vFQa7o.yWE69vJccC # secret key that hashed by bcrypt
     redirect_uri:
       - http://example.com/login/*
       - http://*.example.com/**
