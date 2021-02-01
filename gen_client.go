@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"bytes"
+	"fmt"
 	"os"
 
 	"github.com/macrat/ldapin/secret"
@@ -11,12 +11,13 @@ import (
 
 var (
 	clientSecret = ""
+	redirectURIs = []string{}
 	clientCmd    = &cobra.Command{
-		Use: "gen-client CLIENT_ID",
+		Use:   "gen-client CLIENT_ID",
 		Short: "Generate config for client",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			client, err := GenClient(args[0], clientSecret)
+			client, err := GenClient(args[0], clientSecret, redirectURIs)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "failed to hash secret: %s", err)
 				os.Exit(1)
@@ -29,10 +30,14 @@ var (
 
 func init() {
 	cmd.AddCommand(clientCmd)
-	clientCmd.Flags().StringVar(&clientSecret, "secret", "", "Client secret value. Generate random secret if omit. Not recommend use this option.")
+
+	flags := clientCmd.Flags()
+
+	flags.StringArrayVarP(&redirectURIs, "redirect-uri", "u", nil, "URIs to accept redirect to.")
+	flags.StringVar(&clientSecret, "secret", "", "Client secret value. Generate random secret if omit. Not recommend use this option.")
 }
 
-func GenClient(clientID, secretHint string) (string, error) {
+func GenClient(clientID, secretHint string, redirectURIs []string) (string, error) {
 	var sec, hash []byte
 	if secretHint != "" {
 		sec = []byte(secretHint)
@@ -53,11 +58,20 @@ func GenClient(clientID, secretHint string) (string, error) {
 
 	fmt.Fprintf(buf, "# Please load this by --config option.\n")
 	fmt.Fprintf(buf, "# client_id = \"%s\"\n", clientID)
-	fmt.Fprintf(buf, "# client_secret = \"%s\" (please don't this line in config file)\n", sec)
+	fmt.Fprintf(buf, "# client_secret = \"%s\" (please don't include this line in config file)\n", sec)
 	fmt.Fprintf(buf, "\n")
 	fmt.Fprintf(buf, "client:\n")
 	fmt.Fprintf(buf, "  %s:\n", clientID)
 	fmt.Fprintf(buf, "    secret: %s\n", hash)
+
+	if len(redirectURIs) == 0 {
+		fmt.Fprintf(buf, "    redirect_uri: []\n")
+	} else {
+		fmt.Fprintf(buf, "    redirect_uri:\n")
+		for _, u := range redirectURIs {
+			fmt.Fprintf(buf, "    - %s\n", u)
+		}
+	}
 
 	return string(buf.Bytes()), nil
 }

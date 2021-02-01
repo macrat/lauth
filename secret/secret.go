@@ -43,7 +43,7 @@ func generatePlainSecret() ([]byte, error) {
 	}
 
 	for i := range b {
-		b[i] = CHAR_SET[int(b[i]) % len(CHAR_SET)]
+		b[i] = CHAR_SET[int(b[i])%len(CHAR_SET)]
 	}
 
 	return b, nil
