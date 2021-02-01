@@ -156,6 +156,7 @@ func (api *LdapinAPI) GetAuthz(c *gin.Context) {
 
 	var req GetAuthzRequest
 	if err := (&req).BindAndValidate(c, api.Config); err != nil {
+		req.Report(report)
 		err.Report(report)
 		err.Redirect(c)
 		return

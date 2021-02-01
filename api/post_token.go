@@ -327,6 +327,9 @@ func (api *LdapinAPI) PostToken(c *gin.Context) {
 
 	var req PostTokenRequest
 	if err := (&req).BindAndValidate(c, api.Config); err != nil {
+		report.Set("grant_type", req.GrantType)
+		report.Set("client_id", req.ClientID)
+		err.Report(report)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
