@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/macrat/ldapin/ldap"
-	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/lauth/ldap"
+	"github.com/macrat/lauth/testutil"
 )
 
 func TestDummyLDAP(t *testing.T) {

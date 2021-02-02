@@ -3,7 +3,7 @@ package config_test
 import (
 	"testing"
 
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 )
 
 func TestPattern(t *testing.T) {

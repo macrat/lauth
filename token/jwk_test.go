@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/token"
+	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/token"
 	"gopkg.in/square/go-jose.v2"
 )
 

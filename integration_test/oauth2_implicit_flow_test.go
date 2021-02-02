@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/lauth/testutil"
 )
 
 func TestOAuth2ImplicitFlow(t *testing.T) {

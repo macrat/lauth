@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 )
 
 func SameStringSet(xs []string, ys []string) bool {

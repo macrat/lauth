@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 
-	"github.com/macrat/ldapin/token"
+	"github.com/macrat/lauth/token"
 )
 
 func MakeTokenManager() (token.Manager, error) {

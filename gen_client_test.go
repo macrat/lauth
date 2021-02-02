@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/macrat/ldapin"
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth"
+	"github.com/macrat/lauth/config"
 )
 
 func TestGenClient(t *testing.T) {

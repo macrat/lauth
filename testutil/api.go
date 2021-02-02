@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/api"
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/api"
+	"github.com/macrat/lauth/config"
 )
 
 func init() {
@@ -80,7 +80,7 @@ client:
 
 type APITestEnvironment struct {
 	App *gin.Engine
-	API *api.LdapinAPI
+	API *api.LauthAPI
 }
 
 func NewAPITestEnvironment(t *testing.T) *APITestEnvironment {
@@ -93,7 +93,7 @@ func NewAPITestEnvironment(t *testing.T) *APITestEnvironment {
 		t.Fatalf("failed to make jwt certs: %s", err)
 	}
 
-	api := &api.LdapinAPI{
+	api := &api.LauthAPI{
 		Connector:    LDAP,
 		Config:       MakeConfig(),
 		TokenManager: tokenManager,

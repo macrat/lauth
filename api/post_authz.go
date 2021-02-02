@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/metrics"
+	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/metrics"
 	"github.com/rs/zerolog/log"
 )
 
@@ -38,7 +38,7 @@ func (req *PostAuthzRequest) BindAndValidate(c *gin.Context, config *config.Conf
 	return req.Validate(config)
 }
 
-func (api *LdapinAPI) PostAuthz(c *gin.Context) {
+func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	report := metrics.StartAuthz(c)
 	defer report.Close()
 

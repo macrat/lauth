@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 )
 
 func TestDecideListenAddress(t *testing.T) {

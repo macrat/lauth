@@ -5,19 +5,19 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/ldap"
-	"github.com/macrat/ldapin/metrics"
-	"github.com/macrat/ldapin/token"
+	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/ldap"
+	"github.com/macrat/lauth/metrics"
+	"github.com/macrat/lauth/token"
 )
 
-type LdapinAPI struct {
+type LauthAPI struct {
 	Connector    ldap.Connector
 	Config       *config.Config
 	TokenManager token.Manager
 }
 
-func (api *LdapinAPI) SetRoutes(r gin.IRoutes) {
+func (api *LauthAPI) SetRoutes(r gin.IRoutes) {
 	endpoints := api.Config.EndpointPaths()
 
 	r.GET(endpoints.OpenIDConfiguration, api.GetConfiguration)
@@ -28,7 +28,7 @@ func (api *LdapinAPI) SetRoutes(r gin.IRoutes) {
 	r.GET(endpoints.Jwks, api.GetCerts)
 }
 
-func (api *LdapinAPI) SetErrorRoutes(r *gin.Engine) {
+func (api *LauthAPI) SetErrorRoutes(r *gin.Engine) {
 	r.NoRoute(func(c *gin.Context) {
 		report := metrics.StartLogging(c)
 		defer report.Close()
@@ -62,14 +62,14 @@ func (api *LdapinAPI) SetErrorRoutes(r *gin.Engine) {
 	})
 }
 
-func (api *LdapinAPI) GetConfiguration(c *gin.Context) {
+func (api *LauthAPI) GetConfiguration(c *gin.Context) {
 	report := metrics.StartLogging(c)
 	defer report.Close()
 
 	c.IndentedJSON(200, api.Config.OpenIDConfiguration())
 }
 
-func (api *LdapinAPI) GetCerts(c *gin.Context) {
+func (api *LauthAPI) GetCerts(c *gin.Context) {
 	report := metrics.StartLogging(c)
 	defer report.Close()
 

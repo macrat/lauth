@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/metrics"
+	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/metrics"
 	"github.com/rs/zerolog/log"
 )
 
@@ -148,7 +148,7 @@ func (req *GetAuthzRequest) Report(c *metrics.Context) {
 	c.Set("prompt", req.Prompt)
 }
 
-func (api *LdapinAPI) GetAuthz(c *gin.Context) {
+func (api *LauthAPI) GetAuthz(c *gin.Context) {
 	report := metrics.StartAuthz(c)
 	defer report.Close()
 

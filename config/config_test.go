@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 )
 
 func TestTakeOptions(t *testing.T) {

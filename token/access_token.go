@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 )
 
 type AccessTokenClaims struct {

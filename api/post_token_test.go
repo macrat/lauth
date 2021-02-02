@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ldapin/api"
-	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/testutil"
-	"github.com/macrat/ldapin/token"
+	"github.com/macrat/lauth/api"
+	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/testutil"
+	"github.com/macrat/lauth/token"
 )
 
 func TestPostToken(t *testing.T) {

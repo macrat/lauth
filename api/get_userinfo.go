@@ -5,15 +5,15 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/ldap"
-	"github.com/macrat/ldapin/metrics"
+	"github.com/macrat/lauth/ldap"
+	"github.com/macrat/lauth/metrics"
 )
 
 type GetUserInfoHeader struct {
 	Authorization string `header:"Authorization"`
 }
 
-func (api *LdapinAPI) GetUserInfo(c *gin.Context) {
+func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 	report := metrics.StartUserinfo(c)
 	defer report.Close()
 

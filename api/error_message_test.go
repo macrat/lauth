@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/api"
-	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/lauth/api"
+	"github.com/macrat/lauth/testutil"
 )
 
 func ServeErrorMessageRedirect(t *testing.T, msg api.ErrorMessage) *httptest.ResponseRecorder {

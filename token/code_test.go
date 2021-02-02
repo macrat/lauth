@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/testutil"
-	"github.com/macrat/ldapin/token"
+	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/testutil"
+	"github.com/macrat/lauth/token"
 )
 
 func TestCodeToken(t *testing.T) {

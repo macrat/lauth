@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 )
 
 func TestMappingClaims(t *testing.T) {

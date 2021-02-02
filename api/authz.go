@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTime time.Time) (*url.URL, *ErrorMessage) {
+func (api LauthAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTime time.Time) (*url.URL, *ErrorMessage) {
 	resp := make(url.Values)
 
 	if req.State != "" {
@@ -80,7 +80,7 @@ func (api LdapinAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTi
 	return redirectURI, nil
 }
 
-func (api LdapinAPI) MakeLoginSession(clientIP, clientID string) (string, error) {
+func (api LauthAPI) MakeLoginSession(clientIP, clientID string) (string, error) {
 	return api.TokenManager.CreateLoginToken(
 		api.Config.Issuer,
 		clientIP,

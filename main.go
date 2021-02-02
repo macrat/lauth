@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/api"
-	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/ldap"
-	"github.com/macrat/ldapin/metrics"
-	"github.com/macrat/ldapin/page"
-	"github.com/macrat/ldapin/token"
+	"github.com/macrat/lauth/api"
+	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/ldap"
+	"github.com/macrat/lauth/metrics"
+	"github.com/macrat/lauth/page"
+	"github.com/macrat/lauth/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -101,7 +101,7 @@ func serve(conf *config.Config) {
 		log.Fatal().Msgf("failed to connect LDAP server: %s", err)
 	}
 
-	api := &api.LdapinAPI{
+	api := &api.LauthAPI{
 		Connector:    connector,
 		TokenManager: tokenManager,
 		Config:       conf,
@@ -148,7 +148,7 @@ var (
 	debug      = false
 	conf       = &config.Config{}
 	cmd        = &cobra.Command{
-		Use:   "ldapin",
+		Use:   "lauth",
 		Short: "The simple OpenID Provider for LDAP like an ActiveDirectory.",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			zerolog.ErrorFieldName = "error_reason"

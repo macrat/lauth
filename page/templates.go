@@ -7,10 +7,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 	"github.com/rakyll/statik/fs"
 
-	_ "github.com/macrat/ldapin/page/statik"
+	_ "github.com/macrat/lauth/page/statik"
 )
 
 func Load(conf config.TemplateConfig) (*template.Template, error) {

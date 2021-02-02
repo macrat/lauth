@@ -3,7 +3,7 @@ package testutil
 import (
 	"fmt"
 
-	"github.com/macrat/ldapin/ldap"
+	"github.com/macrat/lauth/ldap"
 )
 
 var (

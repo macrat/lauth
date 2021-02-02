@@ -3,7 +3,7 @@ package token_test
 import (
 	"testing"
 
-	"github.com/macrat/ldapin/token"
+	"github.com/macrat/lauth/token"
 )
 
 func TestTokenHash(t *testing.T) {

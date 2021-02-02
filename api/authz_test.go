@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/lauth/testutil"
 )
 
 var (

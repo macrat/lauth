@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/macrat/ldapin/testutil"
-	"github.com/macrat/ldapin/token"
+	"github.com/macrat/lauth/testutil"
+	"github.com/macrat/lauth/token"
 )
 
 func TestPostAuthz(t *testing.T) {

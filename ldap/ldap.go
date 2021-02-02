@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/go-ldap/ldap/v3"
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 )
 
 var (

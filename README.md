@@ -1,5 +1,5 @@
-Ldapin
-======
+Lauth
+=====
 
 The simple OpenID Provider for LDAP like a Microsoft ActiveDirectory(AD).
 
@@ -9,9 +9,9 @@ Start server,
 
 ``` shell
 $ USER="CN=username,OU=somewhere,DC=example,DC=local"
-$ ldapin --ldap ldap://${USER}:${PASSWORD}@ldap.example.com --ldap-base-dn OU=somewhere,DC=example,DC=com
+$ lauth --ldap ldap://${USER}:${PASSWORD}@ldap.example.com --ldap-base-dn OU=somewhere,DC=example,DC=com
 
-$ ldapin --ldap ldap://${DOMAIN}%5c${USERNAME}:${PASSWORD}@ldap.example.com --ldap-base-dn OU=somewhere,DC=example,DC=com  # for ActiveDirectory.
+$ lauth --ldap ldap://${DOMAIN}%5c${USERNAME}:${PASSWORD}@ldap.example.com --ldap-base-dn OU=somewhere,DC=example,DC=com  # for ActiveDirectory.
 ```
 
 And access to API.

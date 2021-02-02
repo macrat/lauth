@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/coreos/go-oidc"
-	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/lauth/testutil"
 	"golang.org/x/oauth2"
 )
 

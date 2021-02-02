@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/lauth/testutil"
 )
 
 func TestGetAuthz(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/metrics"
+	"github.com/macrat/lauth/metrics"
 )
 
 var (

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc"
-	"github.com/macrat/ldapin/testutil"
+	"github.com/macrat/lauth/testutil"
 )
 
 func TestErrorRoutes(t *testing.T) {

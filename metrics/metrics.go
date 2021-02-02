@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	NAMESPACE = "ldapin"
+	NAMESPACE = "lauth"
 )
 
 type ErrorReporter interface {

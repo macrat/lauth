@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/macrat/ldapin/secret"
+	"github.com/macrat/lauth/secret"
 	"github.com/spf13/cobra"
 )
 

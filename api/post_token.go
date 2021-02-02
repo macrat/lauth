@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/ldapin/config"
-	"github.com/macrat/ldapin/metrics"
-	"github.com/macrat/ldapin/secret"
+	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/metrics"
+	"github.com/macrat/lauth/secret"
 )
 
 type PostTokenRequest struct {
@@ -138,7 +138,7 @@ type PostTokenResponse struct {
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
-func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*PostTokenResponse, *ErrorMessage) {
+func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*PostTokenResponse, *ErrorMessage) {
 	code, err := api.TokenManager.ParseCode(req.Code)
 	if err != nil {
 		return nil, &ErrorMessage{
@@ -245,7 +245,7 @@ func (api *LdapinAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*
 	}, nil
 }
 
-func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequest) (*PostTokenResponse, *ErrorMessage) {
+func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequest) (*PostTokenResponse, *ErrorMessage) {
 	refreshToken, err := api.TokenManager.ParseRefreshToken(req.RefreshToken)
 	if err != nil {
 		return nil, &ErrorMessage{
@@ -323,7 +323,7 @@ func (api *LdapinAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenReq
 	}, nil
 }
 
-func (api *LdapinAPI) PostToken(c *gin.Context) {
+func (api *LauthAPI) PostToken(c *gin.Context) {
 	report := metrics.StartToken(c)
 	defer report.Close()
 

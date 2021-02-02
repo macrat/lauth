@@ -1,4 +1,4 @@
-module github.com/macrat/ldapin
+module github.com/macrat/lauth
 
 go 1.15
 
@@ -27,18 +27,18 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 )
 
-replace github.com/macrat/ldapin/api => ./api
+replace github.com/macrat/lauth/api => ./api
 
-replace github.com/macrat/ldapin/config => ./config
+replace github.com/macrat/lauth/config => ./config
 
-replace github.com/macrat/ldapin/ldap => ./ldap
+replace github.com/macrat/lauth/ldap => ./ldap
 
-replace github.com/macrat/ldapin/page => ./page
+replace github.com/macrat/lauth/page => ./page
 
-replace github.com/macrat/ldapin/page/statik => ./page/statik
+replace github.com/macrat/lauth/page/statik => ./page/statik
 
-replace github.com/macrat/ldapin/secret => ./secret
+replace github.com/macrat/lauth/secret => ./secret
 
-replace github.com/macrat/ldapin/testutil => ./testutil
+replace github.com/macrat/lauth/testutil => ./testutil
 
-replace github.com/macrat/ldapin/token => ./token
+replace github.com/macrat/lauth/token => ./token

@@ -3,7 +3,7 @@ package api_test
 import (
 	"testing"
 
-	"github.com/macrat/ldapin/api"
+	"github.com/macrat/lauth/api"
 )
 
 func TestStringSet(t *testing.T) {

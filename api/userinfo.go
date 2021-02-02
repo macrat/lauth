@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/macrat/ldapin/config"
+	"github.com/macrat/lauth/config"
 	"github.com/rs/zerolog/log"
 )
 
-func (api LdapinAPI) userinfo(subject string, scope *StringSet) (map[string]interface{}, error) {
+func (api LauthAPI) userinfo(subject string, scope *StringSet) (map[string]interface{}, error) {
 	conn, err := api.Connector.Connect()
 	if err != nil {
 		log.Error().

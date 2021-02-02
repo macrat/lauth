@@ -3,7 +3,7 @@ package secret_test
 import (
 	"testing"
 
-	"github.com/macrat/ldapin/secret"
+	"github.com/macrat/lauth/secret"
 )
 
 func TestGenerate(t *testing.T) {
