@@ -1,6 +1,13 @@
 Lauth
 =====
 
+![Test and Build](https://github.com/macrat/lauth/workflows/Test%20and%20Build/badge.svg)
+[![codecov](https://codecov.io/gh/macrat/lauth/branch/main/graph/badge.svg)](https://codecov.io/gh/macrat/lauth)
+[![Go Report Card](https://goreportcard.com/badge/github.com/macrat/lauth)](https://goreportcard.com/report/github.com/macrat/lauth)
+[![Docker Hub](https://img.shields.io/badge/container-Docker%20Hub-blue.svg?logo=docker&logoColor=white)](https://hub.docker.com/r/macrat/lauth)
+[![GitHub Container Registry](https://img.shields.io/badge/container-ghcr.io-blue.svg?logo=docker&logoColor=white)](https://github.com/users/macrat/packages/container/package/lauth)
+[![License](https://img.shields.io/github/license/macrat/lauth)](https://github.com/macrat/lauth/blob/master/LICENSE)
+
 The simple OpenID Provider for LDAP like a Microsoft ActiveDirectory(AD).
 
 ![Lauth can translate LDAP and OAuth2/OpenID Connect](./images/lauth.jpg)
