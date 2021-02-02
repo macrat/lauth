@@ -1,12 +1,11 @@
 Lauth
 =====
 
-![Test and Build](https://github.com/macrat/lauth/workflows/Test%20and%20Build/badge.svg)
-[![codecov](https://codecov.io/gh/macrat/lauth/branch/main/graph/badge.svg)](https://codecov.io/gh/macrat/lauth)
-[![Go Report Card](https://goreportcard.com/badge/github.com/macrat/lauth)](https://goreportcard.com/report/github.com/macrat/lauth)
-[![Docker Hub](https://img.shields.io/badge/container-Docker%20Hub-blue.svg?logo=docker&logoColor=white)](https://hub.docker.com/r/macrat/lauth)
-[![GitHub Container Registry](https://img.shields.io/badge/container-ghcr.io-blue.svg?logo=docker&logoColor=white)](https://github.com/users/macrat/packages/container/package/lauth)
-[![License](https://img.shields.io/github/license/macrat/lauth)](https://github.com/macrat/lauth/blob/master/LICENSE)
+![Test and Build status](https://github.com/macrat/lauth/workflows/Test%20and%20Build/badge.svg)
+[![codecov coverage](https://codecov.io/gh/macrat/lauth/branch/main/graph/badge.svg)](https://codecov.io/gh/macrat/lauth)
+[![Container in Docker Hub](https://img.shields.io/badge/container-Docker%20Hub-blue.svg?logo=docker&logoColor=white)](https://hub.docker.com/r/macrat/lauth)
+[![Container in GitHub Container Registry](https://img.shields.io/badge/container-ghcr.io-blue.svg?logo=docker&logoColor=white)](https://github.com/users/macrat/packages/container/package/lauth)
+[![MIT License](https://img.shields.io/github/license/macrat/lauth)](https://github.com/macrat/lauth/blob/master/LICENSE)
 
 The simple OpenID Provider for LDAP like a Microsoft ActiveDirectory(AD).
 
@@ -62,16 +61,12 @@ Finally, use it.
 
 - authorization endpoint:
   http://localhost:8000/login
-
 - token endpoint:
   http://localhost:8000/login/token
-
 - userinfo endpoint:
   http://localhost:8000/login/userinfo
-
 - jwks endpoint:
   http://localhost:8000/login/jwks
-
 - discovery endpoint:
   http://localhost:8000/.well-known/openid-configuration
 
