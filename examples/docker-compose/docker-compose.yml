@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+  ldap:
+    image: osixia/openldap:latest
+    environment:
+      LDAP_ORGANISATION: "Your Organization"
+      LDAP_DOMAIN: example.com
+      LDAP_ADMIN_PASSWORD: "password for administrator"
+
+  ldapadmin:
+    image: osixia/phpldapadmin:latest
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: ldap
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "8080:80"
+    depends_on:
+      - ldap
+
+  lauth:
+    image: macrat/lauth:main
+    environment:
+      LAUTH_LDAP_SERVER: ldap://ldap
+      LAUTH_LDAP_USER: "CN=admin,DC=example,DC=com"
+      LAUTH_LDAP_PASSWORD: "password for administrator"
+      LAUTH_LDAP_DISABLE_TLS: "true"
+      LAUTH_CONFIG: /config.yml
+    volumes:
+      - ./config.yml:/config.yml:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ldap

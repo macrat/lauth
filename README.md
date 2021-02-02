@@ -79,6 +79,10 @@ In the production use-case, please add those options.
 - `--tls-cert` and `--tls-key`: TLS encryption key files.
 - `--metrics-username` and `--metrics-password`: Credentials for protect metrics page. (metrics page perhaps interesting hint for an attacker)
 
+### Use in docker-compose
+
+Please see [example](./examples/docker-compose/).
+
 
 ## Customize
 
