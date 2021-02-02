@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +27,11 @@ func serve(conf *config.Config) {
 	fmt.Println()
 
 	if debug {
+		fmt.Println("---")
+		confYAML, _ := conf.AsYAML()
+		fmt.Print(confYAML)
+		fmt.Println("---")
+
 		fmt.Fprintln(os.Stderr, "WARNING  Debug mode is enabled.")
 		fmt.Fprintln(os.Stderr, "         Logs will include credentials or sensitive data.")
 		fmt.Fprintln(os.Stderr, "")
@@ -58,13 +64,6 @@ func serve(conf *config.Config) {
 		fmt.Fprintln(os.Stderr, "      Perhaps you have to allow this if used by SPA site.")
 		fmt.Fprintln(os.Stderr, "      You can allow this with --allow-implicit-flow option.")
 		fmt.Fprintln(os.Stderr, "")
-	}
-
-	if debug {
-		fmt.Println("---")
-		confYAML, _ := conf.AsYAML()
-		fmt.Print(confYAML)
-		fmt.Println("---")
 	}
 
 	var tokenManager token.Manager
@@ -148,8 +147,21 @@ var (
 	debug      = false
 	conf       = &config.Config{}
 	cmd        = &cobra.Command{
-		Use:   "lauth",
-		Short: "The simple OpenID Provider for LDAP like an ActiveDirectory.",
+		Version: "1.0.0",
+		Use:     "lauth",
+		Short:   "The simple OpenID Provider for LDAP like an ActiveDirectory.",
+		Long: (strings.Join([]string{
+			"     _                _   _",
+			"    | |    __ _ _   _| |_| |__",
+			"    | |   / _` | | | | __| '_ \\",
+			"    | |__| (_| | |_| | |_| | | |",
+			"    |_____\\__,_|\\__,_|\\__|_| |_|",
+			"",
+			"The simple OpenID Provider for LDAP like an ActiveDirectory.",
+			"",
+			"seealso: https://github.com/macrat/lauth",
+		}, "\n")),
+		SilenceUsage: true,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			zerolog.ErrorFieldName = "error_reason"
 

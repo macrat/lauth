@@ -192,6 +192,7 @@ func (c *Config) Load(file string, flags *pflag.FlagSet) error {
 	if flags != nil {
 		BindFlags(vip, flags)
 	}
+	vip.SetEnvPrefix("LAUTH")
 	vip.AutomaticEnv()
 
 	vip.SetConfigType("yaml")
