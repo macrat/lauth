@@ -155,7 +155,7 @@ scope:
 $ lauth [OPTIONS]
 ```
 
-|command line           |config file          |environment variable       |default value              |description|                                                                    |
+|command line           |config file          |environment variable       |default value              |description|
 |-----------------------|---------------------|---------------------------|---------------------------|-----------|
 |`--issuer`             |`issuer`             |`LAUTH_ISSUER`             |`http://localhost:8000`    |Issuer URL.|
 |`--listen`             |`listen`             |`LAUTH_LISTEN`             |same port as the Issuer URL|Listen address and port.|
