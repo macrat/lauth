@@ -1,2 +1,7 @@
 ignore:
   - testutil
+
+coverage:
+  status:
+    project: off
+    patch: off
