@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/coreos/go-oidc/v3 v3.0.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-ldap/ldap/v3 v3.2.4
 	github.com/gobwas/glob v0.2.3
@@ -23,22 +23,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
+	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/square/go-jose.v2 v2.5.1
 	gopkg.in/yaml.v2 v2.3.0
 )
-
-replace github.com/macrat/lauth/api => ./api
-
-replace github.com/macrat/lauth/config => ./config
-
-replace github.com/macrat/lauth/ldap => ./ldap
-
-replace github.com/macrat/lauth/page => ./page
-
-replace github.com/macrat/lauth/page/statik => ./page/statik
-
-replace github.com/macrat/lauth/secret => ./secret
-
-replace github.com/macrat/lauth/testutil => ./testutil
-
-replace github.com/macrat/lauth/token => ./token

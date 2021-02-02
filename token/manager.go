@@ -7,8 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
+	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 type Manager struct {

@@ -1,8 +1,8 @@
 package token
 
 import (
-	"github.com/dgrijalva/jwt-go"
 	"github.com/macrat/lauth/config"
+	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 type OIDCClaims struct {

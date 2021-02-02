@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/macrat/lauth/config"
 	"github.com/macrat/lauth/token"
+	"gopkg.in/dgrijalva/jwt-go.v3"
 	"gopkg.in/square/go-jose.v2"
 )
 
