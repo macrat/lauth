@@ -19,6 +19,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	VERSION = "0.0.0"
+)
+
 func serve(conf *config.Config) {
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -147,7 +151,7 @@ var (
 	debug      = false
 	conf       = &config.Config{}
 	cmd        = &cobra.Command{
-		Version: "1.0.0",
+		Version: VERSION,
 		Use:     "lauth",
 		Short:   "The simple OpenID Provider for LDAP like an ActiveDirectory.",
 		Long: (strings.Join([]string{
