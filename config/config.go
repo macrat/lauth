@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"net/url"
 	"path"
 	"reflect"
@@ -196,6 +197,10 @@ func (c *Config) Load(file string, flags *pflag.FlagSet) error {
 	vip.AutomaticEnv()
 
 	vip.SetConfigType("yaml")
+
+	if file == "" {
+		file = os.Getenv("LAUTH_CONFIG")
+	}
 
 	if file != "" {
 		vip.SetConfigFile(file)

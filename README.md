@@ -186,7 +186,7 @@ $ lauth [OPTIONS]
 |`--metrics-path`       |`metrics.path`       |`LAUTH_METRICS_PATH`       |`/metrics`                 |Path to Prometheus metrics.|
 |`--metrics-username`   |`metrics.username`   |`LAUTH_METRICS_USERNAME`   |                           |Basic auth username to access to Prometheus metrics.<br />If omit, disable authentication.|
 |`--metrics-password`   |`metrics.password`   |`LAUTH_METRICS_PASSWORD`   |                           |Basic auth password to access to Prometheus metrics.<br />If omit, disable authentication.|
-|`--config`             |                     |                           |                           |Load options from YAML file.|
+|`--config`             |                     |`LAUTH_CONFIG`             |                           |Load options from YAML file.|
 |`--debug`              |                     |                           |                           |Enable debug output. *This is insecure* for production use.|
 
 
