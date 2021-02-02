@@ -3,7 +3,7 @@ Lauth
 
 The simple OpenID Provider for LDAP like a Microsoft ActiveDirectory(AD).
 
-![Lauth can translate LDAP and OAuth2/OpenID Connect](./images/lauth.svg)
+![Lauth can translate LDAP and OAuth2/OpenID Connect](./images/lauth.jpg)
 
 ## Usage
 
