@@ -133,13 +133,6 @@ func (req GetAuthzRequest) Validate(config *config.Config) *ErrorMessage {
 	return nil
 }
 
-func (req *GetAuthzRequest) BindAndValidate(c *gin.Context, config *config.Config) *ErrorMessage {
-	if err := req.Bind(c); err != nil {
-		return err
-	}
-	return req.Validate(config)
-}
-
 func (req *GetAuthzRequest) Report(c *metrics.Context) {
 	c.Set("client_id", req.ClientID)
 	c.Set("response_type", req.ResponseType)
