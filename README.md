@@ -70,6 +70,8 @@ Finally, use it.
 - discovery endpoint:
   http://localhost:8000/.well-known/openid-configuration
 
+See also [all options list](#Options) and [example config file](./config.example.yml).
+
 ### For production
 
 In the production use-case, please add those options.
@@ -126,7 +128,7 @@ $ lauth --config config.yml
 
 You can change scope and claims for `id_token` and userinfo in the config file.
 
-In default, set claims for Microsoft ActiveDirectory.
+This is default config; That claims for Microsoft ActiveDirectory.
 
 ``` yaml
 scope:

@@ -1,35 +1,83 @@
-issuer: http://localhost:8000
-listen: ":8000"
+# Lauth default config
 
-sign_key: /path/to/jwt-sign.key
+# The Issuer of tokens.
+# This is must be same as external URL.
+# You can use sub path like https://yourdomain.example.com/path/to/issuer
+# Same as --issuer and LAUTH_ISSUER.
+issuer: http://localhost:8000
+
+# Listen address of service.
+# In default, use same port as the issuer address.
+# Same as --listen and LAUTH_LISTEN.
+#listen: ":8000"
+
+# Path to RSA private key for signing to tokens.
+# Default is not set.
+# Same as --sign-key and LAUTH_SIGN_KEY.
+#sign_key: /path/to/jwt-sign.key
 
 ldap:
-  server: ldap://ldap.example.com
-  base_dn: OU=somewhere,DC=example,DC=local
+  # The backend LDAP server address. starts with ldap:// or ldaps://.
+  # Same as --ldap and LAUTH_LDAP_SERVER.
+  #server: ldap://ldap.example.com
+
+  # Base DN for search user account.
+  # Same as --ldap-base-dn and LAUTH_LDAP_BASE_DN.
+  #base_dn: OU=somewhere,DC=example,DC=local
+
+  # User ID Attribute in the LDAP server.
+  # Default value "sAMAccountName" is user ID of the Microsoft ActiveDirectory.
+  # Same as --ldap-id-attribute and LAUTH_LDAP_ID_ATTRIBUTE.
   id_attribute: sAMAccountName
+
+  # Disabling TLS encryption when connecting to the LDAP server.
+  # Same as --ldap-disable-tls and LAUTH_LDAP_DISABLE_TLS.
   disable_tls: false
 
-tls:
-  cert: /path/to/tls.crt
-  key: /path/to/tls.key
+# Key files of TLS encryption for serving OAuth2/OpenID Connect API.
+# Same as --tls-key/--tls-cert and LAUTH_TLS_CERT/LAUTH_TLS_KEY.
+#tls:
+#  cert: /path/to/tls.crt
+#  key: /path/to/tls.key
 
-template:
-  login_page: /path/to/login-template.html
-  error_page: /path/to/error-template.html
+# HTML template files.
+# Same as --login-page/--error-page and LAUTH_TEMPLATE_LOGIN_PAGE/LAUTH_TEMPLATE_ERROR_PAGE.
+#template:
+#  login_page: /path/to/login-template.html
+#  error_page: /path/to/error-template.html
 
 expire:
+  # Time limit to input username and password on the login page.
+  # Same as --login-expire and LAUTH_EXPIRE_LOGIN.
   login: 1h
+
+  # Time limit to exchange code to access_token or id_token.
+  # Same as --code-expire and LAUTH_EXPIRE_CODE.
   code: 5m
+
+  # Expiration duration of access_token and id_token.
+  # Same as --token-expire and LAUTH_EXPIRE_TOKEN.
   token: 1d
+
+  # Expiration duration of refresh_token.
+  # If set 0, refresh_token will not create.
+  # Same as --refresh-expire and LAUTH_EXPIRE_REFRESH.
   refresh: 7d
+
+  # Duration for don't show login page if logged in past.
+  # If set 0, always ask the username and password to the end-user.
+  # Same as --sso-expire and LAUTH_EXPIRE_SSO.
   sso: 14d
 
+# Endpoint pathes.
 endpoint:
-  authorization: /login
-  token: /login/token
-  userinfo: /login/userinfo
-  jwks: /login/certs
+  authorization: /login     # Same as --authz-endpoint    and LAUTH_ENDPOINT_AUTHZ.
+  token: /login/token       # Same as --token-endpoint    and LAUTH_ENDPOINT_TOKEN.
+  userinfo: /login/userinfo # Same as --userinfo-endpoint and LAUTH_ENDPOINT_USERINFO.
+  jwks: /login/jwks         # Same as --jwks-endpoint     and LAUTH_ENDPOINT_JWKS.
 
+# Scope and claims for id_token and userinfo endpoint.
+# Default values are set for Microsoft ActiveDirectory.
 scope:
   profile:
     - claim: name
@@ -52,16 +100,32 @@ scope:
       attribute: memberOf
       type: '[]string'
 
-client:
-  http://example.com:
-    secret: $2y$05$ctB3fgxdzGEXICdJCsb1qOkl3169uhjq0UC5vFQa7o.yWE69vJccC # secret key that hash by `lauth gen-client` command
-    redirect_uri:
-      - http://example.com/login/*
-      - http://*.example.com/**
+# Client registrations.
+# You can generate secret with `gen-client` command like this.
+# $ lauth gen-client http://example.com -u http://example.com/login/* -u http://*.example.com/**
+#client:
+#  http://example.com:
+#    secret: $2y$05$ctB3fgxdzGEXICdJCsb1qOkl3169uhjq0UC5vFQa7o.yWE69vJccC # secret key that hash by `lauth gen-client` command
+#    redirect_uri:
+#      - http://example.com/login/*
+#      - http://*.example.com/**
 
+# Disabe check client_id, client_secret, and redirect_uri.
+# But, will check when present those parameters even if set this as true.
+# Same as --disable-client-auth and LAUTH_DISABLE_CLIENT_AUTH.
 disable_client_auth: false
 
+# Allow Implicit and Hybrid flow.
+# Same as --allow-implicit-flow and LAUTH_ALLOW_IMPLICIT_FLOW.
+allow_implicit_flow: false
+
 metrics:
+  # Path to Prometheus metrics page.
+  # Same as --metrics-path and LAUTH_METRICS_PATH.
   path: /metrics
-  username: prometheus-user
-  password: password for basic auth
+
+  # Username and password of Basic authentication.
+  # If absent this, Basic auth will disable.
+  # Same as --metrics-username/--metrics-password and LAUTH_METRICS_USERNAME/LAUTH_METRICS_PASSWORD.
+  #username: prometheus-user
+  #password: password for basic auth
