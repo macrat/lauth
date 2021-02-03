@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/config"
 	"github.com/macrat/lauth/metrics"
-	"github.com/rs/zerolog/log"
 )
 
 type GetAuthzRequest struct {
@@ -156,17 +155,22 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 	c.Header("Pragma", "no-cache")
 
 	var req GetAuthzRequest
-	if err := (&req).BindAndValidate(c, api.Config); err != nil {
-		req.Report(report)
+	if err := req.Bind(c); err != nil {
 		err.Report(report)
 		err.Redirect(c)
 		return
 	}
 	req.Report(report)
-	report.Set("authn_by", "password")
+
+	if err := req.Validate(api.Config); err != nil {
+		err.Report(report)
+		err.Redirect(c)
+		return
+	}
 
 	prompt := ParseStringSet(req.Prompt)
 
+	report.Set("authn_by", "password")
 	if !prompt.Has("login") && !prompt.Has("consent") && !prompt.Has("select_account") && api.Config.Expire.SSO > 0 {
 		if token, err := c.Cookie("token"); err == nil {
 			issuer := api.Config.Issuer
@@ -175,15 +179,14 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 				c.SetCookie("token", "", 0, "/", (*url.URL)(issuer).Hostname(), secure, true)
 			} else if req.MaxAge <= 0 || req.MaxAge > time.Now().Unix()-idToken.AuthTime {
 				report.Set("authn_by", "sso_token")
+				report.Set("username", idToken.Subject)
 
 				redirect, errMsg := api.makeAuthzTokens(req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
 				if errMsg != nil {
 					errMsg.Report(report)
 					errMsg.Redirect(c)
 				} else {
-					log.Debug().
-						Str("username", idToken.Subject).
-						Msg("logged in with SSO token")
+					report.Success()
 					c.Redirect(http.StatusFound, redirect.String())
 				}
 				return
@@ -192,6 +195,7 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 	}
 
 	if ParseStringSet(req.Prompt).Has("none") {
+		report.Set("authn_by", "sso_token")
 		e := req.makeRedirectError(nil, "login_required", "")
 		e.Report(report)
 		e.Redirect(c)
@@ -206,6 +210,7 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 		return
 	}
 
+	report.Continue()
 	c.HTML(http.StatusOK, "login.tmpl", gin.H{
 		"endpoints":        api.Config.EndpointPaths(),
 		"config":           api.Config,

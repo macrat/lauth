@@ -138,7 +138,7 @@ type PostTokenResponse struct {
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
-func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*PostTokenResponse, *ErrorMessage) {
+func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest, report *metrics.Context) (*PostTokenResponse, *ErrorMessage) {
 	code, err := api.TokenManager.ParseCode(req.Code)
 	if err != nil {
 		return nil, &ErrorMessage{
@@ -146,6 +146,7 @@ func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*P
 			Reason: InvalidGrant,
 		}
 	}
+	report.Set("username", code.Subject)
 	if err := code.Validate(api.Config.Issuer); err != nil {
 		return nil, &ErrorMessage{
 			Err:    err,
@@ -245,7 +246,7 @@ func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest) (*P
 	}, nil
 }
 
-func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequest) (*PostTokenResponse, *ErrorMessage) {
+func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequest, report *metrics.Context) (*PostTokenResponse, *ErrorMessage) {
 	refreshToken, err := api.TokenManager.ParseRefreshToken(req.RefreshToken)
 	if err != nil {
 		return nil, &ErrorMessage{
@@ -253,6 +254,7 @@ func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequ
 			Reason: InvalidGrant,
 		}
 	}
+	report.Set("username", refreshToken.Subject)
 	if err := refreshToken.Validate(api.Config.Issuer); err != nil {
 		return nil, &ErrorMessage{
 			Err:    err,
@@ -345,15 +347,16 @@ func (api *LauthAPI) PostToken(c *gin.Context) {
 	var resp *PostTokenResponse
 	var err *ErrorMessage
 	if req.GrantType == "authorization_code" {
-		resp, err = api.postTokenWithCode(c, req)
+		resp, err = api.postTokenWithCode(c, req, report)
 	} else {
-		resp, err = api.postTokenWithRefreshToken(c, req)
+		resp, err = api.postTokenWithRefreshToken(c, req, report)
 	}
 	if err != nil {
 		err.Report(report)
 		err.JSON(c)
 	} else if resp != nil {
 		report.Set("scope", resp.Scope)
+		report.Success()
 		c.JSON(http.StatusOK, resp)
 	}
 }

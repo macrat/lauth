@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/lauth/config"
 	"github.com/macrat/lauth/metrics"
 	"github.com/rs/zerolog/log"
 )
@@ -31,27 +30,28 @@ func (req *PostAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
 	return nil
 }
 
-func (req *PostAuthzRequest) BindAndValidate(c *gin.Context, config *config.Config) *ErrorMessage {
-	if err := req.Bind(c); err != nil {
-		return err
-	}
-	return req.Validate(config)
-}
-
 func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	report := metrics.StartAuthz(c)
 	defer report.Close()
+	report.Set("authn_by", "password")
 
 	c.Header("Cache-Control", "no-store")
 	c.Header("Pragma", "no-cache")
 
 	var req PostAuthzRequest
-	if err := (&req).BindAndValidate(c, api.Config); err != nil {
+	if err := (&req).Bind(c); err != nil {
+		err.Report(report)
 		err.Redirect(c)
 		return
 	}
-	report.Set("authn_by", "password")
 	req.Report(report)
+	report.Set("username", req.User)
+
+	if err := req.Validate(api.Config); err != nil {
+		err.Report(report)
+		err.Redirect(c)
+		return
+	}
 
 	showLoginForm := func(description string) {
 		loginToken, err := api.MakeLoginSession(c.ClientIP(), req.ClientID)
@@ -89,6 +89,7 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	}
 
 	if req.User == "" || req.Password == "" {
+		report.UserError()
 		showLoginForm("missing username or password")
 		return
 	}
@@ -107,6 +108,7 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	defer conn.Close()
 
 	if err := conn.LoginTest(req.User, req.Password); err != nil {
+		report.UserError()
 		RandomDelay()
 		showLoginForm("invalid username or password")
 		return
@@ -140,9 +142,6 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 		return
 	}
 
-	log.Debug().
-		Str("username", req.User).
-		Msg("logged in with username and password")
-
+	report.Success()
 	c.Redirect(http.StatusFound, resp.String())
 }

@@ -5,7 +5,11 @@ import (
 )
 
 var (
-	Authz = NewEndpointMetrics("authz", []string{"method", "response_type", "client_id", "scope", "prompt", "authn_by"})
+	Authz = NewEndpointMetrics(
+		"authz",
+		[]string{"method", "response_type", "client_id", "username", "scope", "prompt", "authn_by"},
+		[]string{"method", "response_type", "authn_by"},
+	)
 )
 
 func init() {

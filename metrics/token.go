@@ -5,7 +5,11 @@ import (
 )
 
 var (
-	Token = NewEndpointMetrics("token", []string{"grant_type", "client_id", "scope"})
+	Token = NewEndpointMetrics(
+		"token",
+		[]string{"grant_type", "client_id", "username", "scope"},
+		[]string{"grant_type"},
+	)
 )
 
 func init() {

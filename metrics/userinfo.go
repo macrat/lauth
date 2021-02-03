@@ -5,7 +5,11 @@ import (
 )
 
 var (
-	Userinfo = NewEndpointMetrics("userinfo", []string{"scope"})
+	Userinfo = NewEndpointMetrics(
+		"userinfo",
+		[]string{"username", "scope"},
+		[]string{},
+	)
 )
 
 func init() {

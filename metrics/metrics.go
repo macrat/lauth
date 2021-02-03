@@ -20,18 +20,21 @@ type ErrorReporter interface {
 }
 
 type EndpointMetrics struct {
-	Name    string
-	Labels  []string
-	Latency *prometheus.SummaryVec
-	Count   *prometheus.CounterVec
+	Name        string
+	Labels      []string
+	TimerLabels []string
+	Latency     *prometheus.SummaryVec
+	Count       *prometheus.CounterVec
 }
 
-func NewEndpointMetrics(name string, labels []string) *EndpointMetrics {
+func NewEndpointMetrics(name string, labels []string, timerLabels []string) *EndpointMetrics {
 	labels = append(labels, "status", "error", "error_description")
+	timerLabels = append(timerLabels, "error")
 
 	return &EndpointMetrics{
-		Name:   name,
-		Labels: labels,
+		Name:        name,
+		Labels:      labels,
+		TimerLabels: timerLabels,
 		Latency: prometheus.NewSummaryVec(
 			prometheus.SummaryOpts{
 				Namespace: NAMESPACE,
@@ -39,7 +42,7 @@ func NewEndpointMetrics(name string, labels []string) *EndpointMetrics {
 				Name:      "seconds",
 				Help:      fmt.Sprintf("The latency to processes the %s endpoint.", name),
 			},
-			labels,
+			timerLabels,
 		),
 		Count: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -94,8 +97,37 @@ func (c *Context) SetError(err error, reason, description string) {
 	c.Labels["error_description"] = description
 }
 
+// Success is succeed process and done.
+func (c *Context) Success() {
+	c.Labels["status"] = "success"
+}
+
+// Continue is succeed process but not done.
+func (c *Context) Continue() {
+	c.Labels["status"] = "continue"
+}
+
+// UserError is invalid username or password or something.
+func (c *Context) UserError() {
+	c.Labels["status"] = "user_error"
+}
+
+// ClientError is client side error except UserError.
+func (c *Context) ClientError() {
+	c.Labels["status"] = "client_error"
+}
+
+// ServerError is internal server error.
+func (c *Context) ServerError() {
+	c.Labels["status"] = "server_error"
+}
+
 func (c *Context) Observe(v float64) {
-	c.Metrics.Latency.With(c.Labels).Observe(v)
+	labels := make([]string, len(c.Metrics.TimerLabels))
+	for i, l := range c.Metrics.TimerLabels {
+		labels[i] = c.Labels[l]
+	}
+	c.Metrics.Latency.WithLabelValues(labels...).Observe(v)
 }
 
 func (c *Context) writeLog(e *zerolog.Event) *zerolog.Event {
@@ -105,7 +137,7 @@ func (c *Context) writeLog(e *zerolog.Event) *zerolog.Event {
 	e.Str("endpoint", c.Metrics.Name)
 
 	for _, l := range c.Metrics.Labels {
-		if l != "method" {
+		if l != "method" && c.Labels[l] != "" {
 			e.Str(l, c.Labels[l])
 		}
 	}
@@ -118,15 +150,12 @@ func (c *Context) writeLog(e *zerolog.Event) *zerolog.Event {
 }
 
 func (c *Context) Close() error {
-	switch c.Labels["error"] {
-	case "":
-		c.Labels["status"] = "2xx"
-	case "server_error":
-		c.Labels["status"] = "5xx"
-	case "invalid_grant":
-		c.Labels["status"] = "3xx"
-	default:
-		c.Labels["status"] = "4xx"
+	if c.Labels["status"] == "" && c.Labels["error"] != "" {
+		if c.Labels["error"] == "server_error" {
+			c.ServerError()
+		} else {
+			c.ClientError()
+		}
 	}
 	c.Metrics.Count.With(c.Labels).Inc()
 	duration := c.timer.ObserveDuration()

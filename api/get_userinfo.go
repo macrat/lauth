@@ -49,6 +49,7 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 		e.JSON(c)
 		return
 	}
+	report.Set("username", token.Subject)
 
 	scope := ParseStringSet(token.Scope)
 	result, err := api.userinfo(token.Subject, scope)
@@ -69,6 +70,7 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 		e.Report(report)
 		e.JSON(c)
 	} else {
+		report.Success()
 		c.JSON(http.StatusOK, result)
 	}
 }
