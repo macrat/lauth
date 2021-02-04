@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	VERSION = "0.0.0"
+	VERSION = "0.1.0"
 )
 
 func serve(conf *config.Config) {
