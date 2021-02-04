@@ -36,8 +36,11 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 	rawToken := strings.TrimSpace(header.Authorization[len("Bearer "):])
 	token, err := api.TokenManager.ParseAccessToken(rawToken)
 	if err == nil {
+		report.Set("client_id", token.Audience)
+		report.Set("username", token.Subject)
 		err = token.Validate(api.Config.Issuer)
 	}
+
 	if err != nil {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
 		e := ErrorMessage{
@@ -49,7 +52,6 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 		e.JSON(c)
 		return
 	}
-	report.Set("username", token.Subject)
 
 	scope := ParseStringSet(token.Scope)
 	result, err := api.userinfo(token.Subject, scope)

@@ -7,8 +7,8 @@ import (
 var (
 	Userinfo = NewEndpointMetrics(
 		"userinfo",
-		[]string{"username", "scope"},
-		[]string{},
+		[]string{"client_id", "username", "scope"},
+		[]string{"client_id"},
 	)
 )
 
