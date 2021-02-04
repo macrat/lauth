@@ -112,6 +112,7 @@ func serve(conf *config.Config) {
 
 	log.Info().
 		Str("login_page", conf.Templates.LoginPage).
+		Str("logout_page", conf.Templates.LogoutPage).
 		Str("error_page", conf.Templates.ErrorPage).
 		Msg("loading HTML templates")
 	tmpl, err := page.Load(conf.Templates)
@@ -208,6 +209,7 @@ func init() {
 	flags.String("token-endpoint", "/login/token", "Path to token endpoint.")
 	flags.String("userinfo-endpoint", "/login/userinfo", "Path to userinfo endpoint.")
 	flags.String("jwks-uri", "/login/jwks", "Path to jwks uri.")
+	flags.String("logout-endpoint", "/logout", "Path to end session endpoint.")
 
 	loginExpire := config.Duration(1 * time.Hour)
 	flags.Var(&loginExpire, "login-expire", "Time limit to input username and password on the login page.")
@@ -228,6 +230,7 @@ func init() {
 	flags.Bool("ldap-disable-tls", false, "Disable use TLS when connecting to the LDAP server. THIS IS INSECURE.")
 
 	flags.String("login-page", "", "Templte file for login page.")
+	flags.String("logout-page", "", "Templte file for logged out page.")
 	flags.String("error-page", "", "Templte file for error page.")
 
 	flags.String("metrics-path", "/metrics", "Path to Prometheus metrics.")

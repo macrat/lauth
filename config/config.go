@@ -49,6 +49,7 @@ type EndpointConfig struct {
 	Token    string `yaml:"token"         flag:"token-endpoint"`
 	Userinfo string `yaml:"userinfo"      flag:"userinfo-endpoint"`
 	Jwks     string `yaml:"jwks"          flag:"jwks-uri"`
+	Logout   string `yaml:"logout"        flag:"logout-endpoint"`
 }
 
 type ExpireConfig struct {
@@ -85,8 +86,9 @@ type LDAPConfig struct {
 }
 
 type TemplateConfig struct {
-	LoginPage string `yaml:"login_page,omitempty" flag:"login-page"`
-	ErrorPage string `yaml:"error_page,omitempty" flag:"error-page"`
+	LoginPage  string `yaml:"login_page,omitempty"  flag:"login-page"`
+	LogoutPage string `yaml:"logout_page,omitempty" flag:"logout-page"`
+	ErrorPage  string `yaml:"error_page,omitempty"  flag:"error-page"`
 }
 
 type Config struct {
@@ -286,6 +288,7 @@ type ResolvedEndpointPaths struct {
 	Token               string
 	Userinfo            string
 	Jwks                string
+	Logout              string
 }
 
 func (c *Config) EndpointPaths() ResolvedEndpointPaths {
@@ -295,6 +298,7 @@ func (c *Config) EndpointPaths() ResolvedEndpointPaths {
 		Token:               path.Join(c.Issuer.Path, c.Endpoints.Token),
 		Userinfo:            path.Join(c.Issuer.Path, c.Endpoints.Userinfo),
 		Jwks:                path.Join(c.Issuer.Path, c.Endpoints.Jwks),
+		Logout:              path.Join(c.Issuer.Path, c.Endpoints.Logout),
 	}
 }
 
@@ -304,6 +308,7 @@ type OpenIDConfiguration struct {
 	TokenEndpoint                     string   `json:"token_endpoint"`
 	UserinfoEndpoint                  string   `json:"userinfo_endpoint"`
 	JwksEndpoint                      string   `json:"jwks_uri"`
+	EndSessionEndpoint                string   `json:"end_session_endpoint"`
 	ScopesSupported                   []string `json:"scopes_supported"`
 	ResponseTypesSupported            []string `json:"response_types_supported"`
 	ResponseModesSupported            []string `json:"response_modes_supported"`
@@ -338,6 +343,7 @@ func (c *Config) OpenIDConfiguration() OpenIDConfiguration {
 		TokenEndpoint:                     issuer + path.Join("/", c.Endpoints.Token),
 		UserinfoEndpoint:                  issuer + path.Join("/", c.Endpoints.Userinfo),
 		JwksEndpoint:                      issuer + path.Join("/", c.Endpoints.Jwks),
+		EndSessionEndpoint:                issuer + path.Join("/", c.Endpoints.Logout),
 		ScopesSupported:                   append(c.Scopes.ScopeNames(), "openid"),
 		ResponseTypesSupported:            responseTypes,
 		ResponseModesSupported:            []string{"query", "fragment"},

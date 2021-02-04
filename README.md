@@ -16,6 +16,7 @@ The simple OpenID Provider for LDAP like a Microsoft ActiveDirectory(AD).
 
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 - [OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html)
+- [OpenID Connect RP-Initiated Logout 1.0 - draft 01](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
 - [OAuth2 (RFC6749)](https://tools.ietf.org/html/rfc6749)
 - LDAP v3 (use [go-ldap](https://github.com/go-ldap/ldap))
 

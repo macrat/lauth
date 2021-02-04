@@ -9,7 +9,12 @@ import (
 
 	"github.com/coreos/go-oidc"
 	"github.com/macrat/lauth/testutil"
+	"github.com/rs/zerolog"
 )
+
+func init() {
+	zerolog.SetGlobalLevel(zerolog.Disabled)
+}
 
 func TestErrorRoutes(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)

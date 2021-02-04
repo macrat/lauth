@@ -54,6 +54,17 @@ func Load(conf config.TemplateConfig) (*template.Template, error) {
 		}
 	}
 
+	if conf.LogoutPage != "" {
+		raw, err := ioutil.ReadFile(conf.LogoutPage)
+		if err != nil {
+			return nil, err
+		}
+		_, err = t.Lookup("logout.tmpl").Parse(string(raw))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if conf.ErrorPage != "" {
 		raw, err := ioutil.ReadFile(conf.ErrorPage)
 		if err != nil {

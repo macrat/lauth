@@ -165,16 +165,13 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 
 	report.Set("authn_by", "password")
 	if !prompt.Has("login") && !prompt.Has("consent") && !prompt.Has("select_account") && api.Config.Expire.SSO > 0 {
-		if token, err := c.Cookie("token"); err == nil {
-			issuer := api.Config.Issuer
-			secure := issuer.Scheme == "https"
-			if idToken, err := api.TokenManager.ParseIDToken(token); err != nil || idToken.Validate(issuer, issuer.String()) != nil {
-				c.SetCookie("token", "", 0, "/", (*url.URL)(issuer).Hostname(), secure, true)
-			} else if req.MaxAge <= 0 || req.MaxAge > time.Now().Unix()-idToken.AuthTime {
+		token, err := api.GetSSOToken(c)
+		if err == nil {
+			if req.MaxAge <= 0 || req.MaxAge > time.Now().Unix()-token.AuthTime {
 				report.Set("authn_by", "sso_token")
-				report.Set("username", idToken.Subject)
+				report.Set("username", token.Subject)
 
-				redirect, errMsg := api.makeAuthzTokens(req, idToken.Subject, time.Unix(idToken.AuthTime, 0))
+				redirect, errMsg := api.makeAuthzTokens(req, token.Subject, time.Unix(token.AuthTime, 0))
 				if errMsg != nil {
 					errMsg.Report(report)
 					errMsg.Redirect(c)
@@ -184,6 +181,8 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 				}
 				return
 			}
+		} else if err != http.ErrNoCookie {
+			api.DeleteSSOToken(c)
 		}
 	}
 

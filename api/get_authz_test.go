@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/macrat/lauth/api"
 	"github.com/macrat/lauth/testutil"
 )
 
@@ -156,7 +157,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 		}
 
 		req, _ := http.NewRequest("GET", "/authz?"+tt.Request.Encode(), nil)
-		req.Header.Set("Cookie", fmt.Sprintf("token=%s", ssoToken))
+		req.Header.Set("Cookie", fmt.Sprintf("%s=%s", api.SSO_TOKEN_COOKIE, ssoToken))
 		resp := env.DoRequest(req)
 
 		if !tt.CanSSO {

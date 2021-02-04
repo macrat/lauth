@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -115,24 +114,7 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	}
 
 	if api.Config.Expire.SSO > 0 {
-		ssoToken, err := api.TokenManager.CreateSSOToken(
-			api.Config.Issuer,
-			req.User,
-			time.Now(),
-			time.Duration(api.Config.Expire.SSO),
-		)
-		if err == nil {
-			secure := api.Config.Issuer.Scheme == "https"
-			c.SetCookie(
-				"token",
-				ssoToken,
-				int(api.Config.Expire.SSO.IntSeconds()),
-				"/",
-				(*url.URL)(api.Config.Issuer).Hostname(),
-				secure,
-				true,
-			)
-		}
+		api.SetSSOToken(c, req.User)
 	}
 
 	resp, errMsg := api.makeAuthzTokens(req.GetAuthzRequest, req.User, time.Now())

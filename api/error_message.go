@@ -53,11 +53,26 @@ func (msg ErrorMessage) Error() string {
 	}
 }
 
+func (msg ErrorMessage) StatusCode() int {
+	switch msg.Reason {
+	case "server_error":
+		return http.StatusInternalServerError
+	case "invalid_token":
+		return http.StatusForbidden
+	default:
+		return http.StatusBadRequest
+	}
+}
+
+func (msg ErrorMessage) HTML(c *gin.Context) {
+	c.HTML(msg.StatusCode(), "error.tmpl", gin.H{
+		"error": msg,
+	})
+}
+
 func (msg ErrorMessage) Redirect(c *gin.Context) {
 	if msg.RedirectURI == nil || msg.RedirectURI.String() == "" || !msg.RedirectURI.IsAbs() {
-		c.HTML(http.StatusBadRequest, "error.tmpl", gin.H{
-			"error": msg,
-		})
+		msg.HTML(c)
 		return
 	}
 
@@ -80,14 +95,7 @@ func (msg ErrorMessage) Redirect(c *gin.Context) {
 }
 
 func (msg ErrorMessage) JSON(c *gin.Context) {
-	switch msg.Reason {
-	case "server_error":
-		c.JSON(http.StatusInternalServerError, msg)
-	case "invalid_token":
-		c.JSON(http.StatusForbidden, msg)
-	default:
-		c.JSON(http.StatusBadRequest, msg)
-	}
+	c.JSON(msg.StatusCode(), msg)
 }
 
 func (msg ErrorMessage) Report(r metrics.ErrorReporter) {

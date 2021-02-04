@@ -63,12 +63,14 @@ endpoint:
   token: /token
   userinfo: /userinfo
   jwks: /certs
+  logout: /logout
 
 client:
   some_client_id:
     secret: $2a$10$gKOvDAJeJCtoMW8DeLdxuOH/tqd2FxsM6hmupzZTW0XsiQhe282Te # hash of "secret for some-client"
     redirect_uri:
       - http://some-client.example.com/callback
+      - http://some-client.example.com/logout
 `, port, port)))
 
 	if err != nil {

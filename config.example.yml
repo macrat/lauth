@@ -41,10 +41,10 @@ ldap:
 #  key: /path/to/tls.key
 
 # HTML template files.
-# Same as --login-page/--error-page and LAUTH_TEMPLATE_LOGIN_PAGE/LAUTH_TEMPLATE_ERROR_PAGE.
 #template:
-#  login_page: /path/to/login-template.html
-#  error_page: /path/to/error-template.html
+#  login_page: /path/to/login-template.html   # Same as --login-page  and LAUTH_TEMPLATE_LOGIN_PAGE.
+#  logout_page: /path/to/logout-template.html # Same as --logout-page and LAUTH_TEMPLATE_LOGOUT_PAGE.
+#  error_page: /path/to/error-template.html   # Same as --error-page  and LAUTH_TEMPLATE_ERROR_PAGE.
 
 expire:
   # Time limit to input username and password on the login page.
@@ -75,6 +75,7 @@ endpoint:
   token: /login/token       # Same as --token-endpoint    and LAUTH_ENDPOINT_TOKEN.
   userinfo: /login/userinfo # Same as --userinfo-endpoint and LAUTH_ENDPOINT_USERINFO.
   jwks: /login/jwks         # Same as --jwks-endpoint     and LAUTH_ENDPOINT_JWKS.
+  logout: /logout           # Same as --logout-endpoint   and LAUTH_ENDPOINT_LOGOUT.
 
 # Scope and claims for id_token and userinfo endpoint.
 # Default values are set for Microsoft ActiveDirectory.

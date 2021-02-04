@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/macrat/lauth/api"
 	"github.com/macrat/lauth/testutil"
 )
 
@@ -166,7 +167,7 @@ func TestSSO(t *testing.T) {
 		t.Fatalf("cookies for SSO was not found")
 	}
 
-	cookie, _ := (&http.Request{Header: http.Header{"Cookie": rawCookie}}).Cookie("token")
+	cookie, _ := (&http.Request{Header: http.Header{"Cookie": rawCookie}}).Cookie(api.SSO_TOKEN_COOKIE)
 
 	ssoToken, err := env.API.TokenManager.ParseIDToken(cookie.Value)
 	if err != nil {
