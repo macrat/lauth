@@ -350,7 +350,7 @@ func (c *Config) OpenIDConfiguration() OpenIDConfiguration {
 		GrantTypesSupported:               []string{"authorization_code", "implicit", "refresh_token"},
 		SubjectTypesSupported:             []string{"public"},
 		IDTokenSigningAlgValuesSupported:  []string{"RS256"},
-		TokenEndpointAuthMethodsSupported: []string{"client_secret_pot", "client_secret_basic"},
+		TokenEndpointAuthMethodsSupported: []string{"client_secret_post", "client_secret_basic"},
 		DisplayValuesSupported:            []string{"page"},
 		ClaimsSupported: append(
 			c.Scopes.AllClaims(),
