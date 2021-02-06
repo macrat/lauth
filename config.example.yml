@@ -34,11 +34,16 @@ ldap:
   # Same as --ldap-disable-tls and LAUTH_LDAP_DISABLE_TLS.
   disable_tls: false
 
-# Key files of TLS encryption for serving OAuth2/OpenID Connect API.
-# Same as --tls-key/--tls-cert and LAUTH_TLS_CERT/LAUTH_TLS_KEY.
-#tls:
-#  cert: /path/to/tls.crt
-#  key: /path/to/tls.key
+# TLS configuration for serving OAuth2/OpenID Connect API.
+tls:
+  # Auto generate TLS Cert with Let's Encrypt.
+  # Same as --tls-auto and LAUTH_TLS_AUTO.
+  auto: false
+
+  # Key files of TLS encryption.
+  # Same as --tls-key/--tls-cert and LAUTH_TLS_CERT/LAUTH_TLS_KEY.
+  #cert: /path/to/tls.crt
+  #key: /path/to/tls.key
 
 # HTML template files.
 #template:

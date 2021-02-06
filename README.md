@@ -79,7 +79,7 @@ In the production use-case, please add those options.
 
 - `--issuer`: External URL of the server.
 - `--sign-key`: RSA private key for signing to the token.
-- `--tls-cert` and `--tls-key`: TLS encryption key files.
+- `--tls-cert` and `--tls-key` (or `--tls-auto`): TLS encryption key files (Or automate generate those with Let's encryption).
 - `--metrics-username` and `--metrics-password`: Credentials for protect metrics page. (metrics page perhaps interesting hint for an attacker)
 
 ### Use in docker-compose
@@ -171,6 +171,7 @@ $ lauth [OPTIONS]
 |`--sign-key`           |`sign_key`           |`LAUTH_SIGN_KEY`           |generate random key        |RSA private key for signing to token.|
 |`--allow-implicit-flow`|`allow_implicit_flow`|`LAUTH_ALLOW_IMPLICIT_FLOW`|                           |Allow implicit/hybrid flow.<br />It's may use for the SPA site or native application.|
 |`--disable-client-auth`|`disable_client_auth`|`LAUTH_DISABLE_CLIENT_AUTH`|                           |Allow use token endpoint without client authentication.|
+|`--tls-auto`           |`tls.auto`           |`LAUTH_TLS_AUTO`           |                           |Enable auto generate TLS cert with Let's Encryption.|
 |`--tls-cert`           |`tls.cert`           |`LAUTH_TLS_CERT`           |                           |Cert file for TLS encryption.|
 |`--tls-key`            |`tls.key`            |`LAUTH_TLS_KEY`            |                           |Key file for TLS encryption.|
 |`--authz-endpoint`     |`endpoint.authz`     |`LAUTH_ENDPOINT_AUTHZ`     |`/login`                   |Path to authorization endpoint.|

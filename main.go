@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/api"
 	"github.com/macrat/lauth/config"
@@ -133,11 +135,14 @@ func serve(conf *config.Config) {
 
 	log.Info().Msg("ready to serve")
 
+	handler := metrics.Middleware(HTTPCompressor(router))
 	server := &http.Server{
 		Addr:    conf.Listen.String(),
-		Handler: metrics.Middleware(HTTPCompressor(router)),
+		Handler: handler,
 	}
-	if conf.TLS.Cert != "" {
+	if conf.TLS.Auto {
+		err = autotls.Run(handler, (*url.URL)(conf.Issuer).Hostname())
+	} else if conf.TLS.Cert != "" {
 		err = server.ListenAndServeTLS(conf.TLS.Cert, conf.TLS.Key)
 	} else {
 		err = server.ListenAndServe()
@@ -202,6 +207,7 @@ func init() {
 	flags.Bool("allow-implicit-flow", false, "Allow implicit/hybrid flow. It's may use for the SPA site or native application.")
 	flags.Bool("disable-client-auth", false, "Allow use token endpoint without client authentication.")
 
+	flags.Bool("tls-auto", false, "Enable auto generate TLS with Let's Encrypt. Instance must be reachable from the Internet.")
 	flags.String("tls-cert", "", "Cert file for TLS encryption.")
 	flags.String("tls-key", "", "Key file for TLS encryption.")
 

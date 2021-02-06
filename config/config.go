@@ -72,6 +72,7 @@ type MetricsConfig struct {
 }
 
 type TLSConfig struct {
+	Auto bool   `yaml:"auto,omitempty" flag:"tls-auto"`
 	Cert string `yaml:"cert,omitempty" flag:"tls-cert"`
 	Key  string `yaml:"key,omitempty"  flag:"tls-key"`
 }
@@ -235,12 +236,15 @@ func (c *Config) Validate() error {
 		es = append(es, errors.New("--issuer: Issuer URL must be absolute URL."))
 	}
 
+	if c.TLS.Auto && (c.TLS.Cert != "" || c.TLS.Key != "") {
+		es = append(es, errors.New("--tls-auto: Can't use both of TLS auto and TLS Key/TLS Cert."))
+	}
 	if c.TLS.Cert != "" && c.TLS.Key == "" {
 		es = append(es, errors.New("--tls-key: TLS Key is required when set TLS Cert."))
 	} else if c.TLS.Cert == "" && c.TLS.Key != "" {
 		es = append(es, errors.New("--tls-cert: TLS Cert is required when set TLS Key."))
 	}
-	if c.TLS.Cert != "" && c.TLS.Key != "" && c.Issuer.Scheme != "https" {
+	if (c.TLS.Cert != "" || c.TLS.Key != "" || c.TLS.Auto) && c.Issuer.Scheme != "https" {
 		es = append(es, errors.New("--issuer: Please set https URL for Issuer URL when use TLS."))
 	}
 
