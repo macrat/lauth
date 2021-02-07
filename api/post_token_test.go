@@ -17,6 +17,7 @@ func TestPostToken(t *testing.T) {
 
 	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
 		{
+			Name: "invalid grant type",
 			Request: url.Values{
 				"grant_type":    {"invalid_grant_type"},
 				"client_id":     {"some_client_id"},
@@ -32,10 +33,8 @@ func TestPostToken(t *testing.T) {
 	})
 }
 
-func ResponseValidation(name string, env *testutil.APITestEnvironment, scope, codeHash string) testutil.JSONTester {
+func ResponseValidation(env *testutil.APITestEnvironment, scope, codeHash string) testutil.JSONTester {
 	return func(t *testing.T, body testutil.RawBody) {
-		t.Logf("response validation for \"%s\" test", name)
-
 		var resp api.PostTokenResponse
 		if err := body.Bind(&resp); err != nil {
 			t.Errorf("failed to unmarshal response body: %s", err)
@@ -135,6 +134,7 @@ func TestPostToken_Code(t *testing.T) {
 
 	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
 		{
+			Name: "missing code",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"client_id":     {"some_client_id"},
@@ -148,6 +148,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "set refresh_token in authorization_code grant",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -163,6 +164,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "invlida code (can't parse)",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {"invalid-code"},
@@ -176,6 +178,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "invlida code (invalid content)",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {invalidCode},
@@ -189,6 +192,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "missing client_id",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -202,6 +206,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "missing client_secret",
 			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {code},
@@ -215,6 +220,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "missing client_id in Basic authorization",
 			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {code},
@@ -228,6 +234,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "missing client_secret in Basic authorization",
 			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {code},
@@ -241,6 +248,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "not registered client_id",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -254,6 +262,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "incorrect client_secret",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -267,6 +276,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "missing redirect_uri",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -280,6 +290,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "invalid redirect_uri",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -294,6 +305,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "relative redirect_uri",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -308,6 +320,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "non registered redirect_uri",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -321,6 +334,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "success with query auth",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -329,9 +343,10 @@ func TestPostToken_Code(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use authorization_code and client_secret", env, "openid profile", token.TokenHash(code)),
+			CheckBody: ResponseValidation(env, "openid profile", token.TokenHash(code)),
 		},
 		{
+			Name: "success with basic auth",
 			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {code},
@@ -339,9 +354,10 @@ func TestPostToken_Code(t *testing.T) {
 			},
 			Token:     "Basic c29tZV9jbGllbnRfaWQ6c2VjcmV0IGZvciBzb21lLWNsaWVudA==",
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use authorization_code and Authorization header with openid scope", env, "openid profile", token.TokenHash(code)),
+			CheckBody: ResponseValidation(env, "openid profile", token.TokenHash(code)),
 		},
 		{
+			Name: "success with basic auth / without openid scope",
 			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {codeWithoutOpenID},
@@ -349,7 +365,7 @@ func TestPostToken_Code(t *testing.T) {
 			},
 			Token:     "Basic c29tZV9jbGllbnRfaWQ6c2VjcmV0IGZvciBzb21lLWNsaWVudA==",
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use authorization_code and Authorization header without openid scope", env, "profile", token.TokenHash(code)),
+			CheckBody: ResponseValidation(env, "profile", token.TokenHash(code)),
 		},
 	})
 }
@@ -398,6 +414,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 
 	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
 		{
+			Name: "missing refresh_token",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"client_id":     {"some_client_id"},
@@ -411,6 +428,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "set code in refresh_token grant",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
@@ -426,6 +444,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "invalid refresh_token (can't parse)",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {"invalid-token"},
@@ -439,6 +458,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "invalid refresh_token (invalid value)",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {invalidRefreshToken},
@@ -452,6 +472,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "missing cilent_id",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
@@ -465,6 +486,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "missing cilent_secret",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
@@ -478,6 +500,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "not registered client_id",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
@@ -491,6 +514,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "incorrect client_secret",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
@@ -504,6 +528,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "success",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
@@ -512,9 +537,10 @@ func TestPostToken_RefreshToken(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use refresh_token with openid scope", env, "openid profile", ""),
+			CheckBody: ResponseValidation(env, "openid profile", ""),
 		},
 		{
+			Name: "success / without openid scope",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshTokenWithoutOpenID},
@@ -523,7 +549,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("use refresh_token without openid scope", env, "profile", ""),
+			CheckBody: ResponseValidation(env, "profile", ""),
 		},
 	})
 }
@@ -561,6 +587,7 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 
 	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
 		{
+			Name: "client_secret set but client_id is not set",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -574,6 +601,7 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 			},
 		},
 		{
+			Name: "success with client_id and client_secret",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},
 				"code":          {code},
@@ -582,9 +610,10 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("code / public client with client_secret", env, "openid profile", token.TokenHash(code)),
+			CheckBody: ResponseValidation(env, "openid profile", token.TokenHash(code)),
 		},
 		{
+			Name: "success without client_secret",
 			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {code},
@@ -592,9 +621,10 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("code / public client without client_secret", env, "openid profile", token.TokenHash(code)),
+			CheckBody: ResponseValidation(env, "openid profile", token.TokenHash(code)),
 		},
 		{
+			Name: "not registered client_id / code",
 			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {code},
@@ -607,6 +637,7 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 			},
 		},
 		{
+			Name: "not registered client_id / refresh_token",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
@@ -619,22 +650,24 @@ func TestPostToken_AnonymousClients(t *testing.T) {
 			},
 		},
 		{
+			Name: "success without client auth / code",
 			Request: url.Values{
 				"grant_type":   {"authorization_code"},
 				"code":         {code},
 				"redirect_uri": {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("code / public client without client_id and client_secret", env, "openid profile", token.TokenHash(code)),
+			CheckBody: ResponseValidation(env, "openid profile", token.TokenHash(code)),
 		},
 		{
+			Name: "success without client auth / refresh_token",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 			},
 			Code:      http.StatusOK,
-			CheckBody: ResponseValidation("refresh_token / public client without client_id and client_secret", env, "openid profile", ""),
+			CheckBody: ResponseValidation(env, "openid profile", ""),
 		},
 	})
 }

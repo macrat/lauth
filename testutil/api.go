@@ -17,10 +17,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/api"
 	"github.com/macrat/lauth/config"
+	"github.com/rs/zerolog"
 )
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+
+	zerolog.SetGlobalLevel(zerolog.Disabled)
 }
 
 func FindAvailTCPPort() int {
@@ -233,24 +236,26 @@ func (env *APITestEnvironment) JSONTest(t *testing.T, method, endpoint string, t
 	t.Helper()
 
 	for _, tt := range tests {
-		resp := env.Do(method, endpoint, tt.Token, tt.Request)
+		t.Run(tt.Name, func(t *testing.T) {
+			resp := env.Do(method, endpoint, tt.Token, tt.Request)
 
-		if resp.Code != tt.Code {
-			t.Errorf("%s: expected status code %d but got %d", tt.Name, tt.Code, resp.Code)
-		}
-
-		rawBody := resp.Body.Bytes()
-
-		if tt.CheckBody != nil {
-			tt.CheckBody(t, RawBody(rawBody))
-		} else {
-			var body map[string]interface{}
-			if err := json.Unmarshal(rawBody, &body); err != nil {
-				t.Errorf("%s: failed to unmarshal response body: %s", tt.Name, err)
-			} else if !reflect.DeepEqual(body, tt.Body) {
-				t.Errorf("%s: unexpected response body: %s", tt.Name, string(rawBody))
+			if resp.Code != tt.Code {
+				t.Errorf("expected status code %d but got %d", tt.Code, resp.Code)
 			}
-		}
+
+			rawBody := resp.Body.Bytes()
+
+			if tt.CheckBody != nil {
+				tt.CheckBody(t, RawBody(rawBody))
+			} else {
+				var body map[string]interface{}
+				if err := json.Unmarshal(rawBody, &body); err != nil {
+					t.Errorf("failed to unmarshal response body: %s", err)
+				} else if !reflect.DeepEqual(body, tt.Body) {
+					t.Errorf("unexpected response body: %s", string(rawBody))
+				}
+			}
+		})
 	}
 }
 
