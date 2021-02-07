@@ -55,10 +55,28 @@ func TestGetAuthz(t *testing.T) {
 }
 
 func TestGetAuthz_SSO(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+
+	invalidToken, err := env.API.TokenManager.CreateIDToken(
+		env.API.Config.Issuer,
+		"macrat",
+		"another_cilent_id",
+		"",
+		"",
+		"",
+		nil,
+		time.Now().Add(-5*time.Minute),
+		10*time.Minute,
+	)
+	if err != nil {
+		t.Fatalf("failed to create SSO token: %s", err)
+	}
+
 	tests := []struct {
 		Name     string
 		Request  url.Values
 		AuthTime time.Time
+		Token    string
 		CanSSO   bool
 	}{
 		{
@@ -147,25 +165,48 @@ func TestGetAuthz_SSO(t *testing.T) {
 			AuthTime: time.Now().Add(-5 * time.Minute),
 			CanSSO:   false,
 		},
+		{
+			Name: "invalid token (can't parse)",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Token:  "this is invalid token",
+			CanSSO: false,
+		},
+		{
+			Name: "invalid token (invalid value)",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"max_age":       {"240"},
+			},
+			Token:  invalidToken,
+			CanSSO: false,
+		},
 	}
-
-	env := testutil.NewAPITestEnvironment(t)
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			ssoToken, err := env.API.TokenManager.CreateIDToken(
-				env.API.Config.Issuer,
-				"macrat",
-				env.API.Config.Issuer.String(),
-				"",
-				"",
-				"",
-				nil,
-				tt.AuthTime,
-				10*time.Minute,
-			)
-			if err != nil {
-				t.Fatalf("failed to create SSO token: %s", err)
+			ssoToken := tt.Token
+			if ssoToken == "" {
+				var err error
+				ssoToken, err = env.API.TokenManager.CreateIDToken(
+					env.API.Config.Issuer,
+					"macrat",
+					env.API.Config.Issuer.String(),
+					"",
+					"",
+					"",
+					nil,
+					tt.AuthTime,
+					10*time.Minute,
+				)
+				if err != nil {
+					t.Fatalf("failed to create SSO token: %s", err)
+				}
 			}
 
 			req, _ := http.NewRequest("GET", "/authz?"+tt.Request.Encode(), nil)
