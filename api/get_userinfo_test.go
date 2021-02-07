@@ -79,6 +79,14 @@ func TestGetUserinfo(t *testing.T) {
 			},
 		},
 		{
+			Token: "",
+			Code:  http.StatusForbidden,
+			Body: map[string]interface{}{
+				"error":             "invalid_token",
+				"error_description": "bearer token is required",
+			},
+		},
+		{
 			Token: "Basic c29tZV9jbGllbnRfaWQ6c2VjcmV0IGZvciBzb21lLWNsaWVudA==",
 			Code:  http.StatusForbidden,
 			Body: map[string]interface{}{

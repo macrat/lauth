@@ -5,12 +5,22 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/lauth/ldap"
 	"github.com/macrat/lauth/metrics"
 )
 
-type GetUserInfoHeader struct {
+type GetUserInfoRequest struct {
 	Authorization string `header:"Authorization"`
+}
+
+func (req GetUserInfoRequest) GetToken() (string, *ErrorMessage) {
+	if !strings.HasPrefix(req.Authorization, "Bearer ") {
+		return "", &ErrorMessage{
+			Reason:      InvalidToken,
+			Description: "bearer token is required",
+		}
+	}
+
+	return strings.TrimSpace(req.Authorization[len("Bearer "):]), nil
 }
 
 func (api *LauthAPI) GetUserInfo(c *gin.Context) {
@@ -20,8 +30,8 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 	c.Header("Cache-Control", "no-store")
 	c.Header("Pragma", "no-cache")
 
-	var header GetUserInfoHeader
-	if err := c.ShouldBindHeader(&header); err != nil || !strings.HasPrefix(header.Authorization, "Bearer ") {
+	var req GetUserInfoRequest
+	if err := c.ShouldBindHeader(&req); err != nil {
 		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"bearer token is required\"")
 		e := ErrorMessage{
 			Err:         err,
@@ -33,7 +43,14 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 		return
 	}
 
-	rawToken := strings.TrimSpace(header.Authorization[len("Bearer "):])
+	rawToken, errMsg := req.GetToken()
+	if errMsg != nil {
+		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"bearer token is required\"")
+		errMsg.Report(report)
+		errMsg.JSON(c)
+		return
+	}
+
 	token, err := api.TokenManager.ParseAccessToken(rawToken)
 	if err == nil {
 		report.Set("client_id", token.Audience)
@@ -54,23 +71,13 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 	}
 
 	scope := ParseStringSet(token.Scope)
-	result, err := api.userinfo(token.Subject, scope)
-	if err == ldap.UserNotFoundError {
-		c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
-		e := ErrorMessage{
-			Err:         err,
-			Reason:      InvalidToken,
-			Description: "user was not found or disabled",
+	result, errMsg := api.userinfo(token.Subject, scope)
+	if errMsg != nil {
+		if errMsg.Reason == InvalidToken {
+			c.Header("WWW-Authenticate", "error=\"invalid_token\",error_description=\"token is invalid\"")
 		}
-		e.Report(report)
-		e.JSON(c)
-	} else if err != nil {
-		e := ErrorMessage{
-			Reason:      ServerError,
-			Description: "failed to get user info",
-		}
-		e.Report(report)
-		e.JSON(c)
+		errMsg.Report(report)
+		errMsg.JSON(c)
 	} else {
 		report.Success()
 		c.JSON(http.StatusOK, result)

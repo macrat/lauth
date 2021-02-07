@@ -48,9 +48,10 @@ func (api LauthAPI) makeAuthzTokens(req GetAuthzRequest, subject string, authTim
 	}
 	if rt.Has("id_token") {
 		scope := ParseStringSet(req.Scope)
-		userinfo, err := api.userinfo(subject, scope)
-		if err != nil {
-			return nil, req.makeRedirectError(err, ServerError, "failed to get user info")
+		userinfo, errMsg := api.userinfo(subject, scope)
+		if errMsg != nil {
+			errMsg.RedirectURI, _ = url.Parse(req.RedirectURI)
+			return nil, errMsg
 		}
 
 		token, err := api.TokenManager.CreateIDToken(

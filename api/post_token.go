@@ -187,13 +187,9 @@ func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest, rep
 
 	var idToken string
 	if scope.Has("openid") {
-		userinfo, err := api.userinfo(code.Subject, scope)
+		userinfo, errMsg := api.userinfo(code.Subject, scope)
 		if err != nil {
-			return nil, &ErrorMessage{
-				Err:         err,
-				Reason:      ServerError,
-				Description: "failed to get user info",
-			}
+			return nil, errMsg
 		}
 
 		idToken, err = api.TokenManager.CreateIDToken(
@@ -287,13 +283,9 @@ func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequ
 	scope := ParseStringSet(refreshToken.Scope)
 	var idToken string
 	if scope.Has("openid") {
-		userinfo, err := api.userinfo(refreshToken.Subject, scope)
+		userinfo, errMsg := api.userinfo(refreshToken.Subject, scope)
 		if err != nil {
-			return nil, &ErrorMessage{
-				Err:         err,
-				Reason:      ServerError,
-				Description: "failed to get user info",
-			}
+			return nil, errMsg
 		}
 
 		idToken, err = api.TokenManager.CreateIDToken(
