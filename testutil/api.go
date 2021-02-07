@@ -155,6 +155,7 @@ func (env *APITestEnvironment) Do(method, path, token string, values url.Values)
 type ParamsTester func(t *testing.T, query, fragment url.Values)
 
 type RedirectTest struct {
+	Name          string
 	Request       url.Values
 	Code          int
 	HasLocation   bool
@@ -168,50 +169,50 @@ func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint strin
 	t.Helper()
 
 	for _, tt := range tests {
-		implicitOriginal := env.API.Config.AllowImplicitFlow
-		env.API.Config.AllowImplicitFlow = tt.AllowImplicit
+		t.Run(tt.Name, func(t *testing.T) {
+			implicitOriginal := env.API.Config.AllowImplicitFlow
+			env.API.Config.AllowImplicitFlow = tt.AllowImplicit
 
-		resp := env.Do(method, endpoint, "", tt.Request)
+			resp := env.Do(method, endpoint, "", tt.Request)
 
-		env.API.Config.AllowImplicitFlow = implicitOriginal
+			env.API.Config.AllowImplicitFlow = implicitOriginal
 
-		if resp.Code != tt.Code {
-			t.Errorf("%s: expected status code %d but got %d", tt.Request.Encode(), tt.Code, resp.Code)
-		}
-
-		location := resp.Header().Get("Location")
-		if !tt.HasLocation {
-			if location != "" {
-				t.Errorf("%s: expected has no Location but got %#v", tt.Request.Encode(), location)
-			}
-		} else {
-			if location == "" {
-				t.Errorf("%s: expected Location header but not set", tt.Request.Encode())
-				continue
+			if resp.Code != tt.Code {
+				t.Errorf("expected status code %d but got %d", tt.Code, resp.Code)
 			}
 
-			loc, err := url.Parse(location)
-			if err != nil {
-				t.Errorf("%s: failed to parse Location header: %s", tt.Request.Encode(), err)
-				continue
-			}
-
-			fragment, err := url.ParseQuery(loc.Fragment)
-			if err != nil {
-				t.Errorf("%s: failed to parse Location fragment: %s", tt.Request.Encode(), err)
-			}
-
-			if tt.CheckParams != nil {
-				tt.CheckParams(t, loc.Query(), fragment)
+			location := resp.Header().Get("Location")
+			if !tt.HasLocation {
+				if location != "" {
+					t.Errorf("expected has no Location but got %#v", location)
+				}
 			} else {
-				if !reflect.DeepEqual(loc.Query(), tt.Query) {
-					t.Errorf("%s: redirect with unexpected query: %#v", tt.Request.Encode(), location)
+				if location == "" {
+					t.Fatalf("expected Location header but not set")
 				}
-				if !reflect.DeepEqual(fragment, tt.Fragment) {
-					t.Errorf("%s: redirect with unexpected fragment: %#v", tt.Request.Encode(), location)
+
+				loc, err := url.Parse(location)
+				if err != nil {
+					t.Fatalf("failed to parse Location header: %s", err)
+				}
+
+				fragment, err := url.ParseQuery(loc.Fragment)
+				if err != nil {
+					t.Errorf("failed to parse Location fragment: %s", err)
+				}
+
+				if tt.CheckParams != nil {
+					tt.CheckParams(t, loc.Query(), fragment)
+				} else {
+					if !reflect.DeepEqual(loc.Query(), tt.Query) {
+						t.Errorf("redirect with unexpected query: %#v", location)
+					}
+					if !reflect.DeepEqual(fragment, tt.Fragment) {
+						t.Errorf("redirect with unexpected fragment: %#v", location)
+					}
 				}
 			}
-		}
+		})
 	}
 }
 

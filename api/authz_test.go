@@ -12,11 +12,13 @@ import (
 var (
 	authzEndpointCommonTests = []testutil.RedirectTest{
 		{
+			Name:        "without any query",
 			Request:     url.Values{},
 			Code:        http.StatusBadRequest,
 			HasLocation: false,
 		},
 		{
+			Name: "missing client_id",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"response_type": {"code"},
@@ -25,6 +27,7 @@ var (
 			HasLocation: false,
 		},
 		{
+			Name: "missing response_type",
 			Request: url.Values{
 				"redirect_uri": {"http://some-client.example.com/callback"},
 				"client_id":    {"some_client_id"},
@@ -38,6 +41,7 @@ var (
 			Fragment: url.Values{},
 		},
 		{
+			Name: "unknown response_type",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -52,6 +56,7 @@ var (
 			},
 		},
 		{
+			Name: "relative redirect_uri",
 			Request: url.Values{
 				"redirect_uri":  {"/invalid/relative/url"},
 				"client_id":     {"some_client_id"},
@@ -61,6 +66,7 @@ var (
 			HasLocation: false,
 		},
 		{
+			Name: "not registered client_id",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"another_client_id"},
@@ -70,6 +76,7 @@ var (
 			HasLocation: false,
 		},
 		{
+			Name: "invalid code (can't parse)",
 			Request: url.Values{
 				"redirect_uri":  {"http://other-site.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -79,16 +86,16 @@ var (
 			HasLocation: false,
 		},
 		{
+			Name: "missing redirect_uri",
 			Request: url.Values{
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 			},
 			Code:        http.StatusBadRequest,
 			HasLocation: false,
-			Query:       url.Values{},
-			Fragment:    url.Values{},
 		},
 		{
+			Name: "invalid redirect_uri",
 			Request: url.Values{
 				"redirect_uri":  {"this is invalid url::"},
 				"client_id":     {"some_client_id"},
@@ -100,6 +107,7 @@ var (
 			Fragment:    url.Values{},
 		},
 		{
+			Name: "disallowed hybrid flow",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -115,6 +123,7 @@ var (
 			},
 		},
 		{
+			Name: "request is not supported",
 			Request: url.Values{
 				"redirect_uri": {"http://some-client.example.com/callback"},
 				"client_id":    {"some_client_id"},
@@ -128,6 +137,7 @@ var (
 			Fragment: url.Values{},
 		},
 		{
+			Name: "request_uri is not supported",
 			Request: url.Values{
 				"redirect_uri": {"http://some-client.example.com/callback"},
 				"client_id":    {"some_client_id"},
@@ -141,6 +151,7 @@ var (
 			Fragment: url.Values{},
 		},
 		{
+			Name: "missing nonce in implicit flow",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},

@@ -18,6 +18,7 @@ func TestGetAuthz(t *testing.T) {
 
 	env.RedirectTest(t, "GET", "/authz", []testutil.RedirectTest{
 		{
+			Name: "success / code",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -26,6 +27,7 @@ func TestGetAuthz(t *testing.T) {
 			Code: http.StatusOK,
 		},
 		{
+			Name: "success / code token",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -35,6 +37,7 @@ func TestGetAuthz(t *testing.T) {
 			Code:          http.StatusOK,
 		},
 		{
+			Name: "prompt=none but not logged in",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -53,11 +56,13 @@ func TestGetAuthz(t *testing.T) {
 
 func TestGetAuthz_SSO(t *testing.T) {
 	tests := []struct {
+		Name     string
 		Request  url.Values
 		AuthTime time.Time
 		CanSSO   bool
 	}{
 		{
+			Name: "logged in at 5m ago",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -67,6 +72,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 			CanSSO:   true,
 		},
 		{
+			Name: "logged in at 11m ago",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -76,6 +82,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 			CanSSO:   true,
 		},
 		{
+			Name: "logged in at 5m ago / prompt=none",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -86,6 +93,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 			CanSSO:   true,
 		},
 		{
+			Name: "logged in at 5m ago / prompt=login",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -96,6 +104,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 			CanSSO:   false,
 		},
 		{
+			Name: "logged in at 5m ago / prompt=consent",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -106,6 +115,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 			CanSSO:   false,
 		},
 		{
+			Name: "logged in at 5m ago / prompt=select_account",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -116,6 +126,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 			CanSSO:   false,
 		},
 		{
+			Name: "logged in at 5m ago / max_age=360",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -126,6 +137,7 @@ func TestGetAuthz_SSO(t *testing.T) {
 			CanSSO:   true,
 		},
 		{
+			Name: "logged in at 5m ago / max_age=240",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -139,58 +151,57 @@ func TestGetAuthz_SSO(t *testing.T) {
 
 	env := testutil.NewAPITestEnvironment(t)
 
-	for i, tt := range tests {
-		ssoToken, err := env.API.TokenManager.CreateIDToken(
-			env.API.Config.Issuer,
-			"macrat",
-			env.API.Config.Issuer.String(),
-			"",
-			"",
-			"",
-			nil,
-			tt.AuthTime,
-			10*time.Minute,
-		)
-		if err != nil {
-			t.Errorf("%d: failed to create SSO token: %s", i, err)
-			continue
-		}
-
-		req, _ := http.NewRequest("GET", "/authz?"+tt.Request.Encode(), nil)
-		req.Header.Set("Cookie", fmt.Sprintf("%s=%s", api.SSO_TOKEN_COOKIE, ssoToken))
-		resp := env.DoRequest(req)
-
-		if !tt.CanSSO {
-			if resp.Code != http.StatusOK {
-				t.Errorf("test %d expect non SSO login but failed (status code = %d)", i, resp.Code)
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			ssoToken, err := env.API.TokenManager.CreateIDToken(
+				env.API.Config.Issuer,
+				"macrat",
+				env.API.Config.Issuer.String(),
+				"",
+				"",
+				"",
+				nil,
+				tt.AuthTime,
+				10*time.Minute,
+			)
+			if err != nil {
+				t.Fatalf("failed to create SSO token: %s", err)
 			}
-			continue
-		}
 
-		if resp.Code != http.StatusFound {
-			t.Errorf("test %d expect SSO login but failed (status code = %d)", i, resp.Code)
-			continue
-		}
+			req, _ := http.NewRequest("GET", "/authz?"+tt.Request.Encode(), nil)
+			req.Header.Set("Cookie", fmt.Sprintf("%s=%s", api.SSO_TOKEN_COOKIE, ssoToken))
+			resp := env.DoRequest(req)
 
-		location, err := url.Parse(resp.Header().Get("Location"))
-		if err != nil {
-			t.Errorf("%d: failed to parse location header: %s", i, err)
-			continue
-		}
+			if !tt.CanSSO {
+				if resp.Code != http.StatusOK {
+					t.Fatalf("expect non SSO login but failed (status code = %d)", resp.Code)
+				}
+				return
+			}
 
-		query := location.Query()
+			if resp.Code != http.StatusFound {
+				t.Fatalf("expect SSO login but failed (status code = %d)", resp.Code)
+			}
 
-		if query.Get("code") == "" {
-			t.Errorf("%d: expected returns code but not set", i)
-		} else if code, err := env.API.TokenManager.ParseCode(query.Get("code")); err != nil {
-			t.Errorf("%d: failed to parse code: %s", i, err)
-		} else if err := code.Validate(env.API.Config.Issuer); err != nil {
-			t.Errorf("%d: failed to validate code: %s", i, err)
-		} else if code.AuthTime != int64(tt.AuthTime.Unix()) {
-			t.Errorf("%d: expected auth_time is %d but got %d", i, tt.AuthTime.Unix(), code.AuthTime)
-		} else if code.Subject != "macrat" {
-			t.Errorf("%d: expected sub is \"macrat\" but got %s", i, code.Subject)
-		}
+			location, err := url.Parse(resp.Header().Get("Location"))
+			if err != nil {
+				t.Fatalf("failed to parse location header: %s", err)
+			}
+
+			query := location.Query()
+
+			if query.Get("code") == "" {
+				t.Errorf("expected returns code but not set")
+			} else if code, err := env.API.TokenManager.ParseCode(query.Get("code")); err != nil {
+				t.Errorf("failed to parse code: %s", err)
+			} else if err := code.Validate(env.API.Config.Issuer); err != nil {
+				t.Errorf("failed to validate code: %s", err)
+			} else if code.AuthTime != int64(tt.AuthTime.Unix()) {
+				t.Errorf("expected auth_time is %d but got %d", tt.AuthTime.Unix(), code.AuthTime)
+			} else if code.Subject != "macrat" {
+				t.Errorf("expected sub is \"macrat\" but got %s", code.Subject)
+			}
+		})
 	}
 }
 
@@ -200,6 +211,7 @@ func TestGetAuthz_AnonymousClients(t *testing.T) {
 
 	env.RedirectTest(t, "GET", "/authz", []testutil.RedirectTest{
 		{
+			Name: "not registered client_id",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"another_client_id"},
@@ -209,6 +221,7 @@ func TestGetAuthz_AnonymousClients(t *testing.T) {
 			HasLocation: false,
 		},
 		{
+			Name: "registered client_id and not registered redirect_uri",
 			Request: url.Values{
 				"redirect_uri":  {"http://other-site.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -218,6 +231,7 @@ func TestGetAuthz_AnonymousClients(t *testing.T) {
 			HasLocation: false,
 		},
 		{
+			Name: "not registered both of client_id and redirect_uri",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"another_client_id"},

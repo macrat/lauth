@@ -32,6 +32,7 @@ func TestPostAuthz(t *testing.T) {
 
 	env.RedirectTest(t, "POST", "/authz", []testutil.RedirectTest{
 		{
+			Name: "missing username and password",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -41,6 +42,7 @@ func TestPostAuthz(t *testing.T) {
 			Code: http.StatusForbidden,
 		},
 		{
+			Name: "missing password",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -51,6 +53,7 @@ func TestPostAuthz(t *testing.T) {
 			Code: http.StatusForbidden,
 		},
 		{
+			Name: "missing username",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -61,6 +64,7 @@ func TestPostAuthz(t *testing.T) {
 			Code: http.StatusForbidden,
 		},
 		{
+			Name: "invalid password",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -72,6 +76,7 @@ func TestPostAuthz(t *testing.T) {
 			Code: http.StatusForbidden,
 		},
 		{
+			Name: "missing session",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -82,6 +87,7 @@ func TestPostAuthz(t *testing.T) {
 			Code: http.StatusForbidden,
 		},
 		{
+			Name: "another browser session",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -93,6 +99,7 @@ func TestPostAuthz(t *testing.T) {
 			Code: http.StatusForbidden,
 		},
 		{
+			Name: "another client session",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -104,6 +111,7 @@ func TestPostAuthz(t *testing.T) {
 			Code: http.StatusForbidden,
 		},
 		{
+			Name: "success / code",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -135,6 +143,7 @@ func TestPostAuthz(t *testing.T) {
 			},
 		},
 		{
+			Name: "success / token",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -175,6 +184,7 @@ func TestPostAuthz(t *testing.T) {
 			},
 		},
 		{
+			Name: "success / id_token",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -220,6 +230,7 @@ func TestPostAuthz(t *testing.T) {
 			},
 		},
 		{
+			Name: "success / id_token with profile scope",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -272,6 +283,7 @@ func TestPostAuthz(t *testing.T) {
 			},
 		},
 		{
+			Name: "success / token id_token",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
@@ -306,6 +318,7 @@ func TestPostAuthz(t *testing.T) {
 			},
 		},
 		{
+			Name: "success / code id_token",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
