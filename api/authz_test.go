@@ -140,6 +140,21 @@ var (
 			},
 			Fragment: url.Values{},
 		},
+		{
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"token id_token"},
+			},
+			AllowImplicit: true,
+			Code:          http.StatusFound,
+			HasLocation:   true,
+			Query:         url.Values{},
+			Fragment: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"nonce is required in the implicit/hybrid flow of OpenID Connect"},
+			},
+		},
 	}
 )
 

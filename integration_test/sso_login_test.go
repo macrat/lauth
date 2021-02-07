@@ -54,6 +54,7 @@ func TestSSOLoginTest(t *testing.T) {
 	authURL.RawQuery = ""
 
 	authQuery.Set("response_type", "id_token")
+	authQuery.Set("nonce", "this is nonce")
 	authQuery.Set("username", "macrat")
 	authQuery.Set("password", "foobar")
 

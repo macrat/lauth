@@ -130,6 +130,14 @@ func (req GetAuthzRequest) Validate(config *config.Config) *ErrorMessage {
 		)
 	}
 
+	if rt.Has("id_token") && req.Nonce == "" {
+		return req.makeRedirectError(
+			nil,
+			InvalidRequest,
+			"nonce is required in the implicit/hybrid flow of OpenID Connect",
+		)
+	}
+
 	return nil
 }
 
