@@ -2,47 +2,55 @@ package api
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/metrics"
 )
 
-type GetUserInfoRequest struct {
-	Authorization string `form:"-" header:"Authorization"`
+type PostUserInfoRequest struct {
+	GetUserInfoRequest
+
+	AccessToken string `form:"access_token" header:"-"`
 }
 
-func (req *GetUserInfoRequest) Bind(c *gin.Context) *ErrorMessage {
-	if err := c.ShouldBindHeader(req); err != nil {
+func (req *PostUserInfoRequest) Bind(c *gin.Context) *ErrorMessage {
+	if errMsg := (&req.GetUserInfoRequest).Bind(c); errMsg != nil {
+		return errMsg
+	}
+	if err := c.ShouldBind(&req); err != nil {
 		return &ErrorMessage{
 			Err:         err,
 			Reason:      InvalidToken,
 			Description: "access token is required",
 		}
 	}
-
 	return nil
 }
 
-func (req GetUserInfoRequest) GetToken() (string, *ErrorMessage) {
-	if !strings.HasPrefix(req.Authorization, "Bearer ") {
+func (req PostUserInfoRequest) GetToken() (string, *ErrorMessage) {
+	token, err := req.GetUserInfoRequest.GetToken()
+	if err == nil {
+		return token, nil
+	}
+
+	if req.AccessToken == "" {
 		return "", &ErrorMessage{
 			Reason:      InvalidToken,
 			Description: "access token is required",
 		}
 	}
 
-	return strings.TrimSpace(req.Authorization[len("Bearer "):]), nil
+	return req.AccessToken, nil
 }
 
-func (api *LauthAPI) GetUserInfo(c *gin.Context) {
+func (api *LauthAPI) PostUserInfo(c *gin.Context) {
 	report := metrics.StartUserinfo(c)
 	defer report.Close()
 
 	c.Header("Cache-Control", "no-store")
 	c.Header("Pragma", "no-cache")
 
-	var req GetUserInfoRequest
+	var req PostUserInfoRequest
 	if errMsg := (&req).Bind(c); errMsg != nil {
 		c.Header("WWW-Authenticate", "Bearer error=\"invalid_token\",error_description=\"access token is required\"")
 		errMsg.Report(report)

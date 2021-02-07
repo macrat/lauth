@@ -221,6 +221,7 @@ func (body RawBody) Bind(target interface{}) error {
 type JSONTester func(t *testing.T, body RawBody)
 
 type JSONTest struct {
+	Name      string
 	Request   url.Values
 	Code      int
 	CheckBody JSONTester
@@ -235,7 +236,7 @@ func (env *APITestEnvironment) JSONTest(t *testing.T, method, endpoint string, t
 		resp := env.Do(method, endpoint, tt.Token, tt.Request)
 
 		if resp.Code != tt.Code {
-			t.Errorf("%s: expected status code %d but got %d", tt.Request.Encode(), tt.Code, resp.Code)
+			t.Errorf("%s: expected status code %d but got %d", tt.Name, tt.Code, resp.Code)
 		}
 
 		rawBody := resp.Body.Bytes()
@@ -245,9 +246,9 @@ func (env *APITestEnvironment) JSONTest(t *testing.T, method, endpoint string, t
 		} else {
 			var body map[string]interface{}
 			if err := json.Unmarshal(rawBody, &body); err != nil {
-				t.Errorf("%s: failed to unmarshal response body: %s", tt.Request.Encode(), err)
+				t.Errorf("%s: failed to unmarshal response body: %s", tt.Name, err)
 			} else if !reflect.DeepEqual(body, tt.Body) {
-				t.Errorf("%s: unexpected response body: %s", tt.Request.Encode(), string(rawBody))
+				t.Errorf("%s: unexpected response body: %s", tt.Name, string(rawBody))
 			}
 		}
 	}

@@ -7,7 +7,7 @@ import (
 var (
 	Userinfo = NewEndpointMetrics(
 		"userinfo",
-		[]string{"client_id", "username", "scope"},
+		[]string{"method", "client_id", "username", "scope"},
 		[]string{"client_id"},
 	)
 )
@@ -16,6 +16,8 @@ func init() {
 	Userinfo.MustRegister()
 }
 
-func StartUserinfo(c *gin.Context) *Context {
-	return Userinfo.Start(c)
+func StartUserinfo(ctx *gin.Context) *Context {
+	c := Userinfo.Start(ctx)
+	c.Set("method", ctx.Request.Method)
+	return c
 }
