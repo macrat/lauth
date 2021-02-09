@@ -62,15 +62,13 @@ func GenClient(clientID, secretHint string, redirectURIs []string) (string, erro
 
 	buf := bytes.NewBuffer([]byte{})
 
+	fmt.Fprintf(buf, "# Client registration of \"%s\".\n", clientID)
 	fmt.Fprintf(buf, "[client.%s]\n", quoteString(clientID))
-	fmt.Fprintf(buf, "# Please load this by --config option.\n")
-	fmt.Fprintf(buf, "# client_id is \"%s\"\n", clientID)
-	fmt.Fprintf(buf, "# client_secret is \"%s\" (please don't include this line in config file)\n", sec)
 	fmt.Fprintf(buf, "\n")
-
+	fmt.Fprintf(buf, "# client_secret is \"%s\" (please remove this line after copy secret)\n", sec)
 	fmt.Fprintf(buf, "secret = \"%s\"\n", hash)
-
 	fmt.Fprintf(buf, "\n")
+	fmt.Fprintf(buf, "# URIs for redirect after login or logout.\n")
 	fmt.Fprintf(buf, "redirect_uri = [\n")
 	for _, u := range redirectURIs {
 		fmt.Fprintf(buf, "  %s,\n", quoteString(u))
