@@ -58,10 +58,10 @@ func serve(conf *config.Config) {
 		fmt.Fprintln(os.Stderr, "")
 	}
 
-	if len(conf.Clients) == 0 && !conf.DisableClientAuth {
+	if len(conf.Clients) == 0 {
 		fmt.Fprintln(os.Stderr, "WARNING  No client is registered in the config file.")
 		fmt.Fprintln(os.Stderr, "         So, no client can use this provider.")
-		fmt.Fprintln(os.Stderr, "         Please consider register clients or use --disable-client-auth option.")
+		fmt.Fprintln(os.Stderr, "         Please see `lauth help gen-client` for how to registration.")
 		fmt.Fprintln(os.Stderr, "")
 	}
 
@@ -205,7 +205,6 @@ func init() {
 	flags.StringP("sign-key", "s", "", "RSA private key for signing to token. If omit this, automate generate key for one time use.")
 
 	flags.Bool("allow-implicit-flow", false, "Allow implicit/hybrid flow. It's may use for the SPA site or native application.")
-	flags.Bool("disable-client-auth", false, "Allow use token endpoint without client authentication.")
 
 	flags.Bool("tls-auto", false, "Enable auto generate TLS with Let's Encrypt. Instance must be reachable from the Internet.")
 	flags.String("tls-cert", "", "Cert file for TLS encryption.")

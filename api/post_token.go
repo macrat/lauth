@@ -73,23 +73,14 @@ func (req PostTokenRequest) Validate(conf *config.Config) *ErrorMessage {
 	}
 
 	if req.ClientID == "" {
-		if !conf.DisableClientAuth && req.GrantType != "refresh_token" {
-			return &ErrorMessage{
-				Reason:      InvalidRequest,
-				Description: "client_id is required",
-			}
-		} else if req.ClientSecret != "" {
-			return &ErrorMessage{
-				Reason:      InvalidRequest,
-				Description: "client_id is required if set client_secret",
-			}
+		return &ErrorMessage{
+			Reason:      InvalidRequest,
+			Description: "client_id is required",
 		}
 	} else if req.ClientSecret == "" {
-		if !conf.DisableClientAuth {
-			return &ErrorMessage{
-				Reason:      InvalidRequest,
-				Description: "client_secret is required",
-			}
+		return &ErrorMessage{
+			Reason:      InvalidRequest,
+			Description: "client_secret is required",
 		}
 	} else {
 		client, ok := conf.Clients[req.ClientID]

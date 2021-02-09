@@ -77,13 +77,11 @@ func (req GetAuthzRequest) Validate(config *config.Config) *ErrorMessage {
 		return req.makeNonRedirectError(nil, InvalidClient, "client_id is required")
 	}
 	if client, ok := config.Clients[req.ClientID]; !ok {
-		if !config.DisableClientAuth {
-			return req.makeNonRedirectError(
-				nil,
-				InvalidClient,
-				"client_id is not registered",
-			)
-		}
+		return req.makeNonRedirectError(
+			nil,
+			InvalidClient,
+			"client_id is not registered",
+		)
 	} else if !client.RedirectURI.Match(req.RedirectURI) {
 		return req.makeNonRedirectError(
 			nil,

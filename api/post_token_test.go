@@ -472,7 +472,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
-			Name: "missing cilent_id",
+			Name: "missing client_id",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},
 				"refresh_token": {refreshToken},
@@ -482,7 +482,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			Code: http.StatusBadRequest,
 			Body: map[string]interface{}{
 				"error":             "invalid_request",
-				"error_description": "client_id is required if set client_secret",
+				"error_description": "client_id is required",
 			},
 		},
 		{
@@ -550,124 +550,6 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 			Code:      http.StatusOK,
 			CheckBody: ResponseValidation(env, "profile", ""),
-		},
-	})
-}
-
-func TestPostToken_AnonymousClients(t *testing.T) {
-	env := testutil.NewAPITestEnvironment(t)
-	env.API.Config.DisableClientAuth = true
-
-	code, err := env.API.TokenManager.CreateCode(
-		env.API.Config.Issuer,
-		"macrat",
-		"some_client_id",
-		"http://some-client.example.com/callback",
-		"openid profile",
-		"something-nonce",
-		time.Now(),
-		time.Duration(env.API.Config.Expire.Code),
-	)
-	if err != nil {
-		t.Fatalf("failed to generate test code: %s", err)
-	}
-
-	refreshToken, err := env.API.TokenManager.CreateRefreshToken(
-		env.API.Config.Issuer,
-		"macrat",
-		"some_client_id",
-		"openid profile",
-		"something-nonce",
-		time.Now(),
-		time.Duration(env.API.Config.Expire.Refresh),
-	)
-	if err != nil {
-		t.Fatalf("failed to generate test refresh_token: %s", err)
-	}
-
-	env.JSONTest(t, "POST", "/token", []testutil.JSONTest{
-		{
-			Name: "client_secret set but client_id is not set",
-			Request: url.Values{
-				"grant_type":    {"authorization_code"},
-				"code":          {code},
-				"client_secret": {"secret for some-client"},
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-			},
-			Code: http.StatusBadRequest,
-			Body: map[string]interface{}{
-				"error":             "invalid_request",
-				"error_description": "client_id is required if set client_secret",
-			},
-		},
-		{
-			Name: "success with client_id and client_secret",
-			Request: url.Values{
-				"grant_type":    {"authorization_code"},
-				"code":          {code},
-				"client_id":     {"some_client_id"},
-				"client_secret": {"secret for some-client"},
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-			},
-			Code:      http.StatusOK,
-			CheckBody: ResponseValidation(env, "openid profile", token.TokenHash(code)),
-		},
-		{
-			Name: "success without client_secret",
-			Request: url.Values{
-				"grant_type":   {"authorization_code"},
-				"code":         {code},
-				"client_id":    {"some_client_id"},
-				"redirect_uri": {"http://some-client.example.com/callback"},
-			},
-			Code:      http.StatusOK,
-			CheckBody: ResponseValidation(env, "openid profile", token.TokenHash(code)),
-		},
-		{
-			Name: "not registered client_id / code",
-			Request: url.Values{
-				"grant_type":   {"authorization_code"},
-				"code":         {code},
-				"client_id":    {"another_client_id"},
-				"redirect_uri": {"http://some-client.example.com/callback"},
-			},
-			Code: http.StatusBadRequest,
-			Body: map[string]interface{}{
-				"error": "invalid_grant",
-			},
-		},
-		{
-			Name: "not registered client_id / refresh_token",
-			Request: url.Values{
-				"grant_type":    {"refresh_token"},
-				"refresh_token": {refreshToken},
-				"client_id":     {"another_client_id"},
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-			},
-			Code: http.StatusBadRequest,
-			Body: map[string]interface{}{
-				"error": "invalid_grant",
-			},
-		},
-		{
-			Name: "success without client auth / code",
-			Request: url.Values{
-				"grant_type":   {"authorization_code"},
-				"code":         {code},
-				"redirect_uri": {"http://some-client.example.com/callback"},
-			},
-			Code:      http.StatusOK,
-			CheckBody: ResponseValidation(env, "openid profile", token.TokenHash(code)),
-		},
-		{
-			Name: "success without client auth / refresh_token",
-			Request: url.Values{
-				"grant_type":    {"refresh_token"},
-				"refresh_token": {refreshToken},
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-			},
-			Code:      http.StatusOK,
-			CheckBody: ResponseValidation(env, "openid profile", ""),
 		},
 	})
 }

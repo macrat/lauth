@@ -97,15 +97,13 @@ func (api *LauthAPI) Logout(c *gin.Context) {
 		}
 
 		if client, ok := api.Config.Clients[token.Audience]; !ok {
-			if !api.Config.DisableClientAuth {
-				msg := ErrorMessage{
-					Reason:      InvalidRequest,
-					Description: "client is not registered",
-				}
-				msg.Report(report)
-				msg.HTML(c)
-				return
+			msg := ErrorMessage{
+				Reason:      InvalidRequest,
+				Description: "client is not registered",
 			}
+			msg.Report(report)
+			msg.HTML(c)
+			return
 		} else if req.RedirectURI != "" && !client.RedirectURI.Match(req.RedirectURI) {
 			msg := ErrorMessage{
 				Reason:      InvalidRequest,

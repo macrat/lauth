@@ -16,11 +16,6 @@ issuer = "http://localhost:8000"
 # Same as --sign-key and LAUTH_SIGN_KEY.
 #sign_key = "/path/to/jwt-sign.key"
 
-# Disabe check client_id, client_secret, and redirect_uri.
-# But, will check when present those parameters even if set this as true.
-# Same as --disable-client-auth and LAUTH_DISABLE_CLIENT_AUTH.
-disable_client_auth = false
-
 # Allow Implicit and Hybrid flow.
 # Same as --allow-implicit-flow and LAUTH_ALLOW_IMPLICIT_FLOW.
 allow_implicit_flow = false

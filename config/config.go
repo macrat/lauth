@@ -104,7 +104,6 @@ type Config struct {
 	Clients           ClientConfig   `json:"client,omitempty"    yaml:"client,omitempty"    toml:"client,omitempty"`
 	Metrics           MetricsConfig  `json:"metrics"             yaml:"metrics"             toml:"metrics"`
 	Templates         TemplateConfig `json:"template,omitempty"  yaml:"template,omitempty"  toml:"template,omitempty"`
-	DisableClientAuth bool           `json:"disable_client_auth" yaml:"disable_client_auth" toml:"disable_client_auth" flag:"disable-client-auth"`
 	AllowImplicitFlow bool           `json:"allow_implicit_flow" yaml:"allow_implicit_flow" toml:"allow_implicit_flow" flag:"allow-implicit-flow"`
 }
 

@@ -92,13 +92,12 @@ func TestLogout(t *testing.T) {
 	}
 
 	tests := []struct {
-		Name              string
-		Request           url.Values
-		DisableClientAuth bool
-		Code              int
-		State             string
-		NotLoggedIn       bool
-		Logout            bool
+		Name        string
+		Request     url.Values
+		Code        int
+		State       string
+		NotLoggedIn bool
+		Logout      bool
 	}{
 		{
 			Name:    "no query",
@@ -107,28 +106,12 @@ func TestLogout(t *testing.T) {
 			Logout:  false,
 		},
 		{
-			Name:              "no query / disable client auth",
-			Request:           url.Values{},
-			DisableClientAuth: true,
-			Code:              http.StatusBadRequest,
-			Logout:            false,
-		},
-		{
 			Name: "invalid token",
 			Request: url.Values{
 				"id_token_hint": {"invalid_id_token"},
 			},
 			Code:   http.StatusBadRequest,
 			Logout: false,
-		},
-		{
-			Name: "invalid token / disable client auth",
-			Request: url.Values{
-				"id_token_hint": {"invalid_id_token"},
-			},
-			DisableClientAuth: true,
-			Code:              http.StatusBadRequest,
-			Logout:            false,
 		},
 		{
 			Name: "another issuer token",
@@ -147,15 +130,6 @@ func TestLogout(t *testing.T) {
 			Logout: false,
 		},
 		{
-			Name: "client not registered / disable client auth",
-			Request: url.Values{
-				"id_token_hint": {anotherClientToken},
-			},
-			DisableClientAuth: true,
-			Code:              http.StatusOK,
-			Logout:            true,
-		},
-		{
 			Name: "invalid redirect URI",
 			Request: url.Values{
 				"id_token_hint":            {idToken},
@@ -163,16 +137,6 @@ func TestLogout(t *testing.T) {
 			},
 			Code:   http.StatusBadRequest,
 			Logout: false,
-		},
-		{
-			Name: "invalid redirect URI / disable client auth",
-			Request: url.Values{
-				"id_token_hint":            {anotherClientToken},
-				"post_logout_redirect_uri": {"::invalid"},
-			},
-			DisableClientAuth: true,
-			Code:              http.StatusBadRequest,
-			Logout:            false,
 		},
 		{
 			Name: "relative redirect URI",
@@ -184,16 +148,6 @@ func TestLogout(t *testing.T) {
 			Logout: false,
 		},
 		{
-			Name: "relative redirect URI / disable client auth",
-			Request: url.Values{
-				"id_token_hint":            {anotherClientToken},
-				"post_logout_redirect_uri": {"/path/to/somewhere"},
-			},
-			DisableClientAuth: true,
-			Code:              http.StatusBadRequest,
-			Logout:            false,
-		},
-		{
 			Name: "not registered URI",
 			Request: url.Values{
 				"id_token_hint":            {idToken},
@@ -201,16 +155,6 @@ func TestLogout(t *testing.T) {
 			},
 			Code:   http.StatusBadRequest,
 			Logout: false,
-		},
-		{
-			Name: "not registered URI / disable client auth",
-			Request: url.Values{
-				"id_token_hint":            {idToken},
-				"post_logout_redirect_uri": {"https://example.com/non/registered"},
-			},
-			DisableClientAuth: true,
-			Code:              http.StatusBadRequest,
-			Logout:            false,
 		},
 		{
 			Name: "user not logged in",
@@ -269,8 +213,6 @@ func TestLogout(t *testing.T) {
 
 	for _, method := range []string{"GET", "POST"} {
 		for _, tt := range tests {
-			env.API.Config.DisableClientAuth = tt.DisableClientAuth
-
 			var req *http.Request
 			if method == "GET" {
 				var err error
