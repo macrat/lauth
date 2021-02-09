@@ -34,8 +34,8 @@ func serve(conf *config.Config) {
 
 	if debug {
 		fmt.Println("---")
-		confYAML, _ := conf.AsYAML()
-		fmt.Print(confYAML)
+		confJson, _ := conf.AsJSON()
+		fmt.Print(confJson)
 		fmt.Println("---")
 
 		fmt.Fprintln(os.Stderr, "WARNING  Debug mode is enabled.")
@@ -243,7 +243,7 @@ func init() {
 	flags.String("metrics-username", "", "Basic auth username to access to Prometheus metrics. If omit, disable authentication.")
 	flags.String("metrics-password", "", "Basic auth password to access to Prometheus metrics. If omit, disable authentication.")
 
-	flags.StringVarP(&configFile, "config", "c", "", "Load options from YAML file.")
+	flags.StringVarP(&configFile, "config", "c", "", "Load options from TOML, YAML, or JSON file.")
 	flags.BoolVar(&debug, "debug", false, "Enable debug output. This is insecure for production use.")
 }
 

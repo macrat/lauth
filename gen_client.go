@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -37,6 +38,11 @@ func init() {
 	flags.StringVar(&clientSecret, "secret", "", "Client secret value. Generate random secret if omit. Not recommend use this option.")
 }
 
+func quoteString(str string) string {
+	b, _ := json.Marshal(str)
+	return string(b)
+}
+
 func GenClient(clientID, secretHint string, redirectURIs []string) (string, error) {
 	var sec, hash []byte
 	if secretHint != "" {
@@ -56,22 +62,20 @@ func GenClient(clientID, secretHint string, redirectURIs []string) (string, erro
 
 	buf := bytes.NewBuffer([]byte{})
 
+	fmt.Fprintf(buf, "[client.%s]\n", quoteString(clientID))
 	fmt.Fprintf(buf, "# Please load this by --config option.\n")
-	fmt.Fprintf(buf, "# client_id = \"%s\"\n", clientID)
-	fmt.Fprintf(buf, "# client_secret = \"%s\" (please don't include this line in config file)\n", sec)
+	fmt.Fprintf(buf, "# client_id is \"%s\"\n", clientID)
+	fmt.Fprintf(buf, "# client_secret is \"%s\" (please don't include this line in config file)\n", sec)
 	fmt.Fprintf(buf, "\n")
-	fmt.Fprintf(buf, "client:\n")
-	fmt.Fprintf(buf, "  %s:\n", clientID)
-	fmt.Fprintf(buf, "    secret: %s\n", hash)
 
-	if len(redirectURIs) == 0 {
-		fmt.Fprintf(buf, "    redirect_uri: []\n")
-	} else {
-		fmt.Fprintf(buf, "    redirect_uri:\n")
-		for _, u := range redirectURIs {
-			fmt.Fprintf(buf, "    - %s\n", u)
-		}
+	fmt.Fprintf(buf, "secret = \"%s\"\n", hash)
+
+	fmt.Fprintf(buf, "\n")
+	fmt.Fprintf(buf, "redirect_uri = [\n")
+	for _, u := range redirectURIs {
+		fmt.Fprintf(buf, "  %s,\n", quoteString(u))
 	}
+	fmt.Fprintf(buf, "]\n")
 
 	return string(buf.Bytes()), nil
 }

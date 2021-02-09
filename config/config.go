@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,7 +15,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -37,81 +37,81 @@ var (
 )
 
 type ClaimConfig struct {
-	Claim     string `yaml:"claim"`
-	Attribute string `yaml:"attribute"`
-	Type      string `yaml:"type,omitempty"`
+	Claim     string `json:"claim"          yaml:"claim"          toml:"claim"`
+	Attribute string `json:"attribute"      yaml:"attribute"      toml:"attribute"`
+	Type      string `json:"type,omitempty" yaml:"type,omitempty" toml:"type,omitempty"`
 }
 
 type ScopeConfig map[string][]ClaimConfig
 
 type EndpointConfig struct {
-	Authz    string `yaml:"authorization" flag:"authz-endpoint"`
-	Token    string `yaml:"token"         flag:"token-endpoint"`
-	Userinfo string `yaml:"userinfo"      flag:"userinfo-endpoint"`
-	Jwks     string `yaml:"jwks"          flag:"jwks-uri"`
-	Logout   string `yaml:"logout"        flag:"logout-endpoint"`
+	Authz    string `json:"authorization" yaml:"authorization" toml:"authorization" flag:"authz-endpoint"`
+	Token    string `json:"token"         yaml:"token"         toml:"token"         flag:"token-endpoint"`
+	Userinfo string `json:"userinfo"      yaml:"userinfo"      toml:"userinfo"      flag:"userinfo-endpoint"`
+	Jwks     string `json:"jwks"          yaml:"jwks"          toml:"jwks"          flag:"jwks-uri"`
+	Logout   string `json:"logout"        yaml:"logout"        toml:"logout"        flag:"logout-endpoint"`
 }
 
 type ExpireConfig struct {
-	Login   Duration `yaml:"login"   flag:"login-expire"`
-	Code    Duration `yaml:"code"    flag:"code-expire"`
-	Token   Duration `yaml:"token"   flag:"token-expire"`
-	Refresh Duration `yaml:"refresh" flag:"refresh-expire"`
-	SSO     Duration `yaml:"sso"     flag:"sso-expire"`
+	Login   Duration `json:"login"   yaml:"login"   toml:"login"   flag:"login-expire"`
+	Code    Duration `json:"code"    yaml:"code"    toml:"code"    flag:"code-expire"`
+	Token   Duration `json:"token"   yaml:"token"   toml:"token"   flag:"token-expire"`
+	Refresh Duration `json:"refresh" yaml:"refresh" toml:"refresh" flag:"refresh-expire"`
+	SSO     Duration `json:"sso"     yaml:"sso"     toml:"sso"     flag:"sso-expire"`
 }
 
 type ClientConfig map[string]struct {
-	Secret      string     `yaml:"secret"`
-	RedirectURI PatternSet `yaml:"redirect_uri"`
+	Secret      string     `json:"secret"       yaml:"secret"       toml:"secret"`
+	RedirectURI PatternSet `json:"redirect_uri" yaml:"redirect_uri" toml:"redirect_uri"`
 }
 
 type MetricsConfig struct {
-	Path     string `yaml:"path"               flag:"metrics-path"`
-	Username string `yaml:"username,omitempty" flag:"metrics-username"`
-	Password string `yaml:"password,omitempty" flag:"metrics-password"`
+	Path     string `json:"path"               yaml:"path"               toml:"path"               flag:"metrics-path"`
+	Username string `json:"username,omitempty" yaml:"username,omitempty" toml:"username,omitempty" flag:"metrics-username"`
+	Password string `json:"password,omitempty" yaml:"password,omitempty" toml:"password,omitempty" flag:"metrics-password"`
 }
 
 type TLSConfig struct {
-	Auto bool   `yaml:"auto,omitempty" flag:"tls-auto"`
-	Cert string `yaml:"cert,omitempty" flag:"tls-cert"`
-	Key  string `yaml:"key,omitempty"  flag:"tls-key"`
+	Auto bool   `json:"auto,omitempty" yaml:"auto,omitempty" toml:"auto,omitempty" flag:"tls-auto"`
+	Cert string `json:"cert,omitempty" yaml:"cert,omitempty" toml:"cert,omitempty" flag:"tls-cert"`
+	Key  string `json:"key,omitempty"  yaml:"key,omitempty"  toml:"key,omitempty"  flag:"tls-key"`
 }
 
 type LDAPConfig struct {
-	Server      *URL   `yaml:"server"       flag:"ldap"`
-	User        string `yaml:"user"         flag:"ldap-user"`
-	Password    string `yaml:"password"     flag:"ldap-password"`
-	BaseDN      string `yaml:"base_dn"      flag:"ldap-base-dn"`
-	IDAttribute string `yaml:"id_attribute" flag:"ldap-id-attribute"`
-	DisableTLS  bool   `yaml:"disable_tls"  flag:"ldap-disable-tls"`
+	Server      *URL   `json:"server"       yaml:"server"       toml:"server"       flag:"ldap"`
+	User        string `json:"user"         yaml:"user"         toml:"user"         flag:"ldap-user"`
+	Password    string `json:"password"     yaml:"password"     toml:"password"     flag:"ldap-password"`
+	BaseDN      string `json:"base_dn"      yaml:"base_dn"      toml:"base_dn"      flag:"ldap-base-dn"`
+	IDAttribute string `json:"id_attribute" yaml:"id_attribute" toml:"id_attribute" flag:"ldap-id-attribute"`
+	DisableTLS  bool   `json:"disable_tls"  yaml:"disable_tls"  toml:"disable_tls"  flag:"ldap-disable-tls"`
 }
 
 type TemplateConfig struct {
-	LoginPage  string `yaml:"login_page,omitempty"  flag:"login-page"`
-	LogoutPage string `yaml:"logout_page,omitempty" flag:"logout-page"`
-	ErrorPage  string `yaml:"error_page,omitempty"  flag:"error-page"`
+	LoginPage  string `json:"login_page,omitempty"  yaml:"login_page,omitempty"  toml:"login_page,omitempty"  flag:"login-page"`
+	LogoutPage string `json:"logout_page,omitempty" yaml:"logout_page,omitempty" toml:"logout_page,omitempty" flag:"logout-page"`
+	ErrorPage  string `json:"error_page,omitempty"  yaml:"error_page,omitempty"  toml:"error_page,omitempty"  flag:"error-page"`
 }
 
 type Config struct {
-	Issuer            *URL           `yaml:"issuer"             flag:"issuer"`
-	Listen            *TCPAddr       `yaml:"listen,omitempty"   flag:"listen"`
-	SignKey           string         `yaml:"sign_key,omitempty" flag:"sign-key"`
-	TLS               TLSConfig      `yaml:"tls,omitempty"`
-	LDAP              LDAPConfig     `yaml:"ldap"`
-	Expire            ExpireConfig   `yaml:"expire"`
-	Endpoints         EndpointConfig `yaml:"endpoint"`
-	Scopes            ScopeConfig    `yaml:"scope,omitempty"`
-	Clients           ClientConfig   `yaml:"client,omitempty"`
-	Metrics           MetricsConfig  `yaml:"metrics"`
-	Templates         TemplateConfig `yaml:"template,omitempty"`
-	DisableClientAuth bool           `yaml:"disable_client_auth" flag:"disable-client-auth"`
-	AllowImplicitFlow bool           `yaml:"allow_implicit_flow" flag:"allow-implicit-flow"`
+	Issuer            *URL           `json:"issuer"              yaml:"issuer"              toml:"issuer"             flag:"issuer"`
+	Listen            *TCPAddr       `json:"listen,omitempty"    yaml:"listen,omitempty"    toml:"listen,omitempty"   flag:"listen"`
+	SignKey           string         `json:"sign_key,omitempty"  yaml:"sign_key,omitempty"  toml:"sign_key,omitempty" flag:"sign-key"`
+	TLS               TLSConfig      `json:"tls,omitempty"       yaml:"tls,omitempty"       toml:"tls,omitempty"`
+	LDAP              LDAPConfig     `json:"ldap"                yaml:"ldap"                toml:"ldap"`
+	Expire            ExpireConfig   `json:"expire"              yaml:"expire"              toml:"expire"`
+	Endpoints         EndpointConfig `json:"endpoint"            yaml:"endpoint"            toml:"endpoint"`
+	Scopes            ScopeConfig    `json:"scope,omitempty"     yaml:"scope,omitempty"     toml:"scope,omitempty"`
+	Clients           ClientConfig   `json:"client,omitempty"    yaml:"client,omitempty"    toml:"client,omitempty"`
+	Metrics           MetricsConfig  `json:"metrics"             yaml:"metrics"             toml:"metrics"`
+	Templates         TemplateConfig `json:"template,omitempty"  yaml:"template,omitempty"  toml:"template,omitempty"`
+	DisableClientAuth bool           `json:"disable_client_auth" yaml:"disable_client_auth" toml:"disable_client_auth" flag:"disable-client-auth"`
+	AllowImplicitFlow bool           `json:"allow_implicit_flow" yaml:"allow_implicit_flow" toml:"allow_implicit_flow" flag:"allow-implicit-flow"`
 }
 
 func TakeOptions(prefix string, typ reflect.Type, result map[string]string) {
 	for i := 0; i < typ.NumField(); i++ {
 		f := typ.Field(i)
-		name := strings.Split(f.Tag.Get("yaml"), ",")[0]
+		name := strings.Split(f.Tag.Get("toml"), ",")[0]
 		flag := f.Tag.Get("flag")
 
 		if name != "" {
@@ -140,7 +140,7 @@ func BindFlags(vip *viper.Viper, flags *pflag.FlagSet) {
 
 func (c *Config) unmarshal(vip *viper.Viper) error {
 	err := vip.Unmarshal(c, func(m *mapstructure.DecoderConfig) {
-		m.TagName = "yaml"
+		m.TagName = "toml"
 		m.DecodeHook = func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
 			if f.Kind() != reflect.String {
 				return data, nil
@@ -199,8 +199,6 @@ func (c *Config) Load(file string, flags *pflag.FlagSet) error {
 	vip.SetEnvPrefix("LAUTH")
 	vip.AutomaticEnv()
 
-	vip.SetConfigType("yaml")
-
 	if file == "" {
 		file = os.Getenv("LAUTH_CONFIG")
 	}
@@ -218,7 +216,7 @@ func (c *Config) Load(file string, flags *pflag.FlagSet) error {
 func (c *Config) ReadReader(config io.Reader) error {
 	vip := viper.New()
 
-	vip.SetConfigType("yaml")
+	vip.SetConfigType("toml")
 
 	if err := vip.ReadConfig(config); err != nil {
 		return err
@@ -373,10 +371,10 @@ func (c *Config) OpenIDConfiguration() OpenIDConfiguration {
 	}
 }
 
-func (c *Config) AsYAML() (string, error) {
-	y, err := yaml.Marshal(c)
+func (c *Config) AsJSON() (string, error) {
+	t, err := json.MarshalIndent(*c, "  ", "  ")
 	if err != nil {
 		return "", err
 	}
-	return string(y), nil
+	return string(t), nil
 }

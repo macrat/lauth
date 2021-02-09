@@ -26,5 +26,4 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/square/go-jose.v2 v2.5.1
-	gopkg.in/yaml.v2 v2.3.0
 )

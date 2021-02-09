@@ -45,7 +45,7 @@ lauth version 1.0.0
 First, Generate a config file.
 
 ``` shell
-$ lauth gen-client your-client-name > config.yml
+$ lauth gen-client your-client-name -u https://you-client.example.com/callback >> config.toml
 ```
 
 Then, start the server.
@@ -55,7 +55,7 @@ $ lauth \
   --ldap ldap://ldap.example.com \
   --ldap-user "CN=username,OU=somewhere,DC=example,DC=local" \
   --ldap-password ${LDAP_USER_PASSWORD} \
-  --config config.yml
+  --config config.toml
 ```
 
 Finally, use it.
@@ -71,7 +71,7 @@ Finally, use it.
 - discovery endpoint:
   http://localhost:8000/.well-known/openid-configuration
 
-See also [all options list](#Options) and [example config file](./config.example.yml).
+See also [all options list](#Options) and [example config file](./config.example.toml).
 
 ### For production
 
@@ -117,12 +117,12 @@ $ lauth --ldap-id-attribute mail  # login with e-mail
 Or, you can use a config file.
 
 ``` shell
-$ cat <<EOS > config.yml
-ldap:
-  id_attribute: mail
+$ cat <<EOS > config.toml
+[ldap]
+id_attribute = "mail"
 EOS
 
-$ lauth --config config.yml
+$ lauth --config config.toml
 ```
 
 ### Scope and Claims
@@ -131,28 +131,26 @@ You can change scope and claims for `id_token` and userinfo in the config file.
 
 This is default config; That claims for Microsoft ActiveDirectory.
 
-``` yaml
-scope:
-  profile:
-    - claim: name
-      attribute: displayName
-    - claim: given_name
-      attribute: givenName
-    - claim: family_name
-      attribute: sn
+``` toml
+[scope]
 
-  email:
-    - claim: email
-      attribute: mail
+profile = [
+  { claim = "name",        attribute = "displayName" },
+  { claim = "given_name",  attribute = "givenName"   },
+  { claim = "family_name", attribute = "sn"          },
+]
 
-  phone:
-    - claim: phone_number
-      attribute: telephoneNumber
+email = [
+  { claim = "email", attribute = "mail" },
+]
 
-  groups:
-    - claim: groups
-      attribute: memberOf
-      type: '[]string'
+phone = [
+  { claim = "phone_number", attribute = "telephoneNumber" },
+]
+
+groups = [
+  { claim = "groups", attribute = "memberOf", type = "[]string" },
+]
 ```
 
 
@@ -194,7 +192,7 @@ $ lauth [OPTIONS]
 |`--metrics-path`       |`metrics.path`       |`LAUTH_METRICS_PATH`       |`/metrics`                 |Path to Prometheus metrics.|
 |`--metrics-username`   |`metrics.username`   |`LAUTH_METRICS_USERNAME`   |                           |Basic auth username to access to Prometheus metrics.<br />If omit, disable authentication.|
 |`--metrics-password`   |`metrics.password`   |`LAUTH_METRICS_PASSWORD`   |                           |Basic auth password to access to Prometheus metrics.<br />If omit, disable authentication.|
-|`--config`             |                     |`LAUTH_CONFIG`             |                           |Load options from YAML file.|
+|`--config`             |                     |`LAUTH_CONFIG`             |                           |Load options from TOML, YAML, or JSON file.|
 |`--debug`              |                     |                           |                           |Enable debug output. *This is insecure* for production use.|
 
 

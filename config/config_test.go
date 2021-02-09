@@ -11,13 +11,13 @@ import (
 
 func TestTakeOptions(t *testing.T) {
 	type Child struct {
-		Hello string `yaml:"hello"                flag:"child-hello"`
-		World int    `yaml:"world_conf,omitempty" flag:"child-world"`
+		Hello string `toml:"hello"                flag:"child-hello"`
+		World int    `toml:"world_conf,omitempty" flag:"child-world"`
 	}
 	type Config struct {
-		Child     Child  `yaml:"child"`
-		Parent    string `yaml:"parent"     flag:"parent-flag"`
-		NoInclude string `yaml:"no_include"`
+		Child     Child  `toml:"child"`
+		Parent    string `toml:"parent"     flag:"parent-flag"`
+		NoInclude string `toml:"no_include"`
 	}
 
 	result := map[string]string{}
@@ -36,15 +36,15 @@ func TestTakeOptions(t *testing.T) {
 
 func TestLoadConfig(t *testing.T) {
 	raw := strings.NewReader(`
-issuer: http://example.com:1234
-listen: ":4200"
+issuer = "http://example.com:1234"
+listen = ":4200"
 
-expire:
-  code: 5m
-  token: 42d
+[expire]
+code = "5m"
+token = "42d"
 
-ldap:
-  server: ldap://someone:secure@ldap.example.com
+[ldap]
+server = "ldap://someone:secure@ldap.example.com"
 `)
 	conf := &config.Config{}
 
@@ -81,10 +81,10 @@ ldap:
 	}
 
 	raw = strings.NewReader(`
-ldap:
-  server: ldap://someone:secure@ldap.example.com
-  user: anotherone
-  password: secret
+[ldap]
+server = "ldap://someone:secure@ldap.example.com"
+user = "anotherone"
+password = "secret"
 `)
 	if err := conf.ReadReader(raw); err != nil {
 		t.Fatalf("failed to load config: %s", err)
@@ -102,7 +102,7 @@ ldap:
 func TestConfigExampleLoadable(t *testing.T) {
 	conf := &config.Config{}
 
-	if err := conf.Load("../config.example.yml", nil); err != nil {
+	if err := conf.Load("../config.example.toml", nil); err != nil {
 		t.Errorf("failed to load example config: %s", err)
 	}
 }

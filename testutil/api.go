@@ -51,29 +51,30 @@ func MakeConfig() *config.Config {
 	conf := &config.Config{}
 	port := FindAvailTCPPort()
 	err := conf.ReadReader(strings.NewReader(fmt.Sprintf(`
-issuer: http://localhost:%d
-listen: 127.0.0.1:%d
+issuer = "http://localhost:%d"
+listen = "127.0.0.1:%d"
 
-expire:
-  login: 30m
-  code: 1m
-  token: 1h
-  refresh: 6h
-  sso: 10m
+[expire]
+login = "30m"
+code = "1m"
+token = "1h"
+refresh = "6h"
+sso = "10m"
 
-endpoint:
-  authorization: /authz
-  token: /token
-  userinfo: /userinfo
-  jwks: /certs
-  logout: /logout
+[endpoint]
+authorization = "/authz"
+token = "/token"
+userinfo = "/userinfo"
+jwks = "/certs"
+logout = "/logout"
 
-client:
-  some_client_id:
-    secret: $2a$10$gKOvDAJeJCtoMW8DeLdxuOH/tqd2FxsM6hmupzZTW0XsiQhe282Te # hash of "secret for some-client"
-    redirect_uri:
-      - http://some-client.example.com/callback
-      - http://some-client.example.com/logout
+[client.some_client_id]
+secret = "$2a$10$gKOvDAJeJCtoMW8DeLdxuOH/tqd2FxsM6hmupzZTW0XsiQhe282Te"  # hash of "secret for some-client"
+
+redirect_uri =[
+  "http://some-client.example.com/callback",
+  "http://some-client.example.com/logout",
+]
 `, port, port)))
 
 	if err != nil {

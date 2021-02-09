@@ -25,9 +25,9 @@ services:
       LAUTH_LDAP_USER: "CN=admin,DC=example,DC=com"
       LAUTH_LDAP_PASSWORD: "password for administrator"
       LAUTH_LDAP_DISABLE_TLS: "true"
-      LAUTH_CONFIG: /config.yml
+      LAUTH_CONFIG: /config.toml
     volumes:
-      - ./config.yml:/config.yml:ro
+      - ./config.toml:/config.toml:ro
     ports:
       - "8000:8000"
     depends_on:
