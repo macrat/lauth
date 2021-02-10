@@ -29,12 +29,11 @@ func TestGetAuthz(t *testing.T) {
 		{
 			Name: "success / code token",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+				"client_id":     {"implicit_client_id"},
 				"response_type": {"code token"},
 			},
-			AllowImplicit: true,
-			Code:          http.StatusOK,
+			Code: http.StatusOK,
 		},
 		{
 			Name: "prompt=none but not logged in",

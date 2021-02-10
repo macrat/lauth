@@ -75,6 +75,18 @@ redirect_uri =[
   "http://some-client.example.com/callback",
   "http://some-client.example.com/logout",
 ]
+
+allow_implicit_flow = false
+
+[client.implicit_client_id]
+secret = "$2a$10$iy8gnu3fTEi2Ge8ysOjBEOz2Or8.eBfQV3A7XaxCbZ7GaDlSTBDh2"  # hash of "secret for implicit-client"
+
+redirect_uri =[
+  "http://implicit-client.example.com/callback",
+  "http://implicit-client.example.com/logout",
+]
+
+allow_implicit_flow = true
 `, port, port)))
 
 	if err != nil {
@@ -156,14 +168,13 @@ func (env *APITestEnvironment) Do(method, path, token string, values url.Values)
 type ParamsTester func(t *testing.T, query, fragment url.Values)
 
 type RedirectTest struct {
-	Name          string
-	Request       url.Values
-	Code          int
-	HasLocation   bool
-	AllowImplicit bool
-	CheckParams   ParamsTester
-	Query         url.Values
-	Fragment      url.Values
+	Name        string
+	Request     url.Values
+	Code        int
+	HasLocation bool
+	CheckParams ParamsTester
+	Query       url.Values
+	Fragment    url.Values
 }
 
 func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint string, tests []RedirectTest) {
@@ -171,12 +182,7 @@ func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint strin
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			implicitOriginal := env.API.Config.AllowImplicitFlow
-			env.API.Config.AllowImplicitFlow = tt.AllowImplicit
-
 			resp := env.Do(method, endpoint, "", tt.Request)
-
-			env.API.Config.AllowImplicitFlow = implicitOriginal
 
 			if resp.Code != tt.Code {
 				t.Errorf("expected status code %d but got %d", tt.Code, resp.Code)

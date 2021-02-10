@@ -113,13 +113,12 @@ var (
 				"client_id":     {"some_client_id"},
 				"response_type": {"code token"},
 			},
-			AllowImplicit: false,
-			Code:          http.StatusFound,
-			HasLocation:   true,
-			Query:         url.Values{},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query:       url.Values{},
 			Fragment: url.Values{
 				"error":             {"unsupported_response_type"},
-				"error_description": {"implicit/hybrid flow is disallowed in this server"},
+				"error_description": {"implicit/hybrid flow is disallowed"},
 			},
 		},
 		{
@@ -153,14 +152,13 @@ var (
 		{
 			Name: "missing nonce in implicit flow",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+				"client_id":     {"implicit_client_id"},
 				"response_type": {"token id_token"},
 			},
-			AllowImplicit: true,
-			Code:          http.StatusFound,
-			HasLocation:   true,
-			Query:         url.Values{},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query:       url.Values{},
 			Fragment: url.Values{
 				"error":             {"invalid_request"},
 				"error_description": {"nonce is required in the implicit/hybrid flow of OpenID Connect"},

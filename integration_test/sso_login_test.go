@@ -15,7 +15,6 @@ import (
 
 func TestSSOLoginTest(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
-	env.API.Config.AllowImplicitFlow = true
 
 	stop := env.Start(t)
 	defer stop()
@@ -34,9 +33,9 @@ func TestSSOLoginTest(t *testing.T) {
 	openIDConfig := env.API.Config.OpenIDConfiguration()
 
 	oauth2config := oauth2.Config{
-		ClientID:     "some_client_id",
-		ClientSecret: "secret for some-client",
-		RedirectURL:  "http://some-client.example.com/callback",
+		ClientID:     "implicit_client_id",
+		ClientSecret: "secret for implicit-client",
+		RedirectURL:  "http://implicit-client.example.com/callback",
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  openIDConfig.AuthorizationEndpoint,
 			TokenURL: openIDConfig.TokenEndpoint,
@@ -58,7 +57,7 @@ func TestSSOLoginTest(t *testing.T) {
 	authQuery.Set("username", "macrat")
 	authQuery.Set("password", "foobar")
 
-	session, err := env.API.MakeLoginSession("127.0.0.1", "some_client_id")
+	session, err := env.API.MakeLoginSession("127.0.0.1", "implicit_client_id")
 	if err != nil {
 		t.Fatalf("failed to create login session: %s", err)
 	}

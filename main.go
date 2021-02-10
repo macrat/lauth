@@ -65,13 +65,6 @@ func serve(conf *config.Config) {
 		fmt.Fprintln(os.Stderr, "")
 	}
 
-	if !conf.AllowImplicitFlow {
-		fmt.Fprintln(os.Stderr, "NOTE  Implicit flow is disallowed.")
-		fmt.Fprintln(os.Stderr, "      Perhaps you have to allow this if used by SPA site.")
-		fmt.Fprintln(os.Stderr, "      You can allow this with --allow-implicit-flow option.")
-		fmt.Fprintln(os.Stderr, "")
-	}
-
 	var tokenManager token.Manager
 	if conf.SignKey != "" {
 		log.Info().Msg("loading sign key")
@@ -203,8 +196,6 @@ func init() {
 	flags.VarP(&config.URL{Scheme: "http", Host: "localhost:8000"}, "issuer", "i", "Issuer URL.")
 	flags.Var(&config.TCPAddr{}, "listen", "Listen address and port. In default, use the same port as the Issuer URL.")
 	flags.StringP("sign-key", "s", "", "RSA private key for signing to token. If omit this, automate generate key for one time use.")
-
-	flags.Bool("allow-implicit-flow", false, "Allow implicit/hybrid flow. It's may use for the SPA site or native application.")
 
 	flags.Bool("tls-auto", false, "Enable auto generate TLS with Let's Encrypt. Instance must be reachable from the Internet.")
 	flags.String("tls-cert", "", "Cert file for TLS encryption.")

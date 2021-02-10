@@ -120,11 +120,11 @@ func (req GetAuthzRequest) Validate(config *config.Config) *ErrorMessage {
 			err.Error(),
 		)
 	}
-	if !config.AllowImplicitFlow && rt.String() != "code" {
+	if !config.Clients[req.ClientID].AllowImplicitFlow && rt.String() != "code" {
 		return req.makeRedirectError(
 			nil,
 			UnsupportedResponseType,
-			"implicit/hybrid flow is disallowed in this server",
+			"implicit/hybrid flow is disallowed",
 		)
 	}
 

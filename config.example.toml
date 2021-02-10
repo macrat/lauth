@@ -16,10 +16,6 @@ issuer = "http://localhost:8000"
 # Same as --sign-key and LAUTH_SIGN_KEY.
 #sign_key = "/path/to/jwt-sign.key"
 
-# Allow Implicit and Hybrid flow.
-# Same as --allow-implicit-flow and LAUTH_ALLOW_IMPLICIT_FLOW.
-allow_implicit_flow = false
-
 
 [ldap]
 
@@ -139,6 +135,7 @@ groups = [
 #  "http://example.com/login/*",
 #  "http://*.example.com/**",
 #]
+#allow_implicit_flow = false
 
 
 [metrics]

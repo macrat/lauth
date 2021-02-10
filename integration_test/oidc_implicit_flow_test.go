@@ -12,19 +12,18 @@ import (
 
 func TestOIDCImplicitFlow(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
-	env.API.Config.AllowImplicitFlow = true
 
-	session, err := env.API.MakeLoginSession("::1", "some_client_id")
+	clientID := "implicit_client_id"
+	nonce := "This Is Nonce"
+
+	session, err := env.API.MakeLoginSession("::1", clientID)
 	if err != nil {
 		t.Fatalf("failed to create login session: %s", err)
 	}
 
-	clientID := "some_client_id"
-	nonce := "This Is Nonce"
-
 	resp := env.Post("/authz", "", url.Values{
 		"response_type": {"token id_token"},
-		"redirect_uri":  {"http://some-client.example.com/callback"},
+		"redirect_uri":  {"http://implicit-client.example.com/callback"},
 		"client_id":     {clientID},
 		"nonce":         {nonce},
 		"scope":         {"phone"},

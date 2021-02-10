@@ -167,7 +167,6 @@ $ lauth [OPTIONS]
 |`--issuer`             |`issuer`             |`LAUTH_ISSUER`             |`http://localhost:8000`    |Issuer URL.|
 |`--listen`             |`listen`             |`LAUTH_LISTEN`             |same port as the Issuer URL|Listen address and port.|
 |`--sign-key`           |`sign_key`           |`LAUTH_SIGN_KEY`           |generate random key        |RSA private key for signing to token.|
-|`--allow-implicit-flow`|`allow_implicit_flow`|`LAUTH_ALLOW_IMPLICIT_FLOW`|                           |Allow implicit/hybrid flow.<br />It's may use for the SPA site or native application.|
 |`--tls-auto`           |`tls.auto`           |`LAUTH_TLS_AUTO`           |                           |Enable auto generate TLS cert with Let's Encryption.|
 |`--tls-cert`           |`tls.cert`           |`LAUTH_TLS_CERT`           |                           |Cert file for TLS encryption.|
 |`--tls-key`            |`tls.key`            |`LAUTH_TLS_KEY`            |                           |Key file for TLS encryption.|

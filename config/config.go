@@ -61,8 +61,9 @@ type ExpireConfig struct {
 }
 
 type ClientConfig map[string]struct {
-	Secret      string     `json:"secret"       yaml:"secret"       toml:"secret"`
-	RedirectURI PatternSet `json:"redirect_uri" yaml:"redirect_uri" toml:"redirect_uri"`
+	Secret            string     `json:"secret"              yaml:"secret"              toml:"secret"`
+	RedirectURI       PatternSet `json:"redirect_uri"        yaml:"redirect_uri"        toml:"redirect_uri"`
+	AllowImplicitFlow bool       `json:"allow_implicit_flow" yaml:"allow_implicit_flow" toml:"allow_implicit_flow"`
 }
 
 type MetricsConfig struct {
@@ -93,18 +94,17 @@ type TemplateConfig struct {
 }
 
 type Config struct {
-	Issuer            *URL           `json:"issuer"              yaml:"issuer"              toml:"issuer"             flag:"issuer"`
-	Listen            *TCPAddr       `json:"listen,omitempty"    yaml:"listen,omitempty"    toml:"listen,omitempty"   flag:"listen"`
-	SignKey           string         `json:"sign_key,omitempty"  yaml:"sign_key,omitempty"  toml:"sign_key,omitempty" flag:"sign-key"`
-	TLS               TLSConfig      `json:"tls,omitempty"       yaml:"tls,omitempty"       toml:"tls,omitempty"`
-	LDAP              LDAPConfig     `json:"ldap"                yaml:"ldap"                toml:"ldap"`
-	Expire            ExpireConfig   `json:"expire"              yaml:"expire"              toml:"expire"`
-	Endpoints         EndpointConfig `json:"endpoint"            yaml:"endpoint"            toml:"endpoint"`
-	Scopes            ScopeConfig    `json:"scope,omitempty"     yaml:"scope,omitempty"     toml:"scope,omitempty"`
-	Clients           ClientConfig   `json:"client,omitempty"    yaml:"client,omitempty"    toml:"client,omitempty"`
-	Metrics           MetricsConfig  `json:"metrics"             yaml:"metrics"             toml:"metrics"`
-	Templates         TemplateConfig `json:"template,omitempty"  yaml:"template,omitempty"  toml:"template,omitempty"`
-	AllowImplicitFlow bool           `json:"allow_implicit_flow" yaml:"allow_implicit_flow" toml:"allow_implicit_flow" flag:"allow-implicit-flow"`
+	Issuer    *URL           `json:"issuer"              yaml:"issuer"              toml:"issuer"             flag:"issuer"`
+	Listen    *TCPAddr       `json:"listen,omitempty"    yaml:"listen,omitempty"    toml:"listen,omitempty"   flag:"listen"`
+	SignKey   string         `json:"sign_key,omitempty"  yaml:"sign_key,omitempty"  toml:"sign_key,omitempty" flag:"sign-key"`
+	TLS       TLSConfig      `json:"tls,omitempty"       yaml:"tls,omitempty"       toml:"tls,omitempty"`
+	LDAP      LDAPConfig     `json:"ldap"                yaml:"ldap"                toml:"ldap"`
+	Expire    ExpireConfig   `json:"expire"              yaml:"expire"              toml:"expire"`
+	Endpoints EndpointConfig `json:"endpoint"            yaml:"endpoint"            toml:"endpoint"`
+	Scopes    ScopeConfig    `json:"scope,omitempty"     yaml:"scope,omitempty"     toml:"scope,omitempty"`
+	Clients   ClientConfig   `json:"client,omitempty"    yaml:"client,omitempty"    toml:"client,omitempty"`
+	Metrics   MetricsConfig  `json:"metrics"             yaml:"metrics"             toml:"metrics"`
+	Templates TemplateConfig `json:"template,omitempty"  yaml:"template,omitempty"  toml:"template,omitempty"`
 }
 
 func TakeOptions(prefix string, typ reflect.Type, result map[string]string) {
@@ -325,9 +325,15 @@ type OpenIDConfiguration struct {
 func (c *Config) OpenIDConfiguration() OpenIDConfiguration {
 	issuer := c.Issuer.String()
 
-	responseTypes := []string{"code"}
-	if c.AllowImplicitFlow {
-		responseTypes = []string{
+	return OpenIDConfiguration{
+		Issuer:                issuer,
+		AuthorizationEndpoint: issuer + path.Join("/", c.Endpoints.Authz),
+		TokenEndpoint:         issuer + path.Join("/", c.Endpoints.Token),
+		UserinfoEndpoint:      issuer + path.Join("/", c.Endpoints.Userinfo),
+		JwksEndpoint:          issuer + path.Join("/", c.Endpoints.Jwks),
+		EndSessionEndpoint:    issuer + path.Join("/", c.Endpoints.Logout),
+		ScopesSupported:       append(c.Scopes.ScopeNames(), "openid"),
+		ResponseTypesSupported: []string{
 			"code",
 			"token",
 			"id_token",
@@ -335,18 +341,7 @@ func (c *Config) OpenIDConfiguration() OpenIDConfiguration {
 			"code id_token",
 			"token id_token",
 			"code token id_token",
-		}
-	}
-
-	return OpenIDConfiguration{
-		Issuer:                            issuer,
-		AuthorizationEndpoint:             issuer + path.Join("/", c.Endpoints.Authz),
-		TokenEndpoint:                     issuer + path.Join("/", c.Endpoints.Token),
-		UserinfoEndpoint:                  issuer + path.Join("/", c.Endpoints.Userinfo),
-		JwksEndpoint:                      issuer + path.Join("/", c.Endpoints.Jwks),
-		EndSessionEndpoint:                issuer + path.Join("/", c.Endpoints.Logout),
-		ScopesSupported:                   append(c.Scopes.ScopeNames(), "openid"),
-		ResponseTypesSupported:            responseTypes,
+		},
 		ResponseModesSupported:            []string{"query", "fragment"},
 		GrantTypesSupported:               []string{"authorization_code", "implicit", "refresh_token"},
 		SubjectTypesSupported:             []string{"public"},

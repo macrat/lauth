@@ -15,7 +15,12 @@ func TestPostAuthz(t *testing.T) {
 
 	env.RedirectTest(t, "GET", "/authz", authzEndpointCommonTests)
 
-	session, err := env.API.MakeLoginSession("::1", "some_client_id")
+	someSession, err := env.API.MakeLoginSession("::1", "some_client_id")
+	if err != nil {
+		t.Fatalf("faield to make login session: %s", err)
+	}
+
+	implicitSession, err := env.API.MakeLoginSession("::1", "implicit_client_id")
 	if err != nil {
 		t.Fatalf("faield to make login session: %s", err)
 	}
@@ -37,7 +42,7 @@ func TestPostAuthz(t *testing.T) {
 				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
-				"session":       {session},
+				"session":       {someSession},
 			},
 			Code: http.StatusForbidden,
 		},
@@ -48,7 +53,7 @@ func TestPostAuthz(t *testing.T) {
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
-				"session":       {session},
+				"session":       {someSession},
 			},
 			Code: http.StatusForbidden,
 		},
@@ -59,7 +64,7 @@ func TestPostAuthz(t *testing.T) {
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"password":      {"foobar"},
-				"session":       {session},
+				"session":       {someSession},
 			},
 			Code: http.StatusForbidden,
 		},
@@ -71,7 +76,7 @@ func TestPostAuthz(t *testing.T) {
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"invalid"},
-				"session":       {session},
+				"session":       {someSession},
 			},
 			Code: http.StatusForbidden,
 		},
@@ -118,11 +123,10 @@ func TestPostAuthz(t *testing.T) {
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {session},
+				"session":       {someSession},
 			},
-			AllowImplicit: false,
-			Code:          http.StatusFound,
-			HasLocation:   true,
+			Code:        http.StatusFound,
+			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(fragment, url.Values{}) {
 					t.Errorf("expected fragment is not set but set %#v", fragment.Encode())
@@ -145,16 +149,15 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / token",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+				"client_id":     {"implicit_client_id"},
 				"response_type": {"token"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {session},
+				"session":       {implicitSession},
 			},
-			AllowImplicit: true,
-			Code:          http.StatusFound,
-			HasLocation:   true,
+			Code:        http.StatusFound,
+			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())
@@ -186,18 +189,17 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / id_token",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+				"client_id":     {"implicit_client_id"},
 				"response_type": {"id_token"},
 				"state":         {"this-is-state"},
 				"nonce":         {"this-is-nonce"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {session},
+				"session":       {implicitSession},
 			},
-			AllowImplicit: true,
-			Code:          http.StatusFound,
-			HasLocation:   true,
+			Code:        http.StatusFound,
+			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())
@@ -206,7 +208,7 @@ func TestPostAuthz(t *testing.T) {
 					t.Errorf("expected returns id_token but not set")
 				} else if code, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
 					t.Errorf("failed to parse access_token: %s", err)
-				} else if err := code.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
+				} else if err := code.Validate(env.API.Config.Issuer, "implicit_client_id"); err != nil {
 					t.Errorf("failed to validate access_token: %s", err)
 				}
 				if fragment.Get("code") != "" {
@@ -216,7 +218,7 @@ func TestPostAuthz(t *testing.T) {
 					t.Errorf("expected access_token is not set but set %#v", fragment.Get("access_token"))
 				}
 				if fragment.Get("expires_in") != "3600" {
-					t.Errorf("expected token_type is \"3600\" but got %#v", fragment.Get("expires_in"))
+					t.Errorf("expected expires_in is \"3600\" but got %#v", fragment.Get("expires_in"))
 				}
 				if fragment.Get("state") != "this-is-state" {
 					t.Errorf("expected state is \"this-is-state\" but got %#v", fragment.Get("state"))
@@ -232,19 +234,18 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / id_token with profile scope",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+				"client_id":     {"implicit_client_id"},
 				"response_type": {"id_token"},
 				"scope":         {"profile"},
 				"state":         {"this-is-state"},
 				"nonce":         {"this-is-nonce"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {session},
+				"session":       {implicitSession},
 			},
-			AllowImplicit: true,
-			Code:          http.StatusFound,
-			HasLocation:   true,
+			Code:        http.StatusFound,
+			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())
@@ -253,7 +254,7 @@ func TestPostAuthz(t *testing.T) {
 					t.Errorf("expected returns id_token but not set")
 				} else if code, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
 					t.Errorf("failed to parse access_token: %s", err)
-				} else if err := code.Validate(env.API.Config.Issuer, "some_client_id"); err != nil {
+				} else if err := code.Validate(env.API.Config.Issuer, "implicit_client_id"); err != nil {
 					t.Errorf("failed to validate access_token: %s", err)
 				}
 				if fragment.Get("code") != "" {
@@ -285,17 +286,16 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / token id_token",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+				"client_id":     {"implicit_client_id"},
 				"response_type": {"token id_token"},
 				"nonce":         {"this-is-nonce"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {session},
+				"session":       {implicitSession},
 			},
-			AllowImplicit: true,
-			Code:          http.StatusFound,
-			HasLocation:   true,
+			Code:        http.StatusFound,
+			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())
@@ -320,17 +320,16 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / code id_token",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+				"client_id":     {"implicit_client_id"},
 				"response_type": {"code id_token"},
 				"nonce":         {"this-is-nonce"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {session},
+				"session":       {implicitSession},
 			},
-			AllowImplicit: true,
-			Code:          http.StatusFound,
-			HasLocation:   true,
+			Code:        http.StatusFound,
+			HasLocation: true,
 			CheckParams: func(t *testing.T, query, fragment url.Values) {
 				if !reflect.DeepEqual(query, url.Values{}) {
 					t.Errorf("expected query is not set but set %#v", query.Encode())

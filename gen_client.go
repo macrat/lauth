@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	clientSecret = ""
-	redirectURIs = []string{}
-	clientCmd    = &cobra.Command{
+	clientSecret      = ""
+	redirectURIs      = []string{}
+	allowImplicitFlow = false
+	clientCmd         = &cobra.Command{
 		Use:   "gen-client CLIENT_ID",
 		Short: "Generate config for client",
 		Args:  cobra.ExactArgs(1),
@@ -33,9 +34,11 @@ func init() {
 	cmd.AddCommand(clientCmd)
 
 	flags := clientCmd.Flags()
+	flags.SortFlags = false
 
 	flags.StringArrayVarP(&redirectURIs, "redirect-uri", "u", nil, "URIs to accept redirect to.")
 	flags.StringVar(&clientSecret, "secret", "", "Client secret value. Generate random secret if omit. Not recommend use this option.")
+	flags.BoolVar(&allowImplicitFlow, "allow-implicit-flow", false, "Allow implicit and hybrid flow for this client.")
 }
 
 func quoteString(str string) string {
@@ -67,6 +70,9 @@ func GenClient(clientID, secretHint string, redirectURIs []string) (string, erro
 	fmt.Fprintf(buf, "\n")
 	fmt.Fprintf(buf, "# client_secret is \"%s\" (please remove this line after copy secret)\n", sec)
 	fmt.Fprintf(buf, "secret = \"%s\"\n", hash)
+	fmt.Fprintf(buf, "\n")
+	fmt.Fprintf(buf, "# Allow use implicit and hybrid flow for this client.\n")
+	fmt.Fprintf(buf, "allow_implicit_flow = %t\n", allowImplicitFlow)
 	fmt.Fprintf(buf, "\n")
 	fmt.Fprintf(buf, "# URIs for redirect after login or logout.\n")
 	fmt.Fprintf(buf, "redirect_uri = [\n")
