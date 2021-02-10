@@ -45,6 +45,9 @@ token = "42d"
 
 [ldap]
 server = "ldap://someone:secure@ldap.example.com"
+
+[client.test]
+secret = "$2a$10$fU1PBoQ6V4a3Mbg4BI5yJemdSU4bE5LogDMFG55n5C761X0/tzAkW"
 `)
 	conf := &config.Config{}
 
@@ -78,6 +81,19 @@ server = "ldap://someone:secure@ldap.example.com"
 
 	if conf.LDAP.Password != "secure" {
 		t.Errorf("unexpected LDAP password: %s", conf.LDAP.Password)
+	}
+
+	if len(conf.Clients) != 1 {
+		t.Errorf("unexpected number of clients: %#v", conf.Clients)
+	} else {
+		for k, v := range conf.Clients {
+			if k != "test" {
+				t.Errorf("unexpected client id: %s", k)
+			}
+			if v.Name != "test" {
+				t.Errorf("unexpected client name: %s", v.Name)
+			}
+		}
 	}
 
 	raw = strings.NewReader(`

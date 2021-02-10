@@ -7,6 +7,7 @@
         <style>
             body {
                 display: flex;
+                flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 min-height: 100vh;
@@ -22,6 +23,16 @@
             }
             footer a {
                 color: inherit;
+            }
+            img {
+                display: block;
+                margin-top: -50px;
+                border-radius: 4px;
+            }
+            span {
+                color: #555;
+                font-size: 140%;
+                margin-bottom: 1em;
             }
             label {
                 display: flex;
@@ -135,6 +146,9 @@
     </head>
 
     <body>
+        {{ if .client.IconURL }}<img src="{{ .client.IconURL }}" width="100" height="100" />{{ end }}
+        <span>{{ .client.Name }}</span>
+
         <form action="{{ .endpoints.Authz }}" method="POST" aria-label="login" onsubmit="document.getElementById('login-btn').disabled = true">
             <input type="hidden" name="session" value="{{ .session_token }}" />
             <input type="hidden" name="response_type" value="{{ .request.ResponseType }}" />

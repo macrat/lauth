@@ -61,6 +61,8 @@ type ExpireConfig struct {
 }
 
 type ClientConfig map[string]struct {
+	Name              string     `json:"name"                yaml:"name"                toml:"name"`
+	IconURL           string     `json:"icon_url"            yaml:"icon_url"            toml:"icon_url"`
 	Secret            string     `json:"secret"              yaml:"secret"              toml:"secret"`
 	RedirectURI       PatternSet `json:"redirect_uri"        yaml:"redirect_uri"        toml:"redirect_uri"`
 	AllowImplicitFlow bool       `json:"allow_implicit_flow" yaml:"allow_implicit_flow" toml:"allow_implicit_flow"`
@@ -177,6 +179,13 @@ func (c *Config) unmarshal(vip *viper.Viper) error {
 
 	if c.LDAP.BaseDN == "" {
 		c.LDAP.BaseDN, _ = GetDCByDN(c.LDAP.User)
+	}
+
+	for id, client := range c.Clients {
+		if client.Name == "" {
+			client.Name = id
+			c.Clients[id] = client
+		}
 	}
 
 	return nil

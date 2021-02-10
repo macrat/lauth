@@ -210,6 +210,10 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 
 	report.Continue()
 	c.HTML(http.StatusOK, "login.tmpl", gin.H{
+		"client": gin.H{
+			"Name":    api.Config.Clients[req.ClientID].Name,
+			"IconURL": api.Config.Clients[req.ClientID].IconURL,
+		},
 		"endpoints":        api.Config.EndpointPaths(),
 		"config":           api.Config,
 		"request":          req,

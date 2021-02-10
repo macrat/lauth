@@ -63,6 +63,10 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 
 		req.makeRedirectError(nil, InvalidRequest, description).Report(report)
 		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
+			"client": gin.H{
+				"Name":    api.Config.Clients[req.ClientID].Name,
+				"IconURL": api.Config.Clients[req.ClientID].IconURL,
+			},
 			"endpoints":        api.Config.EndpointPaths(),
 			"config":           api.Config,
 			"request":          req.GetAuthzRequest,

@@ -129,7 +129,7 @@ groups = [
 # You can generate secret with `gen-client` command like this.
 # $ lauth gen-client http://example.com -u http://example.com/login/* -u http://*.example.com/**
 #
-#[client."http://example.com"]
+#[client.your-client]
 #secret = "$2y$05$ctB3fgxdzGEXICdJCsb1qOkl3169uhjq0UC5vFQa7o.yWE69vJccC"
 #redirect_uri = [
 #  "http://example.com/login/*",
