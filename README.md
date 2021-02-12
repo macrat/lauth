@@ -101,6 +101,7 @@ Templates using [html/template](https://golang.org/pkg/html/template/) libraries
 Please see also the default page templates:
 
 - [login page](./page/html/login.tmpl)
+- [logged out page](./page/html/logout.tmpl)
 - [error page](./page/html/error.tmpl)
 
 ### ID attribute

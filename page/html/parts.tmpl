@@ -1,0 +1,28 @@
+{{ define "formContext" }}
+    <input type="hidden" name="session" value="{{ .session_token }}" />
+    <input type="hidden" name="response_type" value="{{ .request.ResponseType }}" />
+    <input type="hidden" name="client_id" value="{{ .request.ClientID }}" />
+    <input type="hidden" name="redirect_uri" value="{{ .request.RedirectURI }}" />
+
+    {{ if .request.Scope }}
+        <input type="hidden" name="scope" value="{{ .request.Scope }}" />
+    {{ end }}
+
+    {{ if .request.State }}
+        <input type="hidden" name="state" value="{{ .request.State }}" />
+    {{ end }}
+
+    {{ if .request.Nonce }}
+        <input type="hidden" name="nonce" value="{{ .request.Nonce }}" />
+    {{ end }}
+{{ end }}
+
+
+{{ define "username" }}
+    <input name="username" aria-label="username" required{{ if .initial_username }} value="{{ .initial_username }}"{{ end }} />
+{{ end }}
+
+
+{{ define "password" }}
+    <input name="password" aria-label="password" required type="password" />
+{{ end }}
