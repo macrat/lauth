@@ -347,7 +347,7 @@ func TestSSOLogin(t *testing.T) {
 	}
 }
 
-func TestLoginSession(t *testing.T) {
+func TestUseLoginSession(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
 	params := url.Values{
