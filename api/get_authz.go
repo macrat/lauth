@@ -146,6 +146,26 @@ func (req *GetAuthzRequest) Report(c *metrics.Context) {
 	c.Set("prompt", req.Prompt)
 }
 
+func (req GetAuthzRequest) MakeHTMLContext(api *LauthAPI, c *gin.Context, initialUser string, errorDescription string) (map[string]interface{}, *ErrorMessage) {
+	sessionToken, err := api.MakeLoginSession(c.ClientIP(), req.ClientID)
+	if err != nil {
+		return nil, req.makeRedirectError(err, "server_error", "failed to create session")
+	}
+
+	client := api.Config.Clients[req.ClientID]
+
+	return map[string]interface{}{
+		"client": map[string]interface{}{
+			"Name":    client.Name,
+			"IconURL": client.IconURL,
+		},
+		"request":          req,
+		"initial_username": initialUser,
+		"session_token":    sessionToken,
+		"error":            errorDescription,
+	}, nil
+}
+
 func (api *LauthAPI) GetAuthz(c *gin.Context) {
 	report := metrics.StartAuthz(c)
 	defer report.Close()
@@ -200,24 +220,13 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 		return
 	}
 
-	loginToken, err := api.MakeLoginSession(c.ClientIP(), req.ClientID)
-	if err != nil {
-		e := req.makeRedirectError(err, "server_error", "failed to create session")
-		e.Report(report)
-		e.Redirect(c)
+	context, errMsg := req.MakeHTMLContext(api, c, req.LoginHint, "")
+	if errMsg != nil {
+		errMsg.Report(report)
+		errMsg.Redirect(c)
 		return
 	}
 
 	report.Continue()
-	c.HTML(http.StatusOK, "login.tmpl", gin.H{
-		"client": gin.H{
-			"Name":    api.Config.Clients[req.ClientID].Name,
-			"IconURL": api.Config.Clients[req.ClientID].IconURL,
-		},
-		"endpoints":        api.Config.EndpointPaths(),
-		"config":           api.Config,
-		"request":          req,
-		"initial_username": req.LoginHint,
-		"session_token":    loginToken,
-	})
+	c.HTML(http.StatusOK, "login.tmpl", context)
 }

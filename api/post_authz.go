@@ -53,27 +53,15 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	}
 
 	showLoginForm := func(description string) {
-		loginToken, err := api.MakeLoginSession(c.ClientIP(), req.ClientID)
-		if err != nil {
-			e := req.makeRedirectError(err, "server_error", "failed to create session")
-			e.Report(report)
-			e.Redirect(c)
+		context, errMsg := req.GetAuthzRequest.MakeHTMLContext(api, c, req.User, description)
+		if errMsg != nil {
+			errMsg.Report(report)
+			errMsg.Redirect(c)
 			return
 		}
 
 		req.makeRedirectError(nil, InvalidRequest, description).Report(report)
-		c.HTML(http.StatusForbidden, "login.tmpl", gin.H{
-			"client": gin.H{
-				"Name":    api.Config.Clients[req.ClientID].Name,
-				"IconURL": api.Config.Clients[req.ClientID].IconURL,
-			},
-			"endpoints":        api.Config.EndpointPaths(),
-			"config":           api.Config,
-			"request":          req.GetAuthzRequest,
-			"initial_username": req.User,
-			"error":            description,
-			"session_token":    loginToken,
-		})
+		c.HTML(http.StatusForbidden, "login.tmpl", context)
 	}
 
 	if req.LoginToken == "" {

@@ -144,7 +144,7 @@
         {{ if .client.IconURL }}<img src="{{ .client.IconURL }}" width="100" height="100" />{{ end }}
         <span>{{ .client.Name }}</span>
 
-        <form action="{{ .endpoints.Authz }}" method="POST" aria-label="login" onsubmit="document.getElementById('login-btn').disabled = true"{{ if .error }} class="shaking"{{ end }}>
+        <form method="POST" aria-label="login" onsubmit="document.getElementById('login-btn').disabled = true"{{ if .error }} class="shaking"{{ end }}>
             {{ template "formContext" . }}
 
             {{ if .error }}

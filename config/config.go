@@ -60,13 +60,15 @@ type ExpireConfig struct {
 	SSO     Duration `json:"sso"     yaml:"sso"     toml:"sso"     flag:"sso-expire"`
 }
 
-type ClientConfig map[string]struct {
+type ClientConfig struct {
 	Name              string     `json:"name"                yaml:"name"                toml:"name"`
 	IconURL           string     `json:"icon_url"            yaml:"icon_url"            toml:"icon_url"`
 	Secret            string     `json:"secret"              yaml:"secret"              toml:"secret"`
 	RedirectURI       PatternSet `json:"redirect_uri"        yaml:"redirect_uri"        toml:"redirect_uri"`
 	AllowImplicitFlow bool       `json:"allow_implicit_flow" yaml:"allow_implicit_flow" toml:"allow_implicit_flow"`
 }
+
+type ClientConfigSet map[string]ClientConfig
 
 type MetricsConfig struct {
 	Path     string `json:"path"               yaml:"path"               toml:"path"               flag:"metrics-path"`
@@ -96,17 +98,17 @@ type TemplateConfig struct {
 }
 
 type Config struct {
-	Issuer    *URL           `json:"issuer"              yaml:"issuer"              toml:"issuer"             flag:"issuer"`
-	Listen    *TCPAddr       `json:"listen,omitempty"    yaml:"listen,omitempty"    toml:"listen,omitempty"   flag:"listen"`
-	SignKey   string         `json:"sign_key,omitempty"  yaml:"sign_key,omitempty"  toml:"sign_key,omitempty" flag:"sign-key"`
-	TLS       TLSConfig      `json:"tls,omitempty"       yaml:"tls,omitempty"       toml:"tls,omitempty"`
-	LDAP      LDAPConfig     `json:"ldap"                yaml:"ldap"                toml:"ldap"`
-	Expire    ExpireConfig   `json:"expire"              yaml:"expire"              toml:"expire"`
-	Endpoints EndpointConfig `json:"endpoint"            yaml:"endpoint"            toml:"endpoint"`
-	Scopes    ScopeConfig    `json:"scope,omitempty"     yaml:"scope,omitempty"     toml:"scope,omitempty"`
-	Clients   ClientConfig   `json:"client,omitempty"    yaml:"client,omitempty"    toml:"client,omitempty"`
-	Metrics   MetricsConfig  `json:"metrics"             yaml:"metrics"             toml:"metrics"`
-	Templates TemplateConfig `json:"template,omitempty"  yaml:"template,omitempty"  toml:"template,omitempty"`
+	Issuer    *URL            `json:"issuer"              yaml:"issuer"              toml:"issuer"             flag:"issuer"`
+	Listen    *TCPAddr        `json:"listen,omitempty"    yaml:"listen,omitempty"    toml:"listen,omitempty"   flag:"listen"`
+	SignKey   string          `json:"sign_key,omitempty"  yaml:"sign_key,omitempty"  toml:"sign_key,omitempty" flag:"sign-key"`
+	TLS       TLSConfig       `json:"tls,omitempty"       yaml:"tls,omitempty"       toml:"tls,omitempty"`
+	LDAP      LDAPConfig      `json:"ldap"                yaml:"ldap"                toml:"ldap"`
+	Expire    ExpireConfig    `json:"expire"              yaml:"expire"              toml:"expire"`
+	Endpoints EndpointConfig  `json:"endpoint"            yaml:"endpoint"            toml:"endpoint"`
+	Scopes    ScopeConfig     `json:"scope,omitempty"     yaml:"scope,omitempty"     toml:"scope,omitempty"`
+	Clients   ClientConfigSet `json:"client,omitempty"    yaml:"client,omitempty"    toml:"client,omitempty"`
+	Metrics   MetricsConfig   `json:"metrics"             yaml:"metrics"             toml:"metrics"`
+	Templates TemplateConfig  `json:"template,omitempty"  yaml:"template,omitempty"  toml:"template,omitempty"`
 }
 
 func TakeOptions(prefix string, typ reflect.Type, result map[string]string) {
