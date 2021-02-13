@@ -3,6 +3,7 @@ package api_test
 import (
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/macrat/lauth/api"
@@ -319,10 +320,11 @@ func TestSSOLogin(t *testing.T) {
 		params.Add(k, v)
 	}
 
-	req, _ = http.NewRequest("GET", "/authz?"+params.Encode(), nil)
+	req, _ = http.NewRequest("POST", "/authz", strings.NewReader(params.Encode()))
 	for _, c := range rawCookie {
 		req.Header.Add("Cookie", c)
 	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp = env.DoRequest(req)
 	if resp.Code != http.StatusFound {
