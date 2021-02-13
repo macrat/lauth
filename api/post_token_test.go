@@ -542,6 +542,20 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			},
 		},
 		{
+			Name: "mismatch client_id",
+			Request: url.Values{
+				"grant_type":    {"refresh_token"},
+				"refresh_token": {refreshToken},
+				"client_id":     {"implicit_client_id"},
+				"client_secret": {"secret for implicit-client"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "invalid_grant",
+			},
+		},
+		{
 			Name: "success",
 			Request: url.Values{
 				"grant_type":    {"refresh_token"},

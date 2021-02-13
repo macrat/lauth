@@ -249,9 +249,9 @@ func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequ
 		}
 	}
 
-	if req.ClientID != "" && req.ClientID != refreshToken.ClientID {
+	if req.ClientID != refreshToken.ClientID {
 		return nil, &ErrorMessage{
-			Err:    errors.New("incorrect redirect_id"),
+			Err:    errors.New("mismatch client_id"),
 			Reason: InvalidGrant,
 		}
 	}
