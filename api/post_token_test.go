@@ -262,6 +262,20 @@ func TestPostToken_Code(t *testing.T) {
 			},
 		},
 		{
+			Name: "no match client_id in code and query",
+			Request: url.Values{
+				"grant_type":    {"authorization_code"},
+				"code":          {code},
+				"client_id":     {"implicit_client_id"},
+				"client_secret": {"secret for implicit-client"},
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+			},
+			Code: http.StatusBadRequest,
+			Body: map[string]interface{}{
+				"error": "invalid_grant",
+			},
+		},
+		{
 			Name: "incorrect client_secret",
 			Request: url.Values{
 				"grant_type":    {"authorization_code"},

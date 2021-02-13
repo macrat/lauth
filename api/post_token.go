@@ -145,16 +145,16 @@ func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest, rep
 		}
 	}
 
-	if req.ClientID != "" && req.ClientID != code.ClientID {
+	if req.ClientID != code.ClientID {
 		return nil, &ErrorMessage{
-			Err:    errors.New("incorrect redirect_id"),
+			Err:    errors.New("mismatch client_id"),
 			Reason: InvalidGrant,
 		}
 	}
 
 	if req.RedirectURI != code.RedirectURI {
 		return nil, &ErrorMessage{
-			Err:    errors.New("incorrect redirect_uri"),
+			Err:    errors.New("mismatch redirect_uri"),
 			Reason: InvalidGrant,
 		}
 	}
