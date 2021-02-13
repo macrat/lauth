@@ -95,7 +95,7 @@ This is default page design:
 
 ![default design of login page and error page](./images/default_design.jpg)
 
-If you want to customize the design, you can use `--login-page` and `--error-page`.
+If you want to customize the design, you can use `--login-page`, `--logout-page`, and `--error-page`.
 Templates using [html/template](https://golang.org/pkg/html/template/) libraries format.
 
 Please see also the default page templates:
@@ -163,36 +163,37 @@ groups = [
 $ lauth [OPTIONS]
 ```
 
-|command line           |config file          |environment variable       |default value              |description|
-|-----------------------|---------------------|---------------------------|---------------------------|-----------|
-|`--issuer`             |`issuer`             |`LAUTH_ISSUER`             |`http://localhost:8000`    |Issuer URL.|
-|`--listen`             |`listen`             |`LAUTH_LISTEN`             |same port as the Issuer URL|Listen address and port.|
-|`--sign-key`           |`sign_key`           |`LAUTH_SIGN_KEY`           |generate random key        |RSA private key for signing to token.|
-|`--tls-auto`           |`tls.auto`           |`LAUTH_TLS_AUTO`           |                           |Enable auto generate TLS cert with Let's Encryption.|
-|`--tls-cert`           |`tls.cert`           |`LAUTH_TLS_CERT`           |                           |Cert file for TLS encryption.|
-|`--tls-key`            |`tls.key`            |`LAUTH_TLS_KEY`            |                           |Key file for TLS encryption.|
-|`--authz-endpoint`     |`endpoint.authz`     |`LAUTH_ENDPOINT_AUTHZ`     |`/login`                   |Path to authorization endpoint.|
-|`--token-endpoint`     |`endpoint.token`     |`LAUTH_ENDPOINT_TOKEN`     |`/login/token`             |Path to token endpoint.|
-|`--userinfo-endpoint`  |`endpoint.userinfo`  |`LAUTH_ENDPOINT_USERINFO`  |`/login/userinfo`          |Path to userinfo endpoint.|
-|`--jwks-uri`           |`endpoint.jwks`      |`LAUTH_ENDPOINT_JWKS`      |`/login/jwks`              |Path to jwks uri.|
-|`--login-expire`       |`expire.login`       |`LAUTH_EXPIRE_LOGIN`       |`1h`                       |Time limit to input username and password on the login page.|
-|`--code-expire`        |`expire.code`        |`LAUTH_EXPIRE_CODE`        |`5m`                       |Time limit to exchange code to `access_token` or `id_token`.|
-|`--token-expire`       |`expire.token`       |`LAUTH_EXPIRE_TOKEN`       |`1d`                       |Expiration duration of `access_token` and `id_token`.|
-|`--refresh-expire`     |`expire.refresh`     |`LAUTH_EXPIRE_REFRESH`     |`1w`                       |Expiration duration of `refresh_token`.<br />If set 0, `refresh_token` will not create.|
-|`--sso-expire`         |`expire.sso`         |`LAUTH_EXPIRE_SSO`         |`2w`                       |Duration for don't show login page if logged in past.<br />If set 0, always ask the username and password to the end-user.|
-|`--ldap`               |`ldap.server`        |`LAUTH_LDAP_SERVER`        |                           |URL of LDAP server.<br />You can include user credentials like `ldap://USER_DN:PASSW|ORD@ldap.example.com`.
-|`--ldap-user`          |`ldap.user`          |`LAUTH_LDAP_USER`          |                           |User DN for connecting to LDAP.<br />You can use `DOMAIN\username` style if using ActiveDirectory.|
-|`--ldap-password`      |`ldap.password`      |`LAUTH_LDAP_PASSWORD`      |                           |Password for connecting to LDAP.|
-|`--ldap-base-dn`       |`ldap.base_dn`       |`LAUTH_LDAP_BASE_DN`       |same as user DC            |The base DN for search user account in LDAP like `OU=somewhere,DC=example,DC=local`.|
-|`--ldap-id-attribute`  |`ldap.id_attribute`  |`LAUTH_LDAP_ID_ATTRIBUTE`  |`sAMAccountName`           |ID attribute name in LDAP.|
-|`--ldap-disable-tls`   |`ldap.disable_tls`   |`LAUTH_LDAP_DISABLE_TLS`   |                           |Disable use TLS when connecting to the LDAP server. *THIS IS INSECURE.*|
-|`--login-page`         |`template.login_page`|`LAUTH_TEMPLATE_LOGIN_PAGE`|                           |Templte file for login page.|
-|`--error-page`         |`template.error_page`|`LAUTH_TEMPLATE_ERROR_PAGE`|                           |Templte file for error page.|
-|`--metrics-path`       |`metrics.path`       |`LAUTH_METRICS_PATH`       |`/metrics`                 |Path to Prometheus metrics.|
-|`--metrics-username`   |`metrics.username`   |`LAUTH_METRICS_USERNAME`   |                           |Basic auth username to access to Prometheus metrics.<br />If omit, disable authentication.|
-|`--metrics-password`   |`metrics.password`   |`LAUTH_METRICS_PASSWORD`   |                           |Basic auth password to access to Prometheus metrics.<br />If omit, disable authentication.|
-|`--config`             |                     |`LAUTH_CONFIG`             |                           |Load options from TOML, YAML, or JSON file.|
-|`--debug`              |                     |                           |                           |Enable debug output. *This is insecure* for production use.|
+|command line           |config file           |environment variable        |default value              |description|
+|-----------------------|----------------------|----------------------------|---------------------------|-----------|
+|`--issuer`             |`issuer`              |`LAUTH_ISSUER`              |`http://localhost:8000`    |Issuer URL.|
+|`--listen`             |`listen`              |`LAUTH_LISTEN`              |same port as the Issuer URL|Listen address and port.|
+|`--sign-key`           |`sign_key`            |`LAUTH_SIGN_KEY`            |generate random key        |RSA private key for signing to token.|
+|`--tls-auto`           |`tls.auto`            |`LAUTH_TLS_AUTO`            |                           |Enable auto generate TLS cert with Let's Encryption.|
+|`--tls-cert`           |`tls.cert`            |`LAUTH_TLS_CERT`            |                           |Cert file for TLS encryption.|
+|`--tls-key`            |`tls.key`             |`LAUTH_TLS_KEY`             |                           |Key file for TLS encryption.|
+|`--authz-endpoint`     |`endpoint.authz`      |`LAUTH_ENDPOINT_AUTHZ`      |`/login`                   |Path to authorization endpoint.|
+|`--token-endpoint`     |`endpoint.token`      |`LAUTH_ENDPOINT_TOKEN`      |`/login/token`             |Path to token endpoint.|
+|`--userinfo-endpoint`  |`endpoint.userinfo`   |`LAUTH_ENDPOINT_USERINFO`   |`/login/userinfo`          |Path to userinfo endpoint.|
+|`--jwks-uri`           |`endpoint.jwks`       |`LAUTH_ENDPOINT_JWKS`       |`/login/jwks`              |Path to jwks uri.|
+|`--login-expire`       |`expire.login`        |`LAUTH_EXPIRE_LOGIN`        |`1h`                       |Time limit to input username and password on the login page.|
+|`--code-expire`        |`expire.code`         |`LAUTH_EXPIRE_CODE`         |`5m`                       |Time limit to exchange code to `access_token` or `id_token`.|
+|`--token-expire`       |`expire.token`        |`LAUTH_EXPIRE_TOKEN`        |`1d`                       |Expiration duration of `access_token` and `id_token`.|
+|`--refresh-expire`     |`expire.refresh`      |`LAUTH_EXPIRE_REFRESH`      |`1w`                       |Expiration duration of `refresh_token`.<br />If set 0, `refresh_token` will not create.|
+|`--sso-expire`         |`expire.sso`          |`LAUTH_EXPIRE_SSO`          |`2w`                       |Duration for don't show login page if logged in past.<br />If set 0, always ask the username and password to the end-user.|
+|`--ldap`               |`ldap.server`         |`LAUTH_LDAP_SERVER`         |                           |URL of LDAP server.<br />You can include user credentials like `ldap://USER_DN:PASSW|ORD@ldap.example.com`.
+|`--ldap-user`          |`ldap.user`           |`LAUTH_LDAP_USER`           |                           |User DN for connecting to LDAP.<br />You can use `DOMAIN\username` style if using ActiveDirectory.|
+|`--ldap-password`      |`ldap.password`       |`LAUTH_LDAP_PASSWORD`       |                           |Password for connecting to LDAP.|
+|`--ldap-base-dn`       |`ldap.base_dn`        |`LAUTH_LDAP_BASE_DN`        |same as user DC            |The base DN for search user account in LDAP like `OU=somewhere,DC=example,DC=local`.|
+|`--ldap-id-attribute`  |`ldap.id_attribute`   |`LAUTH_LDAP_ID_ATTRIBUTE`   |`sAMAccountName`           |ID attribute name in LDAP.|
+|`--ldap-disable-tls`   |`ldap.disable_tls`    |`LAUTH_LDAP_DISABLE_TLS`    |                           |Disable use TLS when connecting to the LDAP server. *THIS IS INSECURE.*|
+|`--login-page`         |`template.login_page` |`LAUTH_TEMPLATE_LOGIN_PAGE` |                           |Templte file for login page.|
+|`--logout-page`        |`template.logout_page`|`LAUTH_TEMPLATE_LOGOUT_PAGE`|                           |Templte file for logged out page.|
+|`--error-page`         |`template.error_page` |`LAUTH_TEMPLATE_ERROR_PAGE` |                           |Templte file for error page.|
+|`--metrics-path`       |`metrics.path`        |`LAUTH_METRICS_PATH`        |`/metrics`                 |Path to Prometheus metrics.|
+|`--metrics-username`   |`metrics.username`    |`LAUTH_METRICS_USERNAME`    |                           |Basic auth username to access to Prometheus metrics.<br />If omit, disable authentication.|
+|`--metrics-password`   |`metrics.password`    |`LAUTH_METRICS_PASSWORD`    |                           |Basic auth password to access to Prometheus metrics.<br />If omit, disable authentication.|
+|`--config`             |                      |`LAUTH_CONFIG`              |                           |Load options from TOML, YAML, or JSON file.|
+|`--debug`              |                      |                            |                           |Enable debug output. *This is insecure* for production use.|
 
 
 ### gen-client sub command
