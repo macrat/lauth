@@ -46,10 +46,7 @@ func (req *AuthzRequest) Bind(c *gin.Context) *ErrorMessage {
 }
 
 func (req *AuthzRequest) makeRedirectError(err error, reason ErrorReason, description string) *ErrorMessage {
-	redirectURI, e2 := url.Parse(req.RedirectURI)
-	if e2 != nil {
-		redirectURI = nil
-	}
+	redirectURI, _ := url.Parse(req.RedirectURI)
 
 	return &ErrorMessage{
 		Err:          err,
