@@ -63,7 +63,8 @@ func (api *LauthAPI) Logout(c *gin.Context) {
 		loginUser = ssoToken.Subject
 	}
 
-	if token, err := api.TokenManager.ParseIDToken(req.IDTokenHint); err != nil {
+	token, err := api.TokenManager.ParseIDToken(req.IDTokenHint)
+	if err != nil {
 		msg := ErrorMessage{
 			Err:         err,
 			Reason:      InvalidRequest,
@@ -72,47 +73,29 @@ func (api *LauthAPI) Logout(c *gin.Context) {
 		msg.Report(report)
 		msg.HTML(c)
 		return
-	} else {
-		report.Set("client_id", token.Audience)
-		report.Set("username", token.Subject)
+	}
 
-		if token.Issuer != api.Config.Issuer.String() {
-			msg := ErrorMessage{
-				Reason:      InvalidRequest,
-				Description: "invalid id_token_hint",
-			}
-			msg.Report(report)
-			msg.HTML(c)
-			return
-		}
+	report.Set("client_id", token.Audience)
+	report.Set("username", token.Subject)
 
-		if token.Subject != loginUser {
-			msg := ErrorMessage{
-				Reason:      InvalidRequest,
-				Description: "user not logged in",
-			}
-			msg.Report(report)
-			msg.HTML(c)
-			return
+	if token.Issuer != api.Config.Issuer.String() {
+		msg := ErrorMessage{
+			Reason:      InvalidRequest,
+			Description: "invalid id_token_hint",
 		}
+		msg.Report(report)
+		msg.HTML(c)
+		return
+	}
 
-		if client, ok := api.Config.Clients[token.Audience]; !ok {
-			msg := ErrorMessage{
-				Reason:      InvalidRequest,
-				Description: "client is not registered",
-			}
-			msg.Report(report)
-			msg.HTML(c)
-			return
-		} else if req.RedirectURI != "" && !client.RedirectURI.Match(req.RedirectURI) {
-			msg := ErrorMessage{
-				Reason:      InvalidRequest,
-				Description: "post_logout_redirect_uri is not registered",
-			}
-			msg.Report(report)
-			msg.HTML(c)
-			return
+	if token.Subject != loginUser {
+		msg := ErrorMessage{
+			Reason:      InvalidRequest,
+			Description: "user not logged in",
 		}
+		msg.Report(report)
+		msg.HTML(c)
+		return
 	}
 
 	redirectURI, err := url.Parse(req.RedirectURI)
@@ -129,7 +112,25 @@ func (api *LauthAPI) Logout(c *gin.Context) {
 	if req.RedirectURI != "" && !redirectURI.IsAbs() {
 		msg := ErrorMessage{
 			Reason:      InvalidRequest,
-			Description: "post_logout_redirect_uri is must be absolute URL.",
+			Description: "post_logout_redirect_uri is must be absolute URL",
+		}
+		msg.Report(report)
+		msg.HTML(c)
+		return
+	}
+
+	if client, ok := api.Config.Clients[token.Audience]; !ok {
+		msg := ErrorMessage{
+			Reason:      InvalidRequest,
+			Description: "client is not registered",
+		}
+		msg.Report(report)
+		msg.HTML(c)
+		return
+	} else if req.RedirectURI != "" && !client.RedirectURI.Match(req.RedirectURI) {
+		msg := ErrorMessage{
+			Reason:      InvalidRequest,
+			Description: "post_logout_redirect_uri is not registered",
 		}
 		msg.Report(report)
 		msg.HTML(c)
