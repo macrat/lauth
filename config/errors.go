@@ -14,5 +14,5 @@ func (es ParseErrorSet) Error() string {
 		ss[i+1] = "  " + e.Error()
 	}
 
-	return strings.Join(ss, "\n") + "\n"
+	return strings.Join(ss, "\n") + "\n\nPlease see --help for more information."
 }
