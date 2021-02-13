@@ -19,7 +19,7 @@ services:
       - ldap
 
   lauth:
-    image: macrat/lauth:main
+    image: macrat/lauth:latest
     environment:
       LAUTH_LDAP_SERVER: ldap://ldap
       LAUTH_LDAP_USER: "CN=admin,DC=example,DC=com"

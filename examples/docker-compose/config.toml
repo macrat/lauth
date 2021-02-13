@@ -1,6 +1,3 @@
-allow_implicit_flow = true
-
-
 [ldap]
 id_attribute = "uid"
 
@@ -14,5 +11,6 @@ icon_url = "http://placehold.it/100x100"
 secret = "$2a$10$gobUHsL8fedoDu3AhJCkq.H5iNsq8qc.zbtis0XFOnFH8EiwQc4oi"
 
 redirect_uri = [
-  "http://localhost:3000/**",
+  "http://localhost:*",
+  "http://localhost:*/**",
 ]
