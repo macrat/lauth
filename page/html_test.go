@@ -18,6 +18,7 @@ func TestLoginForm_value_passing(t *testing.T) {
 		"scope":         {"openid profile"},
 		"state":         {"this-is-state"},
 		"nonce":         {"noncenoncenonce"},
+		"max_age":       {"123"},
 	}
 	resp := env.Get("/authz", "", params)
 

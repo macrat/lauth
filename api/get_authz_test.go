@@ -50,6 +50,23 @@ func TestGetAuthz(t *testing.T) {
 			},
 			Fragment: url.Values{},
 		},
+		{
+			Name: "given username and password",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"username":      {"macrat"},
+				"password":      {"foobar"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"can't set username or password in GET method"},
+			},
+			Fragment: url.Values{},
+		},
 	})
 }
 

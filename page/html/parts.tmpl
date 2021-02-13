@@ -15,6 +15,10 @@
     {{ if .request.Nonce }}
         <input type="hidden" name="nonce" value="{{ .request.Nonce }}" />
     {{ end }}
+
+    {{ if .request.MaxAge }}
+        <input type="hidden" name="max_age" value="{{ .request.MaxAge }}" />
+    {{ end }}
 {{ end }}
 
 

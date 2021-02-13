@@ -46,7 +46,7 @@ func TestSSOLoginTest(t *testing.T) {
 	// ---------- First login --------------------
 	authURL, err := url.Parse(oauth2config.AuthCodeURL("this is state"))
 	if err != nil {
-		t.Fatalf("failed to mage auth code URL: %s", err)
+		t.Fatalf("failed to make auth code URL: %s", err)
 	}
 
 	authQuery := authURL.Query()
@@ -108,6 +108,51 @@ func TestSSOLoginTest(t *testing.T) {
 		t.Fatalf("unexpected error message: error=%#v error_description=%#v", errMsg, loc.Query().Get("error_description"))
 	}
 
+	// ---------- 3rd login (using SSO / consent prompt) --------------------
+	authURL, err = url.Parse(oauth2config.AuthCodeURL("another state2"))
+	if err != nil {
+		t.Fatalf("failed to make auth code URL: %s", err)
+	}
+	authQuery = authURL.Query()
+	authQuery.Set("prompt", "consent")
+	authURL.RawQuery = authQuery.Encode()
+
+	resp, err = client.Get(authURL.String())
+	if err != nil {
+		t.Fatalf("failed to fetch authorization URL: %s", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("unexpected response code: %d", resp.StatusCode)
+	}
+	inputs, err := testutil.FindInputsByHTML(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to parse consent prompt page: %s", err)
+	}
+
+	authQuery = url.Values{}
+	for k, v := range inputs {
+		authQuery.Add(k, v)
+	}
+	authURL.RawQuery = ""
+
+	resp, err = client.Post(authURL.String(), "application/x-www-form-urlencoded", strings.NewReader(authQuery.Encode()))
+	if err != nil {
+		t.Fatalf("failed to fetch authorization URL: %s", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("unexpected response code: %d", resp.StatusCode)
+	}
+	loc, err = url.Parse(resp.Header.Get("Location"))
+	if err != nil {
+		t.Fatalf("failed to parse location: %s", err)
+	}
+
+	if errMsg := loc.Query().Get("error"); errMsg != "" {
+		t.Fatalf("unexpected error message: error=%#v error_description=%#v", errMsg, loc.Query().Get("error_description"))
+	}
+
 	// ---------- Logout --------------------
 	resp, err = client.Get(fmt.Sprintf("%s/logout?id_token_hint=%s", env.API.Config.Issuer, idToken))
 	if err != nil {
@@ -117,7 +162,7 @@ func TestSSOLoginTest(t *testing.T) {
 		t.Fatalf("unexpected response code: %d", resp.StatusCode)
 	}
 
-	// ---------- 3rd login (show login form because already logged out) --------------------
+	// ---------- 4th login (show login form because already logged out) --------------------
 	resp, err = client.Get(oauth2config.AuthCodeURL("yet another state"))
 	if err != nil {
 		t.Fatalf("failed to fetch authorization URL: %s", err)

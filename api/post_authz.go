@@ -5,82 +5,40 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/lauth/metrics"
 	"github.com/rs/zerolog/log"
 )
 
-type PostAuthzRequest struct {
-	GetAuthzRequest
-
-	User       string `form:"username" json:"username" xml:"username"`
-	Password   string `form:"password" json:"password" xml:"password"`
-	LoginToken string `form:"session"  json:"session"  xml:"session"`
-}
-
-func (req *PostAuthzRequest) Bind(c *gin.Context) *ErrorMessage {
-	err := c.ShouldBind(req)
-	if err != nil {
-		return &ErrorMessage{
-			Err:         err,
-			Reason:      InvalidRequest,
-			Description: "failed to parse request",
-		}
-	}
-	return nil
-}
-
 func (api *LauthAPI) PostAuthz(c *gin.Context) {
-	report := metrics.StartAuthz(c)
-	defer report.Close()
-	report.Set("authn_by", "password")
-
-	c.Header("Cache-Control", "no-store")
-	c.Header("Pragma", "no-cache")
-
-	var req PostAuthzRequest
-	if err := (&req).Bind(c); err != nil {
-		err.Report(report)
-		err.Redirect(c)
+	ctx, errMsg := NewAuthzContext(api, c)
+	if errMsg != nil {
+		errMsg.Redirect(c)
 		return
 	}
-	req.Report(report)
-	report.Set("username", req.User)
+	defer ctx.Close()
 
-	if err := req.Validate(api.Config); err != nil {
-		err.Report(report)
-		err.Redirect(c)
+	ctx.Report.Set("username", ctx.Request.User)
+
+	if errMsg := ctx.Request.Validate(api.Config); errMsg != nil {
+		ctx.ErrorRedirect(errMsg)
 		return
 	}
 
 	showLoginForm := func(description string) {
-		context, errMsg := req.GetAuthzRequest.MakeHTMLContext(api, c, req.User, description)
-		if errMsg != nil {
-			errMsg.Report(report)
-			errMsg.Redirect(c)
-			return
-		}
-
-		req.makeRedirectError(nil, InvalidRequest, description).Report(report)
-		c.HTML(http.StatusForbidden, "login.tmpl", context)
+		ctx.Request.makeRedirectError(nil, InvalidRequest, description).Report(ctx.Report)
+		ctx.ShowLoginPage(http.StatusForbidden, ctx.Request.User, description)
 	}
 
-	if req.LoginToken == "" {
+	if !api.IsValidLoginSession(ctx.Request.SessionToken, ctx.Gin.ClientIP(), ctx.Request.ClientID) {
 		showLoginForm("invalid session")
 		return
-	} else {
-		loginToken, err := api.TokenManager.ParseLoginToken(req.LoginToken)
-		if err == nil {
-			err = loginToken.Validate(api.Config.Issuer)
-		}
-
-		if err != nil || loginToken.Subject != c.ClientIP() || loginToken.ClientID != req.ClientID {
-			showLoginForm("invalid session")
-			return
-		}
 	}
 
-	if req.User == "" || req.Password == "" {
-		report.UserError()
+	if proceed := ctx.TrySSO(true); proceed {
+		return
+	}
+
+	if ctx.Request.User == "" || ctx.Request.Password == "" {
+		ctx.Report.UserError()
 		showLoginForm("missing username or password")
 		return
 	}
@@ -91,31 +49,22 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 			Err(err).
 			Msg("failed to connecting LDAP server")
 
-		e := req.makeRedirectError(err, ServerError, "failed to connecting LDAP server")
-		e.Report(report)
-		e.Redirect(c)
+		e := ctx.Request.makeRedirectError(err, ServerError, "failed to connecting LDAP server")
+		ctx.ErrorRedirect(e)
 		return
 	}
 	defer conn.Close()
 
-	if err := conn.LoginTest(req.User, req.Password); err != nil {
-		report.UserError()
+	if err := conn.LoginTest(ctx.Request.User, ctx.Request.Password); err != nil {
+		ctx.Report.UserError()
 		RandomDelay()
 		showLoginForm("invalid username or password")
 		return
 	}
 
 	if api.Config.Expire.SSO > 0 {
-		api.SetSSOToken(c, req.User)
+		api.SetSSOToken(c, ctx.Request.User)
 	}
 
-	resp, errMsg := api.makeAuthzTokens(req.GetAuthzRequest, req.User, time.Now())
-	if errMsg != nil {
-		errMsg.Report(report)
-		errMsg.Redirect(c)
-		return
-	}
-
-	report.Success()
-	c.Redirect(http.StatusFound, resp.String())
+	ctx.SendTokens(ctx.Request.User, time.Now())
 }

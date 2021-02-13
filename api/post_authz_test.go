@@ -13,7 +13,7 @@ import (
 func TestPostAuthz(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
-	env.RedirectTest(t, "GET", "/authz", authzEndpointCommonTests)
+	env.RedirectTest(t, "POST", "/authz", authzEndpointCommonTests)
 
 	someSession, err := env.API.MakeLoginSession("::1", "some_client_id")
 	if err != nil {
