@@ -71,7 +71,7 @@ logout = "/logout"
 [client.some_client_id]
 secret = "$2a$10$gKOvDAJeJCtoMW8DeLdxuOH/tqd2FxsM6hmupzZTW0XsiQhe282Te"  # hash of "secret for some-client"
 
-redirect_uri =[
+redirect_uri = [
   "http://some-client.example.com/callback",
   "http://some-client.example.com/logout",
 ]
@@ -81,7 +81,7 @@ allow_implicit_flow = false
 [client.implicit_client_id]
 secret = "$2a$10$iy8gnu3fTEi2Ge8ysOjBEOz2Or8.eBfQV3A7XaxCbZ7GaDlSTBDh2"  # hash of "secret for implicit-client"
 
-redirect_uri =[
+redirect_uri = [
   "http://implicit-client.example.com/callback",
   "http://implicit-client.example.com/logout",
 ]
