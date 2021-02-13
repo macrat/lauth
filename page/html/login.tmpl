@@ -12,6 +12,7 @@
                 align-items: center;
                 min-height: 100vh;
                 margin: 0;
+                padding: 0 8px;
                 background-color: #f8f8f8;
             }
             footer {
@@ -19,104 +20,98 @@
                 bottom: 2px;
                 font-size: 70%;
                 text-align: center;
-                color: #668;
+                color: #669;
             }
             footer a {
                 color: inherit;
             }
+
             img {
                 display: block;
-                margin-top: -50px;
                 border-radius: 4px;
             }
             span {
-                color: #555;
+                color: #666;
                 font-size: 140%;
-                margin-bottom: 1em;
+                margin-bottom: 18px;
+            }
+
+            form {
+                width: 100%;
+                max-width: 340px;
+                box-sizing: border-box;
+            }
+            label, #password {
+                display: flex;
             }
             label {
-                display: flex;
-                border: 0 solid #99b;
+                border: 0 solid #669;
                 background-color: #fff;
             }
-            path {
-                fill: none;
+            #username {
+                border-radius: 4px 4px 0 0;
+                border-width: 0 1px 1px 0;
             }
-            label svg {
-                height: 1.7em;
-                margin: .4em 0 .4em .4em;
-            }
-            label path {
-                stroke: #66a;
+            #password label {
+                border-radius: 0 0 0 4px;
+                border-width: 0 0 1px 0;
             }
             input {
+                flex: 1 1 0;
+                width: 100%;
+                min-width: 4em;
                 font-size: 110%;
-                padding: .2em .5em;
                 border: none;
+                padding: .2em .5em;
                 border-radius: 4px;
                 color: #222;
             }
-            label:focus-within, button:focus {
-                z-index: 1;
-                position: relative;
-                outline: none;
-                box-shadow: 0px 0px 6px #99c;
+
+            path {
+                fill: none;
             }
-            input:focus {
-                outline: none;
-            }
-            #username {
-                margin-bottom: -1px;
-                border-width: 0 1px 1px 0;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-            }
-            #password {
-                border-width: 1px 1px 1px 0;
-                border-bottom-left-radius: 4px;
-                border-bottom-right-radius: 4px;
-            }
-            button {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                position: relative;
-                background-color: #669;
-                border: 0 solid #003;
-                border-width: 0 2px 2px 0;
-                border-radius: 4px;
-                color: white;
-                margin: 12px 0 0;
-                height: 2.1em;
-                width: 100%;
-                font-size: 110%;
-                cursor: pointer;
-                transition: .3s background-color;
-            }
-            button svg {
-                position: absolute;
-                right: .4em;
-                height: 1.7em;
-                opacity: 1;
-                transition: opacity .2s;
+            label path {
+                stroke: #669;
             }
             button path {
                 stroke: #fff;
-                transition: .3s stroke;
             }
-            button:focus {
-                background-color: white;
-                color: #669;
+            label svg {
+                flex: 0 0 1.7em;
+                height: 1.7em;
+                margin: .4em 0 .4em .4em;
             }
-            button:focus path {
-                stroke: #669;
+
+            button {
+                flex: 0 0 3em;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background-color: #669;
+                cursor: pointer;
+                border: none;
+                border-radius: 0 0 4px 0;
+            }
+            button svg {
+                width: 1.7em;
+                height: 1.7em;
+            }
+
+            input:focus {
+                outline: none;
+            }
+            label:focus-within, button:focus {
+                outline: none;
+                z-index: 1;
+                position: relative;
+                box-shadow: 0px 0px 6px #99c;
             }
 
             button:disabled #login-icon {
-                opacity: 0;
+                display: none;
             }
             button:not(:disabled) #loading-icon {
-                opacity: 0;
+                display: none;
             }
 
             #loading-icon {
@@ -134,12 +129,12 @@
             }
 
             .shaking {
-                animation: shake .15s ease 3;
+                animation: shake .15s linear 3;
             }
             @keyframes shake {
                 0% { transform: translateX(0); }
-                40% { transform: translateX(-1%); }
-                80% { transform: translateX(1%); }
+                25% { transform: translateX(-1%); }
+                75% { transform: translateX(1%); }
                 100% { transform: translateX(0); }
             }
         </style>
@@ -149,7 +144,7 @@
         {{ if .client.IconURL }}<img src="{{ .client.IconURL }}" width="100" height="100" />{{ end }}
         <span>{{ .client.Name }}</span>
 
-        <form action="{{ .endpoints.Authz }}" method="POST" aria-label="login" onsubmit="document.getElementById('login-btn').disabled = true">
+        <form action="{{ .endpoints.Authz }}" method="POST" aria-label="login" onsubmit="document.getElementById('login-btn').disabled = true"{{ if .error }} class="shaking"{{ end }}>
             {{ template "formContext" . }}
 
             {{ if .error }}
@@ -160,16 +155,16 @@
                 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path d='M344 144c-3.92 52.87-44 96-88 96s-84.15-43.12-88-96c-4-55 35-96 88-96s92 42 88 96z' stroke-linecap='round' stroke-linejoin='round' stroke-width='32'/><path d='M256 304c-87 0-175.3 48-191.64 138.6C62.39 453.52 68.57 464 80 464h352c11.44 0 17.62-10.48 15.65-21.4C431.3 352 343 304 256 304z' fill='none' stroke='currentColor' stroke-miterlimit='10' stroke-width='32'/></svg>
                 {{ template "username" . }}
             </label>
-            <label id="password">
-                <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path d='M218.1 167.17c0 13 0 25.6 4.1 37.4-43.1 50.6-156.9 184.3-167.5 194.5a20.17 20.17 0 00-6.7 15c0 8.5 5.2 16.7 9.6 21.3 6.6 6.9 34.8 33 40 28 15.4-15 18.5-19 24.8-25.2 9.5-9.3-1-28.3 2.3-36s6.8-9.2 12.5-10.4 15.8 2.9 23.7 3c8.3.1 12.8-3.4 19-9.2 5-4.6 8.6-8.9 8.7-15.6.2-9-12.8-20.9-3.1-30.4s23.7 6.2 34 5 22.8-15.5 24.1-21.6-11.7-21.8-9.7-30.7c.7-3 6.8-10 11.4-11s25 6.9 29.6 5.9c5.6-1.2 12.1-7.1 17.4-10.4 15.5 6.7 29.6 9.4 47.7 9.4 68.5 0 124-53.4 124-119.2S408.5 48 340 48s-121.9 53.37-121.9 119.17zM400 144a32 32 0 11-32-32 32 32 0 0132 32z' stroke-linejoin='round' stroke-width='32'/></svg>
-                {{ template "password" . }}
-            </label>
-
-            <button id="login-btn" type="submit"{{ if .error }} class="shaking"{{ end }}>
-                LOGIN
-                <svg id="login-icon" xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path stroke-linecap='round' stroke-width='38' d='M268 112l144 144-144 144M392 256H100'/></svg>
-                <svg id="loading-icon" xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path d='M434.67 285.59v-29.8c0-98.73-80.24-178.79-179.2-178.79a179 179 0 00-140.14 67.36m-38.53 82v29.8C76.8 355 157 435 256 435a180.45 180.45 0 00140-66.92' stroke-linecap='round' stroke-linejoin='round' stroke-width='32'/><path stroke-linecap='round' stroke-linejoin='round' stroke-width='32' d='M32 256l44-44 46 44M480 256l-44 44-46-44'/></svg>
-            </button>
+            <div id="password">
+                <label>
+                    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path d='M218.1 167.17c0 13 0 25.6 4.1 37.4-43.1 50.6-156.9 184.3-167.5 194.5a20.17 20.17 0 00-6.7 15c0 8.5 5.2 16.7 9.6 21.3 6.6 6.9 34.8 33 40 28 15.4-15 18.5-19 24.8-25.2 9.5-9.3-1-28.3 2.3-36s6.8-9.2 12.5-10.4 15.8 2.9 23.7 3c8.3.1 12.8-3.4 19-9.2 5-4.6 8.6-8.9 8.7-15.6.2-9-12.8-20.9-3.1-30.4s23.7 6.2 34 5 22.8-15.5 24.1-21.6-11.7-21.8-9.7-30.7c.7-3 6.8-10 11.4-11s25 6.9 29.6 5.9c5.6-1.2 12.1-7.1 17.4-10.4 15.5 6.7 29.6 9.4 47.7 9.4 68.5 0 124-53.4 124-119.2S408.5 48 340 48s-121.9 53.37-121.9 119.17zM400 144a32 32 0 11-32-32 32 32 0 0132 32z' stroke-linejoin='round' stroke-width='32'/></svg>
+                    {{ template "password" . }}
+                </label>
+                <button id="login-btn" type="submit" aria-label="login">
+                    <svg id="login-icon" xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path stroke-linecap='round' stroke-width='38' d='M268 112l144 144-144 144M392 256H100'/></svg>
+                    <svg id="loading-icon" xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' aria-hidden="true"><path d='M434.67 285.59v-29.8c0-98.73-80.24-178.79-179.2-178.79a179 179 0 00-140.14 67.36m-38.53 82v29.8C76.8 355 157 435 256 435a180.45 180.45 0 00140-66.92' stroke-linecap='round' stroke-linejoin='round' stroke-width='32'/><path stroke-linecap='round' stroke-linejoin='round' stroke-width='32' d='M32 256l44-44 46 44M480 256l-44 44-46-44'/></svg>
+                </button>
+            </div>
         </form>
 
         <footer>
