@@ -1,0 +1,45 @@
+version: 1
+
+dn: cn=lauth,{{ LDAP_BASE_DN }}
+cn: lauth
+description: Lauth account
+objectclass: simpleSecurityObject
+objectclass: organizationalRole
+userpassword: zxcvb
+
+dn: cn=macrat,{{ LDAP_BASE_DN }}
+cn: macrat
+displayname: SHIDA Yuuma
+gidnumber: 500
+givenname: yuuma
+homedirectory: /home/users/macrat
+mail: m@crat.jp
+objectclass: inetOrgPerson
+objectclass: posixAccount
+objectclass: top
+sn: SHIDA
+telephonenumber: 000-1234-5678
+uid: macrat
+uidnumber: 1000
+userpassword: foobar
+
+dn: cn=j.smith,{{ LDAP_BASE_DN }}
+cn: j.smith
+displayname: Jhon smith
+gidnumber: 500
+givenname: jhon
+homedirectory: /home/users/j.smith
+mail: jhon@example.com
+objectclass: inetOrgPerson
+objectclass: posixAccount
+objectclass: top
+sn: smith
+uid: j.smith
+uidnumber: 1001
+userpassword: hello
+
+dn: cn=users,{{ LDAP_BASE_DN }}
+cn: users
+gidnumber: 500
+objectclass: posixGroup
+objectclass: top

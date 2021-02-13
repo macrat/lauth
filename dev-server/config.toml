@@ -1,0 +1,36 @@
+[ldap]
+server = "ldap://localhost:1389"
+user = "CN=lauth,DC=lauth,DC=local"
+password = "zxcvb"
+disable_tls = true
+id_attribute = "uid"
+
+
+[client.some_client_id]
+name = "Some Client"
+icon_url = "http://placehold.it/100x100"
+
+# client_secret is "secret for some-client"
+secret = "$2a$10$gKOvDAJeJCtoMW8DeLdxuOH/tqd2FxsM6hmupzZTW0XsiQhe282Te"
+
+redirect_uri =[
+  "http://localhost:*",
+  "http://localhost:*/**",
+]
+
+allow_implicit_flow = false
+
+
+[client.implicit_client_id]
+name = "Some Client"
+icon_url = "http://placehold.it/100x100"
+
+# client_secret is "secret for implicit-client"
+secret = "$2a$10$iy8gnu3fTEi2Ge8ysOjBEOz2Or8.eBfQV3A7XaxCbZ7GaDlSTBDh2"
+
+redirect_uri =[
+  "http://localhost:*",
+  "http://localhost:*/**",
+]
+
+allow_implicit_flow = true

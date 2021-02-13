@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+  ldap:
+    image: osixia/openldap:latest
+    volumes:
+      - ./initial.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/initial.ldif
+    environment:
+      LDAP_ORGANISATION: "Lauth Test Environment"
+      LDAP_DOMAIN: lauth.local
+      LDAP_ADMIN_PASSWORD: "asdfg"
+    command:
+      - --copy-service
+    ports:
+      - "1389:389"
+
+  ldapadmin:
+    image: osixia/phpldapadmin:latest
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: ldap
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "8080:80"
+    depends_on:
+      - ldap
