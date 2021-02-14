@@ -1,12 +1,5 @@
 version: 1
 
-dn: cn=lauth,{{ LDAP_BASE_DN }}
-cn: lauth
-description: Lauth account
-objectclass: simpleSecurityObject
-objectclass: organizationalRole
-userpassword: zxcvb
-
 dn: cn=macrat,{{ LDAP_BASE_DN }}
 cn: macrat
 displayname: SHIDA Yuuma

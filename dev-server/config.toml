@@ -1,7 +1,7 @@
 [ldap]
 server = "ldap://localhost:1389"
-user = "CN=lauth,DC=lauth,DC=local"
-password = "zxcvb"
+user = "CN=admin,DC=lauth,DC=local"
+password = "asdfg"
 disable_tls = true
 id_attribute = "uid"
 
