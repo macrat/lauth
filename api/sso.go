@@ -37,20 +37,20 @@ func (api *LauthAPI) SetSSOToken(c *gin.Context, subject string) error {
 	return nil
 }
 
-func (api *LauthAPI) GetSSOToken(c *gin.Context) (token.IDTokenClaims, error) {
+func (api *LauthAPI) GetSSOToken(c *gin.Context) (token.SSOTokenClaims, error) {
 	rawToken, err := c.Cookie(SSO_TOKEN_COOKIE)
 	if err != nil {
-		return token.IDTokenClaims{}, err
+		return token.SSOTokenClaims{}, err
 	}
 
-	ssoToken, err := api.TokenManager.ParseIDToken(rawToken)
+	ssoToken, err := api.TokenManager.ParseSSOToken(rawToken)
 	if err != nil {
-		return token.IDTokenClaims{}, err
+		return token.SSOTokenClaims{}, err
 	}
 
-	err = ssoToken.Validate(api.Config.Issuer, api.Config.Issuer.String())
+	err = ssoToken.Validate(api.Config.Issuer)
 	if err != nil {
-		return token.IDTokenClaims{}, err
+		return token.SSOTokenClaims{}, err
 	}
 
 	return ssoToken, nil

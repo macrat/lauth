@@ -16,14 +16,9 @@ import (
 func TestLogout(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
-	ssoToken, err := env.API.TokenManager.CreateIDToken(
+	ssoToken, err := env.API.TokenManager.CreateSSOToken(
 		env.API.Config.Issuer,
 		"macrat",
-		env.API.Config.Issuer.String(),
-		"",
-		"",
-		"",
-		nil,
 		time.Now(),
 		10*time.Minute,
 	)

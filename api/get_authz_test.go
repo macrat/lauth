@@ -209,14 +209,9 @@ func TestGetAuthz_SSO(t *testing.T) {
 			ssoToken := tt.Token
 			if ssoToken == "" {
 				var err error
-				ssoToken, err = env.API.TokenManager.CreateIDToken(
+				ssoToken, err = env.API.TokenManager.CreateSSOToken(
 					env.API.Config.Issuer,
 					"macrat",
-					env.API.Config.Issuer.String(),
-					"",
-					"",
-					"",
-					nil,
 					tt.AuthTime,
 					10*time.Minute,
 				)

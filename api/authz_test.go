@@ -244,10 +244,10 @@ func TestSSOLogin(t *testing.T) {
 
 	cookie, _ := (&http.Request{Header: http.Header{"Cookie": rawCookie}}).Cookie(api.SSO_TOKEN_COOKIE)
 
-	ssoToken, err := env.API.TokenManager.ParseIDToken(cookie.Value)
+	ssoToken, err := env.API.TokenManager.ParseSSOToken(cookie.Value)
 	if err != nil {
 		t.Errorf("failed to parse token in cookie: %s", err)
-	} else if err := ssoToken.Validate(env.API.Config.Issuer, env.API.Config.Issuer.String()); err != nil {
+	} else if err := ssoToken.Validate(env.API.Config.Issuer); err != nil {
 		t.Errorf("token in cookie is invalid: %s", err)
 	}
 
