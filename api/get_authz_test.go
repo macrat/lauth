@@ -9,6 +9,7 @@ import (
 
 	"github.com/macrat/lauth/api"
 	"github.com/macrat/lauth/testutil"
+	"github.com/macrat/lauth/token"
 )
 
 func TestGetAuthz(t *testing.T) {
@@ -212,8 +213,9 @@ func TestGetAuthz_SSO(t *testing.T) {
 				ssoToken, err = env.API.TokenManager.CreateSSOToken(
 					env.API.Config.Issuer,
 					"macrat",
+					token.AuthorizedParties{"some_client_id"},
 					tt.AuthTime,
-					10*time.Minute,
+					time.Now().Add(10*time.Minute),
 				)
 				if err != nil {
 					t.Fatalf("failed to create SSO token: %s", err)

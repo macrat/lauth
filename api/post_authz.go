@@ -63,7 +63,7 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	}
 
 	if api.Config.Expire.SSO > 0 {
-		api.SetSSOToken(c, ctx.Request.User)
+		api.SetSSOToken(c, ctx.Request.User, ctx.Request.ClientID, true)
 	}
 
 	ctx.SendTokens(ctx.Request.User, time.Now())

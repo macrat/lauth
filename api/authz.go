@@ -211,11 +211,12 @@ func (ctx *AuthzContext) TrySSO(authorized bool) (proceed bool) {
 			ctx.Report.Set("authn_by", "sso_token")
 			ctx.Report.Set("username", token.Subject)
 
-			if prompt.Has("consent") && !authorized {
+			if !authorized && (prompt.Has("consent") || !token.Authorized.Includes(ctx.Request.ClientID)) {
 				ctx.ShowConfirmPage(http.StatusOK, token.Subject)
 				return true
 			}
 
+			ctx.API.SetSSOToken(ctx.Gin, token.Subject, ctx.Request.ClientID, false)
 			ctx.SendTokens(token.Subject, time.Unix(token.AuthTime, 0))
 			return true
 		}

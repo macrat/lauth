@@ -49,55 +49,6 @@ func (api *LauthAPI) Logout(c *gin.Context) {
 		return
 	}
 
-	var loginUser string
-	if ssoToken, err := api.GetSSOToken(c); err != nil {
-		msg := ErrorMessage{
-			Err:         err,
-			Reason:      InvalidRequest,
-			Description: "user not logged in",
-		}
-		msg.Report(report)
-		msg.HTML(c)
-		return
-	} else {
-		loginUser = ssoToken.Subject
-	}
-
-	token, err := api.TokenManager.ParseIDToken(req.IDTokenHint)
-	if err != nil {
-		msg := ErrorMessage{
-			Err:         err,
-			Reason:      InvalidRequest,
-			Description: "invalid id_token_hint",
-		}
-		msg.Report(report)
-		msg.HTML(c)
-		return
-	}
-
-	report.Set("client_id", token.Audience)
-	report.Set("username", token.Subject)
-
-	if token.Issuer != api.Config.Issuer.String() {
-		msg := ErrorMessage{
-			Reason:      InvalidRequest,
-			Description: "invalid id_token_hint",
-		}
-		msg.Report(report)
-		msg.HTML(c)
-		return
-	}
-
-	if token.Subject != loginUser {
-		msg := ErrorMessage{
-			Reason:      InvalidRequest,
-			Description: "user not logged in",
-		}
-		msg.Report(report)
-		msg.HTML(c)
-		return
-	}
-
 	redirectURI, err := url.Parse(req.RedirectURI)
 	if err != nil {
 		msg := ErrorMessage{
@@ -119,7 +70,21 @@ func (api *LauthAPI) Logout(c *gin.Context) {
 		return
 	}
 
-	if client, ok := api.Config.Clients[token.Audience]; !ok {
+	idToken, err := api.TokenManager.ParseIDToken(req.IDTokenHint)
+	if err != nil {
+		msg := ErrorMessage{
+			Err:         err,
+			Reason:      InvalidRequest,
+			Description: "invalid id_token_hint",
+		}
+		msg.Report(report)
+		msg.HTML(c)
+		return
+	}
+	report.Set("client_id", idToken.Audience)
+	report.Set("username", idToken.Subject)
+
+	if client, ok := api.Config.Clients[idToken.Audience]; !ok {
 		msg := ErrorMessage{
 			Reason:      InvalidRequest,
 			Description: "client is not registered",
@@ -137,7 +102,38 @@ func (api *LauthAPI) Logout(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie(SSO_TOKEN_COOKIE, "", 0, "/", (*url.URL)(api.Config.Issuer).Hostname(), false, true)
+	if idToken.Issuer != api.Config.Issuer.String() {
+		msg := ErrorMessage{
+			Reason:      InvalidRequest,
+			Description: "invalid id_token_hint",
+		}
+		msg.Report(report)
+		msg.HTML(c)
+		return
+	}
+
+	ssoToken, err := api.GetSSOToken(c)
+	if err != nil {
+		msg := ErrorMessage{
+			Err:         err,
+			Reason:      InvalidRequest,
+			Description: "user not logged in",
+		}
+		msg.Report(report)
+		msg.HTML(c)
+		return
+	}
+	if !ssoToken.Authorized.Includes(idToken.Audience) || idToken.Subject != ssoToken.Subject {
+		msg := ErrorMessage{
+			Reason:      InvalidRequest,
+			Description: "user not logged in",
+		}
+		msg.Report(report)
+		msg.HTML(c)
+		return
+	}
+
+	api.DeleteSSOToken(c)
 
 	if req.RedirectURI == "" {
 		c.HTML(http.StatusOK, "logout.tmpl", nil)

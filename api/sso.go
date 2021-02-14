@@ -12,12 +12,25 @@ const (
 	SSO_TOKEN_COOKIE = "lauth_token"
 )
 
-func (api *LauthAPI) SetSSOToken(c *gin.Context, subject string) error {
+func (api *LauthAPI) SetSSOToken(c *gin.Context, subject, client string, authenticated bool) error {
+	authTime := time.Now()
+	expiresAt := time.Now().Add(time.Duration(api.Config.Expire.SSO))
+	azp := token.AuthorizedParties{client}
+
+	if current, err := api.GetSSOToken(c); err == nil {
+		if !authenticated {
+			authTime = time.Unix(current.AuthTime, 0)
+			expiresAt = time.Unix(current.ExpiresAt, 0)
+		}
+		azp = current.Authorized.Append(client)
+	}
+
 	token, err := api.TokenManager.CreateSSOToken(
 		api.Config.Issuer,
 		subject,
-		time.Now(),
-		time.Duration(api.Config.Expire.SSO),
+		azp,
+		authTime,
+		expiresAt,
 	)
 	if err != nil {
 		return err

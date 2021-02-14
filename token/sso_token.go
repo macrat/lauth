@@ -7,10 +7,28 @@ import (
 	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
+type AuthorizedParties []string
+
+func (azp AuthorizedParties) Includes(rp string) bool {
+	for _, p := range azp {
+		if p == rp {
+			return true
+		}
+	}
+	return false
+}
+
+func (azp AuthorizedParties) Append(rp string) AuthorizedParties {
+	if azp.Includes(rp) {
+		return azp
+	}
+	return append(azp, rp)
+}
+
 type SSOTokenClaims struct {
 	OIDCClaims
 
-	//Authorized []string `json:"azp,omitempty"` // TODO: use this
+	Authorized AuthorizedParties `json:"azp,omitempty"`
 }
 
 func (claims SSOTokenClaims) Validate(issuer *config.URL) error {
@@ -25,19 +43,20 @@ func (claims SSOTokenClaims) Validate(issuer *config.URL) error {
 	return nil
 }
 
-func (m Manager) CreateSSOToken(issuer *config.URL, subject string, authTime time.Time, expiresIn time.Duration) (string, error) {
+func (m Manager) CreateSSOToken(issuer *config.URL, subject string, authorized AuthorizedParties, authTime time.Time, expiresAt time.Time) (string, error) {
 	return m.create(SSOTokenClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
 				Issuer:    issuer.String(),
 				Subject:   subject,
 				Audience:  issuer.String(),
-				ExpiresAt: time.Now().Add(expiresIn).Unix(),
+				ExpiresAt: expiresAt.Unix(),
 				IssuedAt:  time.Now().Unix(),
 			},
 			Type:     "SSO_TOKEN",
 			AuthTime: authTime.Unix(),
 		},
+		Authorized: authorized,
 	})
 }
 

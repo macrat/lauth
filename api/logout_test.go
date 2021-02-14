@@ -11,6 +11,7 @@ import (
 	"github.com/macrat/lauth/api"
 	"github.com/macrat/lauth/config"
 	"github.com/macrat/lauth/testutil"
+	"github.com/macrat/lauth/token"
 )
 
 func TestLogout(t *testing.T) {
@@ -19,8 +20,9 @@ func TestLogout(t *testing.T) {
 	ssoToken, err := env.API.TokenManager.CreateSSOToken(
 		env.API.Config.Issuer,
 		"macrat",
+		token.AuthorizedParties{"some_client_id"},
 		time.Now(),
-		10*time.Minute,
+		time.Now().Add(10*time.Minute),
 	)
 	if err != nil {
 		t.Fatalf("failed to create test id_token: %s", err)
@@ -45,6 +47,21 @@ func TestLogout(t *testing.T) {
 		env.API.Config.Issuer,
 		"macrat",
 		"another_client_id",
+		"",
+		"",
+		"",
+		nil,
+		time.Now(),
+		10*time.Minute,
+	)
+	if err != nil {
+		t.Fatalf("failed to create test id_token: %s", err)
+	}
+
+	notLoggedInClientToken, err := env.API.TokenManager.CreateIDToken(
+		env.API.Config.Issuer,
+		"macrat",
+		"implicit_client_id",
 		"",
 		"",
 		"",
@@ -128,6 +145,15 @@ func TestLogout(t *testing.T) {
 			Code:    http.StatusBadRequest,
 			Logout:  false,
 			Message: "client is not registered",
+		},
+		{
+			Name: "client not logged in",
+			Request: url.Values{
+				"id_token_hint": {notLoggedInClientToken},
+			},
+			Code:    http.StatusBadRequest,
+			Logout:  false,
+			Message: "user not logged in",
 		},
 		{
 			Name: "invalid redirect URI",
