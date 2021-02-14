@@ -37,9 +37,9 @@ var (
 )
 
 type ClaimConfig struct {
-	Claim     string `json:"claim"          yaml:"claim"          toml:"claim"`
-	Attribute string `json:"attribute"      yaml:"attribute"      toml:"attribute"`
-	Type      string `json:"type,omitempty" yaml:"type,omitempty" toml:"type,omitempty"`
+	Claim     string    `json:"claim"          yaml:"claim"          toml:"claim"`
+	Attribute string    `json:"attribute"      yaml:"attribute"      toml:"attribute"`
+	Type      ClaimType `json:"type,omitempty" yaml:"type,omitempty" toml:"type,omitempty"`
 }
 
 type ScopeConfig map[string][]ClaimConfig
