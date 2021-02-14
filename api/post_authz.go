@@ -23,13 +23,13 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 		return
 	}
 
-	showLoginForm := func(description string) {
-		ctx.Request.makeRedirectError(nil, InvalidRequest, description).Report(ctx.Report)
+	showLoginForm := func(err error, description string) {
+		ctx.Request.makeRedirectError(err, InvalidRequest, description).Report(ctx.Report)
 		ctx.ShowLoginPage(http.StatusForbidden, ctx.Request.User, description)
 	}
 
-	if !api.IsValidLoginSession(ctx.Request.SessionToken, ctx.Gin.ClientIP(), ctx.Request.ClientID) {
-		showLoginForm("invalid session")
+	if err := api.ValidateLoginSession(ctx.Request.SessionToken, ctx.Gin.ClientIP(), ctx.Request.ClientID); err != nil {
+		showLoginForm(err, "invalid session")
 		return
 	}
 
@@ -39,7 +39,7 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 
 	if ctx.Request.User == "" || ctx.Request.Password == "" {
 		ctx.Report.UserError()
-		showLoginForm("missing username or password")
+		showLoginForm(nil, "missing username or password")
 		return
 	}
 
@@ -58,7 +58,7 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	if err := conn.LoginTest(ctx.Request.User, ctx.Request.Password); err != nil {
 		ctx.Report.UserError()
 		RandomDelay()
-		showLoginForm("invalid username or password")
+		showLoginForm(err, "invalid username or password")
 		return
 	}
 

@@ -35,55 +35,64 @@ func TestMakeAndTestLoginSession(t *testing.T) {
 		Token    string
 		UserIP   string
 		ClientID string
-		Result   bool
+		Error    string
 	}{
 		{
 			Name:     "success",
 			Token:    correctSession,
 			UserIP:   "10.1.2.3",
 			ClientID: "some_client_id",
-			Result:   true,
+			Error:    "",
 		},
 		{
 			Name:     "incorrect user IP",
 			Token:    correctSession,
 			UserIP:   "10.0.0.0",
 			ClientID: "some_client_id",
-			Result:   false,
+			Error:    "mismatch User IP",
 		},
 		{
 			Name:     "incorrect client ID",
 			Token:    correctSession,
 			UserIP:   "10.1.2.3",
 			ClientID: "another_client_id",
-			Result:   false,
+			Error:    "mismatch Client ID",
 		},
 		{
 			Name:     "expired",
 			Token:    expiredSession,
 			UserIP:   "10.1.2.3",
 			ClientID: "some_client_id",
-			Result:   false,
+			Error:    "token is expired by 10m0s",
 		},
 		{
 			Name:     "can't parse",
 			Token:    "invalid token",
 			UserIP:   "10.1.2.3",
 			ClientID: "some_client_id",
-			Result:   false,
+			Error:    "token contains an invalid number of segments",
 		},
 		{
 			Name:     "another issuer",
 			Token:    anotherIssuerSession,
 			UserIP:   "10.1.2.3",
 			ClientID: "some_client_id",
-			Result:   false,
+			Error:    "crypto/rsa: verification error",
 		},
 	}
 
 	for _, tt := range tests {
-		if got := env.API.IsValidLoginSession(tt.Token, tt.UserIP, tt.ClientID); got != tt.Result {
-			t.Errorf("%s: expected %t but got %t", tt.Name, tt.Result, got)
+		err := env.API.ValidateLoginSession(tt.Token, tt.UserIP, tt.ClientID)
+
+		if tt.Error == "" && err != nil {
+			t.Errorf("%s: expected valid but got %s", tt.Name, err)
+		}
+		if tt.Error != "" {
+			if err == nil {
+				t.Errorf("%s: expected not valid but reports as valid", tt.Name)
+			} else if err.Error() != tt.Error {
+				t.Errorf("%s: expected error %#v but got %#v", tt.Name, tt.Error, err.Error())
+			}
 		}
 	}
 }

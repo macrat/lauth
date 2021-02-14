@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"time"
 )
 
@@ -13,19 +14,25 @@ func (api *LauthAPI) MakeLoginSession(userIP, clientID string) (string, error) {
 	)
 }
 
-func (api *LauthAPI) IsValidLoginSession(token, userIP, clientID string) bool {
+func (api *LauthAPI) ValidateLoginSession(token, userIP, clientID string) error {
 	if token == "" {
-		return false
+		return errors.New("session token is empty")
 	}
 
 	parsed, err := api.TokenManager.ParseLoginToken(token)
-	if err != nil || parsed.Validate(api.Config.Issuer) != nil {
-		return false
+	if err != nil {
+		return err
+	}
+	if err = parsed.Validate(api.Config.Issuer); err != nil {
+		return err
 	}
 
-	if parsed.Subject != userIP || parsed.ClientID != clientID {
-		return false
+	if parsed.Subject != userIP {
+		return errors.New("mismatch User IP")
+	}
+	if parsed.ClientID != clientID {
+		return errors.New("mismatch Client ID")
 	}
 
-	return true
+	return nil
 }
