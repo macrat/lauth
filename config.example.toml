@@ -106,8 +106,12 @@ logout = "/logout"
 # Default values are set for Microsoft ActiveDirectory.
 [scope]
 
-profile = [
-  { claim = "name",        attribute = "displayName" },
+profile = [ # Claims for "profile" scope.
+  {
+      claim = "name",            # `claim` is a claim name for id_token and userinfo endpoint.
+      attribute = "displayName", # `attribute` is an attribute name in the LDAP server.
+      type = "string"            # `type` is a type of this claim value. You can use "string", "[]string", "number", or "[]number".
+  },
   { claim = "given_name",  attribute = "givenName"   },
   { claim = "family_name", attribute = "sn"          },
 ]
