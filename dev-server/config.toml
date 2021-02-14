@@ -22,7 +22,7 @@ allow_implicit_flow = false
 
 
 [client.implicit_client_id]
-name = "Some Client"
+name = "Implicit Client"
 icon_url = "http://placehold.it/100x100"
 
 # client_secret is "secret for implicit-client"
