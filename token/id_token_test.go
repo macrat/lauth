@@ -75,3 +75,34 @@ func TestIDToken(t *testing.T) {
 		t.Errorf("unexpected at_hash: %s", claims2.AccessTokenHash)
 	}
 }
+
+func TestIDToken_InvalidSign(t *testing.T) {
+	tokenManager1, err := testutil.MakeTokenManager()
+	if err != nil {
+		t.Fatalf("failed to generate TokenManager: %s", err)
+	}
+
+	tokenManager2, err := testutil.MakeTokenManager()
+	if err != nil {
+		t.Fatalf("failed to generate TokenManager: %s", err)
+	}
+
+	issuer := &config.URL{Scheme: "http", Host: "localhost:8000"}
+
+	token, err := tokenManager1.CreateIDToken(issuer, "someone", "something", "", "code", "token", nil, time.Now(), 10*time.Minute)
+	if err != nil {
+		t.Fatalf("failed to generate token: %s", err)
+	}
+
+	_, err = tokenManager1.ParseIDToken(token)
+	if err != nil {
+		t.Fatalf("failed to parse self signed token: %s", err)
+	}
+
+	_, err = tokenManager2.ParseIDToken(token)
+	if err == nil {
+		t.Fatalf("passed parse token that signed another key")
+	} else if err.Error() != "crypto/rsa: verification error" {
+		t.Fatalf("unexpected error: %s", err)
+	}
+}
