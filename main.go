@@ -122,6 +122,9 @@ func serve(conf *config.Config) {
 	})
 
 	router.GET(conf.Metrics.Path, gin.WrapH(metrics.Handler(conf.Metrics.Username, conf.Metrics.Password)))
+	router.GET("/healthz", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
 
 	api.SetRoutes(router)
 	api.SetErrorRoutes(router)
