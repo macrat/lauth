@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/errors"
 	"github.com/macrat/lauth/ldap"
 	"github.com/macrat/lauth/metrics"
 	"github.com/macrat/lauth/token"
@@ -38,29 +39,25 @@ func (api *LauthAPI) SetErrorRoutes(r *gin.Engine) {
 
 		endpoints := api.Config.EndpointPaths()
 
-		methodNotAllowed := ErrorMessage{
-			Reason:      "method_not_allowed",
+		methodNotAllowed := &errors.Error{
+			Reason:      errors.MethodNotAllowed,
 			Description: fmt.Sprintf("%s method is not supported in this page", c.Request.Method),
 		}
 
 		switch c.Request.URL.Path {
 		case endpoints.Authz:
-			methodNotAllowed.Report(report)
-			c.HTML(http.StatusMethodNotAllowed, "error.tmpl", gin.H{
-				"error": methodNotAllowed,
-			})
+			report.SetError(methodNotAllowed)
+			errors.SendHTML(c, methodNotAllowed)
 		case endpoints.OpenIDConfiguration, endpoints.Token, endpoints.Userinfo, endpoints.Jwks:
-			methodNotAllowed.Report(report)
+			report.SetError(methodNotAllowed)
 			c.JSON(http.StatusMethodNotAllowed, methodNotAllowed)
 		default:
-			notFound := ErrorMessage{
-				Reason:      "page_not_found",
+			notFound := &errors.Error{
+				Reason:      errors.PageNotFound,
 				Description: "requested page is not found",
 			}
-			notFound.Report(report)
-			c.HTML(http.StatusNotFound, "error.tmpl", gin.H{
-				"error": notFound,
-			})
+			report.SetError(notFound)
+			errors.SendHTML(c, notFound)
 		}
 	})
 }
@@ -78,13 +75,13 @@ func (api *LauthAPI) GetCerts(c *gin.Context) {
 
 	keys, err := api.TokenManager.JWKs()
 	if err != nil {
-		e := ErrorMessage{
+		e := &errors.Error{
 			Err:         err,
-			Reason:      "server_error",
+			Reason:      errors.ServerError,
 			Description: "failed to get key informations",
 		}
-		e.Report(report)
-		e.JSON(c)
+		report.SetError(e)
+		errors.SendJSON(c, e)
 		return
 	}
 

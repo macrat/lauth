@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/config"
+	"github.com/macrat/lauth/errors"
 	"github.com/macrat/lauth/metrics"
 )
 
@@ -33,22 +34,22 @@ type AuthzRequest struct {
 	RequestURI string `form:"request_uri"   json:"request_uri"   xml:"request_uri"`
 }
 
-func (req *AuthzRequest) Bind(c *gin.Context) *ErrorMessage {
+func (req *AuthzRequest) Bind(c *gin.Context) *errors.Error {
 	err := c.ShouldBind(req)
 	if err != nil {
-		return &ErrorMessage{
+		return &errors.Error{
 			Err:         err,
-			Reason:      InvalidRequest,
+			Reason:      errors.InvalidRequest,
 			Description: "failed to parse request",
 		}
 	}
 	return nil
 }
 
-func (req *AuthzRequest) makeRedirectError(err error, reason ErrorReason, description string) *ErrorMessage {
+func (req *AuthzRequest) makeRedirectError(err error, reason errors.Reason, description string) *errors.Error {
 	redirectURI, _ := url.Parse(req.RedirectURI)
 
-	return &ErrorMessage{
+	return &errors.Error{
 		Err:          err,
 		RedirectURI:  redirectURI,
 		ResponseType: req.ResponseType,
@@ -58,8 +59,8 @@ func (req *AuthzRequest) makeRedirectError(err error, reason ErrorReason, descri
 	}
 }
 
-func (req *AuthzRequest) makeNonRedirectError(err error, reason ErrorReason, description string) *ErrorMessage {
-	return &ErrorMessage{
+func (req *AuthzRequest) makeNonRedirectError(err error, reason errors.Reason, description string) *errors.Error {
+	return &errors.Error{
 		Err:          err,
 		ResponseType: req.ResponseType,
 		State:        req.State,
@@ -68,30 +69,30 @@ func (req *AuthzRequest) makeNonRedirectError(err error, reason ErrorReason, des
 	}
 }
 
-func (req *AuthzRequest) Validate(config *config.Config) *ErrorMessage {
+func (req *AuthzRequest) Validate(config *config.Config) *errors.Error {
 	if req.RedirectURI == "" {
-		return req.makeNonRedirectError(nil, InvalidRequest, "redirect_uri is required")
+		return req.makeNonRedirectError(nil, errors.InvalidRequest, "redirect_uri is required")
 	}
 
 	if u, err := url.Parse(req.RedirectURI); err != nil {
-		return req.makeNonRedirectError(err, InvalidRequest, "redirect_uri is invalid format")
+		return req.makeNonRedirectError(err, errors.InvalidRequest, "redirect_uri is invalid format")
 	} else if !u.IsAbs() {
-		return req.makeNonRedirectError(err, InvalidRequest, "redirect_uri is must be absolute URL")
+		return req.makeNonRedirectError(err, errors.InvalidRequest, "redirect_uri is must be absolute URL")
 	}
 
 	if req.ClientID == "" {
-		return req.makeNonRedirectError(nil, InvalidClient, "client_id is required")
+		return req.makeNonRedirectError(nil, errors.InvalidClient, "client_id is required")
 	}
 	if client, ok := config.Clients[req.ClientID]; !ok {
 		return req.makeNonRedirectError(
 			nil,
-			InvalidClient,
+			errors.InvalidClient,
 			"client_id is not registered",
 		)
 	} else if !client.RedirectURI.Match(req.RedirectURI) {
 		return req.makeNonRedirectError(
 			nil,
-			UnauthorizedClient,
+			errors.UnauthorizedClient,
 			"redirect_uri is not registered",
 		)
 	}
@@ -99,14 +100,14 @@ func (req *AuthzRequest) Validate(config *config.Config) *ErrorMessage {
 	if req.Request != "" {
 		return req.makeRedirectError(
 			nil,
-			RequestNotSupported,
+			errors.RequestNotSupported,
 			"",
 		)
 	}
 	if req.RequestURI != "" {
 		return req.makeRedirectError(
 			nil,
-			RequestURINotSupported,
+			errors.RequestURINotSupported,
 			"",
 		)
 	}
@@ -115,21 +116,21 @@ func (req *AuthzRequest) Validate(config *config.Config) *ErrorMessage {
 	if rt.String() == "" {
 		return req.makeRedirectError(
 			nil,
-			UnsupportedResponseType,
+			errors.UnsupportedResponseType,
 			"response_type is required",
 		)
 	}
 	if err := rt.Validate("response_type", []string{"code", "token", "id_token"}); err != nil {
 		return req.makeRedirectError(
 			err,
-			UnsupportedResponseType,
+			errors.UnsupportedResponseType,
 			err.Error(),
 		)
 	}
 	if !config.Clients[req.ClientID].AllowImplicitFlow && rt.String() != "code" {
 		return req.makeRedirectError(
 			nil,
-			UnsupportedResponseType,
+			errors.UnsupportedResponseType,
 			"implicit/hybrid flow is disallowed",
 		)
 	}
@@ -138,7 +139,7 @@ func (req *AuthzRequest) Validate(config *config.Config) *ErrorMessage {
 	if prompt.Has("none") && (prompt.Has("login") || prompt.Has("select_account") || prompt.Has("consent")) {
 		return req.makeRedirectError(
 			nil,
-			InvalidRequest,
+			errors.InvalidRequest,
 			"prompt=none can't use same time with login, select_account, or consent",
 		)
 	}
@@ -146,7 +147,7 @@ func (req *AuthzRequest) Validate(config *config.Config) *ErrorMessage {
 	if rt.Has("id_token") && req.Nonce == "" {
 		return req.makeRedirectError(
 			nil,
-			InvalidRequest,
+			errors.InvalidRequest,
 			"nonce is required in the implicit/hybrid flow of OpenID Connect",
 		)
 	}
@@ -161,7 +162,7 @@ type AuthzContext struct {
 	Report  *metrics.Context
 }
 
-func NewAuthzContext(api *LauthAPI, c *gin.Context) (*AuthzContext, *ErrorMessage) {
+func NewAuthzContext(api *LauthAPI, c *gin.Context) (*AuthzContext, *errors.Error) {
 	m := metrics.StartAuthz(c)
 
 	c.Header("Cache-Control", "no-store")
@@ -169,7 +170,7 @@ func NewAuthzContext(api *LauthAPI, c *gin.Context) (*AuthzContext, *ErrorMessag
 
 	req := new(AuthzRequest)
 	if err := req.Bind(c); err != nil {
-		err.Report(m)
+		m.SetError(err)
 		m.Close()
 		return nil, err
 	}
@@ -191,9 +192,9 @@ func (ctx *AuthzContext) Close() error {
 	return ctx.Report.Close()
 }
 
-func (ctx *AuthzContext) ErrorRedirect(msg *ErrorMessage) {
-	msg.Report(ctx.Report)
-	msg.Redirect(ctx.Gin)
+func (ctx *AuthzContext) ErrorRedirect(err *errors.Error) {
+	ctx.Report.SetError(err)
+	errors.SendRedirect(ctx.Gin, err)
 }
 
 func (ctx *AuthzContext) TrySSO(authorized bool) (proceed bool) {
@@ -266,7 +267,7 @@ func (ctx *AuthzContext) ShowConfirmPage(code int, initialUser string) {
 	ctx.showPage(code, true, initialUser, "")
 }
 
-func (ctx *AuthzContext) makeCodeToken(subject string, authTime time.Time) (string, *ErrorMessage) {
+func (ctx *AuthzContext) makeCodeToken(subject string, authTime time.Time) (string, *errors.Error) {
 	code, err := ctx.API.TokenManager.CreateCode(
 		ctx.API.Config.Issuer,
 		subject,
@@ -278,12 +279,12 @@ func (ctx *AuthzContext) makeCodeToken(subject string, authTime time.Time) (stri
 		time.Duration(ctx.API.Config.Expire.Code),
 	)
 	if err != nil {
-		return "", ctx.Request.makeRedirectError(err, ServerError, "failed to generate code")
+		return "", ctx.Request.makeRedirectError(err, errors.ServerError, "failed to generate code")
 	}
 	return code, nil
 }
 
-func (ctx *AuthzContext) makeAccessToken(subject string, authTime time.Time) (string, *ErrorMessage) {
+func (ctx *AuthzContext) makeAccessToken(subject string, authTime time.Time) (string, *errors.Error) {
 	token, err := ctx.API.TokenManager.CreateAccessToken(
 		ctx.API.Config.Issuer,
 		subject,
@@ -292,12 +293,12 @@ func (ctx *AuthzContext) makeAccessToken(subject string, authTime time.Time) (st
 		time.Duration(ctx.API.Config.Expire.Token),
 	)
 	if err != nil {
-		return "", ctx.Request.makeRedirectError(err, ServerError, "failed to generate access_token")
+		return "", ctx.Request.makeRedirectError(err, errors.ServerError, "failed to generate access_token")
 	}
 	return token, nil
 }
 
-func (ctx *AuthzContext) makeIDToken(subject string, authTime time.Time, code, accessToken string) (string, *ErrorMessage) {
+func (ctx *AuthzContext) makeIDToken(subject string, authTime time.Time, code, accessToken string) (string, *errors.Error) {
 	scope := ParseStringSet(ctx.Request.Scope)
 	userinfo, errMsg := ctx.API.userinfo(subject, scope)
 	if errMsg != nil {
@@ -317,13 +318,13 @@ func (ctx *AuthzContext) makeIDToken(subject string, authTime time.Time, code, a
 		time.Duration(ctx.API.Config.Expire.Token),
 	)
 	if err != nil {
-		return "", ctx.Request.makeRedirectError(err, ServerError, "failed to generate id_token")
+		return "", ctx.Request.makeRedirectError(err, errors.ServerError, "failed to generate id_token")
 	}
 
 	return token, nil
 }
 
-func (ctx *AuthzContext) makeAuthzTokens(subject string, authTime time.Time) (*url.URL, *ErrorMessage) {
+func (ctx *AuthzContext) makeAuthzTokens(subject string, authTime time.Time) (*url.URL, *errors.Error) {
 	resp := make(url.Values)
 
 	if ctx.Request.State != "" {

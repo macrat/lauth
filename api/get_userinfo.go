@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/lauth/errors"
 	"github.com/macrat/lauth/metrics"
 )
 
@@ -12,11 +13,11 @@ type GetUserInfoRequest struct {
 	Authorization string `form:"-" header:"Authorization"`
 }
 
-func (req *GetUserInfoRequest) Bind(c *gin.Context) *ErrorMessage {
+func (req *GetUserInfoRequest) Bind(c *gin.Context) *errors.Error {
 	if err := c.ShouldBindHeader(req); err != nil {
-		return &ErrorMessage{
+		return &errors.Error{
 			Err:         err,
-			Reason:      InvalidToken,
+			Reason:      errors.InvalidToken,
 			Description: "access token is required",
 		}
 	}
@@ -24,10 +25,10 @@ func (req *GetUserInfoRequest) Bind(c *gin.Context) *ErrorMessage {
 	return nil
 }
 
-func (req GetUserInfoRequest) GetToken() (string, *ErrorMessage) {
+func (req GetUserInfoRequest) GetToken() (string, *errors.Error) {
 	if !strings.HasPrefix(req.Authorization, "Bearer ") {
-		return "", &ErrorMessage{
-			Reason:      InvalidToken,
+		return "", &errors.Error{
+			Reason:      errors.InvalidToken,
 			Description: "access token is required",
 		}
 	}
@@ -43,28 +44,23 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 	c.Header("Pragma", "no-cache")
 
 	var req GetUserInfoRequest
-	if errMsg := (&req).Bind(c); errMsg != nil {
-		c.Header("WWW-Authenticate", "Bearer error=\"invalid_token\",error_description=\"access token is required\"")
-		errMsg.Report(report)
-		errMsg.JSON(c)
+	if err := (&req).Bind(c); err != nil {
+		report.SetError(err)
+		errors.SendJSON(c, err)
 		return
 	}
 
-	rawToken, errMsg := req.GetToken()
-	if errMsg != nil {
-		c.Header("WWW-Authenticate", "Bearer error=\"invalid_token\",error_description=\"access token is required\"")
-		errMsg.Report(report)
-		errMsg.JSON(c)
+	rawToken, err := req.GetToken()
+	if err != nil {
+		report.SetError(err)
+		errors.SendJSON(c, err)
 		return
 	}
 
-	result, errMsg := api.userinfoByToken(rawToken, report)
-	if errMsg != nil {
-		if errMsg.Reason == InvalidToken {
-			c.Header("WWW-Authenticate", "Bearer error=\"invalid_token\",error_description=\"token is invalid\"")
-		}
-		errMsg.Report(report)
-		errMsg.JSON(c)
+	result, err := api.userinfoByToken(rawToken, report)
+	if err != nil {
+		report.SetError(err)
+		errors.SendJSON(c, err)
 	} else {
 		report.Success()
 		c.JSON(http.StatusOK, result)

@@ -5,26 +5,27 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/lauth/errors"
 	"github.com/rs/zerolog/log"
 )
 
 func (api *LauthAPI) PostAuthz(c *gin.Context) {
-	ctx, errMsg := NewAuthzContext(api, c)
-	if errMsg != nil {
-		errMsg.Redirect(c)
+	ctx, e := NewAuthzContext(api, c)
+	if e != nil {
+		errors.SendRedirect(c, e)
 		return
 	}
 	defer ctx.Close()
 
 	ctx.Report.Set("username", ctx.Request.User)
 
-	if errMsg := ctx.Request.Validate(api.Config); errMsg != nil {
-		ctx.ErrorRedirect(errMsg)
+	if e = ctx.Request.Validate(api.Config); e != nil {
+		errors.SendRedirect(c, e)
 		return
 	}
 
 	showLoginForm := func(err error, description string) {
-		ctx.Request.makeRedirectError(err, InvalidRequest, description).Report(ctx.Report)
+		ctx.Report.SetError(ctx.Request.makeRedirectError(err, errors.InvalidRequest, description))
 		ctx.ShowLoginPage(http.StatusForbidden, ctx.Request.User, description)
 	}
 
@@ -49,7 +50,7 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 			Err(err).
 			Msg("failed to connecting LDAP server")
 
-		e := ctx.Request.makeRedirectError(err, ServerError, "failed to connecting LDAP server")
+		e := ctx.Request.makeRedirectError(err, errors.ServerError, "failed to connecting LDAP server")
 		ctx.ErrorRedirect(e)
 		return
 	}

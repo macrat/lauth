@@ -1,4 +1,4 @@
-package api_test
+package errors_test
 
 import (
 	"net/http"
@@ -8,17 +8,17 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macrat/lauth/api"
+	"github.com/macrat/lauth/errors"
 	"github.com/macrat/lauth/testutil"
 )
 
-func ServeErrorMessageRedirect(t *testing.T, msg api.ErrorMessage) *httptest.ResponseRecorder {
+func ServeErrorRedirect(t *testing.T, msg *errors.Error) *httptest.ResponseRecorder {
 	t.Helper()
 
 	router := testutil.MakeTestRouter()
 
 	router.GET("/", func(c *gin.Context) {
-		msg.Redirect(c)
+		errors.SendRedirect(c, msg)
 	})
 
 	w := httptest.NewRecorder()
@@ -28,22 +28,22 @@ func ServeErrorMessageRedirect(t *testing.T, msg api.ErrorMessage) *httptest.Res
 	return w
 }
 
-func TestErrorMessage_Redirect(t *testing.T) {
+func TestSendRedirect(t *testing.T) {
 	tests := []struct {
-		Msg        api.ErrorMessage
+		Msg        *errors.Error
 		NoRedirect bool
 		Query      url.Values
 		Fragment   url.Values
 	}{
 		{
-			Msg: api.ErrorMessage{
+			Msg: &errors.Error{
 				Reason:      "some_reason",
 				Description: "hello world",
 			},
 			NoRedirect: true,
 		},
 		{
-			Msg: api.ErrorMessage{
+			Msg: &errors.Error{
 				RedirectURI: testutil.MustParseURL("/relative/path"),
 				Reason:      "some_reason",
 				Description: "hello world",
@@ -51,7 +51,7 @@ func TestErrorMessage_Redirect(t *testing.T) {
 			NoRedirect: true,
 		},
 		{
-			Msg: api.ErrorMessage{
+			Msg: &errors.Error{
 				RedirectURI:  testutil.MustParseURL("http://localhost:3000/redirect"),
 				ResponseType: "code",
 				State:        "hello world",
@@ -62,7 +62,7 @@ func TestErrorMessage_Redirect(t *testing.T) {
 			Fragment: url.Values{},
 		},
 		{
-			Msg: api.ErrorMessage{
+			Msg: &errors.Error{
 				RedirectURI:  testutil.MustParseURL("http://localhost:3000/redirect"),
 				ResponseType: "code token",
 				State:        "hello world",
@@ -73,7 +73,7 @@ func TestErrorMessage_Redirect(t *testing.T) {
 			Fragment: testutil.MustParseQuery("state=hello world&error=something_wrong&error_description=this is something wrong!"),
 		},
 		{
-			Msg: api.ErrorMessage{
+			Msg: &errors.Error{
 				RedirectURI:  testutil.MustParseURL("http://localhost:3000/redirect"),
 				ResponseType: "code",
 				Reason:       "something_wrong",
@@ -82,7 +82,7 @@ func TestErrorMessage_Redirect(t *testing.T) {
 			Fragment: url.Values{},
 		},
 		{
-			Msg: api.ErrorMessage{
+			Msg: &errors.Error{
 				RedirectURI:  testutil.MustParseURL("http://localhost:3000/redirect"),
 				ResponseType: "token",
 				Reason:       "something_wrong",
@@ -91,7 +91,7 @@ func TestErrorMessage_Redirect(t *testing.T) {
 			Fragment: testutil.MustParseQuery("error=something_wrong"),
 		},
 		{
-			Msg: api.ErrorMessage{
+			Msg: &errors.Error{
 				RedirectURI: testutil.MustParseURL("http://localhost:3000/redirect"),
 				Reason:      "something_wrong",
 			},
@@ -99,7 +99,7 @@ func TestErrorMessage_Redirect(t *testing.T) {
 			Fragment: url.Values{},
 		},
 		{
-			Msg: api.ErrorMessage{
+			Msg: &errors.Error{
 				RedirectURI:  testutil.MustParseURL("http://localhost:3000/redirect"),
 				ResponseType: "code invalid",
 				Reason:       "something_wrong",
@@ -110,7 +110,7 @@ func TestErrorMessage_Redirect(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		resp := ServeErrorMessageRedirect(t, tt.Msg)
+		resp := ServeErrorRedirect(t, tt.Msg)
 		if tt.NoRedirect {
 			if resp.Code != http.StatusBadRequest {
 				t.Errorf("%d: unexpected response code: %d", i, resp.Code)

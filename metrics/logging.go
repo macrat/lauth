@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/lauth/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -64,8 +65,13 @@ func (c *LogContext) Close() error {
 	return nil
 }
 
-func (c *LogContext) SetError(err error, reason, description string) {
-	c.Err = err
-	c.Error = reason
-	c.Description = description
+func (c *LogContext) SetError(err error) {
+	if e, ok := err.(*errors.Error); ok {
+		c.Err = e.Err
+		c.Error = e.Reason.String()
+		c.Description = e.Description
+	} else {
+		c.Err = err
+		c.Error = errors.ServerError.String()
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/lauth/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -14,10 +15,6 @@ import (
 const (
 	NAMESPACE = "lauth"
 )
-
-type ErrorReporter interface {
-	SetError(err error, reason, description string)
-}
 
 type EndpointMetrics struct {
 	Name        string
@@ -91,10 +88,15 @@ func (c *Context) Set(key, value string) {
 	c.Labels[key] = value
 }
 
-func (c *Context) SetError(err error, reason, description string) {
-	c.Error = err
-	c.Labels["error"] = reason
-	c.Labels["error_description"] = description
+func (c *Context) SetError(err error) {
+	if e, ok := err.(*errors.Error); ok {
+		c.Error = e.Err
+		c.Labels["error"] = e.Reason.String()
+		c.Labels["error_description"] = e.Description
+	} else {
+		c.Error = err
+		c.Labels["error"] = errors.ServerError.String()
+	}
 }
 
 // Success is succeed process and done.

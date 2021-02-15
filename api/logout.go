@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/gin-gonic/gin"
+	"github.com/macrat/lauth/errors"
 	"github.com/macrat/lauth/metrics"
 )
 
@@ -14,12 +15,12 @@ type LogoutRequest struct {
 	State       string `form:"state"                    json:"state"                    xml:"state"`
 }
 
-func (req *LogoutRequest) Bind(c *gin.Context) *ErrorMessage {
+func (req *LogoutRequest) Bind(c *gin.Context) *errors.Error {
 	err := c.ShouldBind(req)
 	if err != nil {
-		return &ErrorMessage{
+		return &errors.Error{
 			Err:         err,
-			Reason:      InvalidRequest,
+			Reason:      errors.InvalidRequest,
 			Description: "failed to parse request",
 		}
 	}
@@ -31,105 +32,105 @@ func (api *LauthAPI) Logout(c *gin.Context) {
 	defer report.Close()
 
 	var req LogoutRequest
-	if msg := (&req).Bind(c); msg != nil {
-		msg.Report(report)
-		msg.HTML(c)
+	if e := (&req).Bind(c); e != nil {
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 
 	report.Set("redirect_uri", req.RedirectURI)
 
 	if req.IDTokenHint == "" {
-		msg := ErrorMessage{
-			Reason:      InvalidRequest,
+		e := &errors.Error{
+			Reason:      errors.InvalidRequest,
 			Description: "id_token_hint is required in this OP",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 
 	redirectURI, err := url.Parse(req.RedirectURI)
 	if err != nil {
-		msg := ErrorMessage{
+		e := &errors.Error{
 			Err:         err,
-			Reason:      InvalidRequest,
+			Reason:      errors.InvalidRequest,
 			Description: "post_logout_redirect_uri is invalid format",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 	if req.RedirectURI != "" && !redirectURI.IsAbs() {
-		msg := ErrorMessage{
-			Reason:      InvalidRequest,
+		e := &errors.Error{
+			Reason:      errors.InvalidRequest,
 			Description: "post_logout_redirect_uri is must be absolute URL",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 
 	idToken, err := api.TokenManager.ParseIDToken(req.IDTokenHint)
 	if err != nil {
-		msg := ErrorMessage{
+		e := &errors.Error{
 			Err:         err,
-			Reason:      InvalidRequest,
+			Reason:      errors.InvalidRequest,
 			Description: "invalid id_token_hint",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 	report.Set("client_id", idToken.Audience)
 	report.Set("username", idToken.Subject)
 
 	if client, ok := api.Config.Clients[idToken.Audience]; !ok {
-		msg := ErrorMessage{
-			Reason:      InvalidRequest,
+		e := &errors.Error{
+			Reason:      errors.InvalidRequest,
 			Description: "client is not registered",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	} else if req.RedirectURI != "" && !client.RedirectURI.Match(req.RedirectURI) {
-		msg := ErrorMessage{
-			Reason:      InvalidRequest,
+		e := &errors.Error{
+			Reason:      errors.InvalidRequest,
 			Description: "post_logout_redirect_uri is not registered",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 
 	if idToken.Issuer != api.Config.Issuer.String() {
-		msg := ErrorMessage{
-			Reason:      InvalidRequest,
+		e := &errors.Error{
+			Reason:      errors.InvalidRequest,
 			Description: "invalid id_token_hint",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 
 	ssoToken, err := api.GetSSOToken(c)
 	if err != nil {
-		msg := ErrorMessage{
+		e := &errors.Error{
 			Err:         err,
-			Reason:      InvalidRequest,
+			Reason:      errors.InvalidRequest,
 			Description: "user not logged in",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 	if !ssoToken.Authorized.Includes(idToken.Audience) || idToken.Subject != ssoToken.Subject {
-		msg := ErrorMessage{
-			Reason:      InvalidRequest,
+		e := &errors.Error{
+			Reason:      errors.InvalidRequest,
 			Description: "user not logged in",
 		}
-		msg.Report(report)
-		msg.HTML(c)
+		report.SetError(e)
+		errors.SendHTML(c, e)
 		return
 	}
 
