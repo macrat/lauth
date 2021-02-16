@@ -13,7 +13,7 @@ import (
 func TestPostAuthz(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
-	env.RedirectTest(t, "POST", "/authz", authzEndpointCommonTests)
+	env.RedirectTest(t, "POST", "/authz", authzEndpointCommonTests(t, env.API.Config))
 
 	someSession, err := env.API.MakeLoginSession("::1", "some_client_id")
 	if err != nil {
@@ -348,6 +348,62 @@ func TestPostAuthz(t *testing.T) {
 					t.Errorf("failed to parse id_token: %s", err)
 				} else if idToken.CodeHash != token.TokenHash(fragment.Get("code")) {
 					t.Errorf("c_hash is not match\nfrom id_token: %s\ncalculated: %s", idToken.CodeHash, token.TokenHash(fragment.Get("code")))
+				}
+			},
+		},
+		{
+			Name: "success / id_token with profile scope via request object",
+			Request: url.Values{
+				"client_id":     {"implicit_client_id"},
+				"response_type": {"id_token"},
+				"username":      {"macrat"},
+				"password":      {"foobar"},
+				"session":       {implicitSession},
+				"request": {testutil.ImplicitClientRequestObject(t, map[string]interface{}{
+					"iss":          "implicit_client_id",
+					"aud":          env.API.Config.Issuer.String(),
+					"redirect_uri": "http://implicit-client.example.com/callback",
+					"scope":        "profile",
+					"state":        "this-is-state",
+					"nonce":        "this-is-nonce",
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			CheckParams: func(t *testing.T, query, fragment url.Values) {
+				if !reflect.DeepEqual(query, url.Values{}) {
+					t.Errorf("expected query is not set but set %#v", query.Encode())
+				}
+				if fragment.Get("id_token") == "" {
+					t.Errorf("expected returns id_token but not set")
+				} else if code, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+					t.Errorf("failed to parse access_token: %s", err)
+				} else if err := code.Validate(env.API.Config.Issuer, "implicit_client_id"); err != nil {
+					t.Errorf("failed to validate access_token: %s", err)
+				}
+				if fragment.Get("code") != "" {
+					t.Errorf("expected code is not set but set %#v", fragment.Get("code"))
+				}
+				if fragment.Get("access_token") != "" {
+					t.Errorf("expected access_token is not set but set %#v", fragment.Get("access_token"))
+				}
+				if fragment.Get("expires_in") != "3600" {
+					t.Errorf("expected token_type is \"3600\" but got %#v", fragment.Get("expires_in"))
+				}
+				if fragment.Get("state") != "this-is-state" {
+					t.Errorf("expected state is \"this-is-state\" but got %#v", fragment.Get("state"))
+				}
+
+				expectedClaims := token.ExtraClaims{
+					"name":        "SHIDA Yuuma",
+					"given_name":  "yuuma",
+					"family_name": "shida",
+				}
+
+				if idToken, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
+					t.Errorf("failed to parse id_token: %s", err)
+				} else if !reflect.DeepEqual(idToken.ExtraClaims, expectedClaims) {
+					t.Errorf("unexpected extra claims: %#v", idToken.ExtraClaims)
 				}
 			},
 		},

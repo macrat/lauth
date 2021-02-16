@@ -15,7 +15,7 @@ import (
 func TestGetAuthz(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
-	env.RedirectTest(t, "GET", "/authz", authzEndpointCommonTests)
+	env.RedirectTest(t, "GET", "/authz", authzEndpointCommonTests(t, env.API.Config))
 
 	env.RedirectTest(t, "GET", "/authz", []testutil.RedirectTest{
 		{
@@ -33,6 +33,21 @@ func TestGetAuthz(t *testing.T) {
 				"redirect_uri":  {"http://implicit-client.example.com/callback"},
 				"client_id":     {"implicit_client_id"},
 				"response_type": {"code token"},
+			},
+			Code: http.StatusOK,
+		},
+		{
+			Name: "success / request object",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":           "some_client_id",
+					"aud":           env.API.Config.Issuer.String(),
+					"client_id":     "some_client_id",
+					"response_type": "code",
+					"redirect_uri":  "http://some-client.example.com/callback",
+				})},
 			},
 			Code: http.StatusOK,
 		},

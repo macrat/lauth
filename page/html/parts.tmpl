@@ -19,6 +19,10 @@
     {{ if .request.MaxAge }}
         <input type="hidden" name="max_age" value="{{ .request.MaxAge }}" />
     {{ end }}
+
+    {{ if .request.Request }}
+        <input type="hidden" name="request" value="{{ .request.Request }}" />
+    {{ end }}
 {{ end }}
 
 

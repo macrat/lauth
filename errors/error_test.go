@@ -21,7 +21,7 @@ func TestErrorString(t *testing.T) {
 		{
 			"server_error: this is description",
 			&errors.Error{
-				Reason: errors.ServerError,
+				Reason:      errors.ServerError,
 				Description: "this is description",
 			},
 		},
@@ -29,15 +29,15 @@ func TestErrorString(t *testing.T) {
 			"invalid_client: this is error",
 			&errors.Error{
 				Reason: errors.InvalidClient,
-				Err: fmt.Errorf("this is error"),
+				Err:    fmt.Errorf("this is error"),
 			},
 		},
 		{
 			"invalid_grant: desc: err",
 			&errors.Error{
-				Reason: errors.InvalidGrant,
+				Reason:      errors.InvalidGrant,
 				Description: "desc",
-				Err: fmt.Errorf("err"),
+				Err:         fmt.Errorf("err"),
 			},
 		},
 	}

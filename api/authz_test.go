@@ -7,11 +7,12 @@ import (
 	"testing"
 
 	"github.com/macrat/lauth/api"
+	"github.com/macrat/lauth/config"
 	"github.com/macrat/lauth/testutil"
 )
 
-var (
-	authzEndpointCommonTests = []testutil.RedirectTest{
+func authzEndpointCommonTests(t *testing.T, c *config.Config) []testutil.RedirectTest {
+	return []testutil.RedirectTest{
 		{
 			Name:        "without any query",
 			Request:     url.Values{},
@@ -123,16 +124,140 @@ var (
 			},
 		},
 		{
-			Name: "request is not supported",
+			Name: "request object / can't parse",
 			Request: url.Values{
-				"redirect_uri": {"http://some-client.example.com/callback"},
-				"client_id":    {"some_client_id"},
-				"request":      {"request-jwt"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request":       {"invalid request"},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
 			Query: url.Values{
-				"error": {"request_not_supported"},
+				"error":             {"invalid_request_object"},
+				"error_description": {"failed to decode or validation request object"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "request object / empty request",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request":       {testutil.SomeClientRequestObject(t, map[string]interface{}{})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request_object"},
+				"error_description": {"failed to decode or validation request object"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "request object / mismatch some values",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"scope":         {"openid profile"},
+				"state":         {"this is state"},
+				"nonce":         {"this is nonce"},
+				"max_age":       {"123"},
+				"prompt":        {"login"},
+				"login_hint":    {"macrat"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":           "some_client_id",
+					"aud":           c.Issuer.String(),
+					"client_id":     "another_client_id",
+					"response_type": "token",
+					"redirect_uri":  "http://another-client.example.com/callback",
+					"scope":         "openid profile email",
+					"state":         "this is another state",
+					"nonce":         "this is nonce",
+					"max_age":       123,
+					"prompt":        "login",
+					"login_hint":    "macrat",
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request_object"},
+				"error_description": {"mismatch query parameter and request object: response_type, client_id, redirect_uri, scope, state"},
+				"state":             {"this is state"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "request object / mismatch another some values",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"scope":         {"openid profile"},
+				"state":         {"this is state"},
+				"nonce":         {"this is nonce"},
+				"max_age":       {"123"},
+				"prompt":        {"login"},
+				"login_hint":    {"macrat"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":           "some_client_id",
+					"aud":           c.Issuer.String(),
+					"client_id":     "some_client_id",
+					"response_type": "code",
+					"redirect_uri":  "http://some-client.example.com/callback",
+					"scope":         "openid profile",
+					"state":         "this is state",
+					"nonce":         "this is anothernonce",
+					"max_age":       42,
+					"prompt":        "consent",
+					"login_hint":    "j.smith",
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request_object"},
+				"error_description": {"mismatch query parameter and request object: nonce, max_age, prompt, login_hint"},
+				"state":             {"this is state"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "request object / invalid redirect_uri",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":          "some_client_id",
+					"aud":          c.Issuer.String(),
+					"redirect_uri": "this is invalid url::",
+				})},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+			Query:       url.Values{},
+			Fragment:    url.Values{},
+		},
+		{
+			Name: "request object / set both of prompt=none and prompt=login",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":          "some_client_id",
+					"aud":          c.Issuer.String(),
+					"redirect_uri": "http://some-client.example.com/callback",
+					"prompt":       "none login",
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"prompt=none can't use same time with login, select_account, or consent"},
 			},
 			Fragment: url.Values{},
 		},
@@ -214,7 +339,7 @@ var (
 			Fragment: url.Values{},
 		},
 	}
-)
+}
 
 func TestSSOLogin(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)

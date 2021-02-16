@@ -78,6 +78,11 @@ redirect_uri = [
 
 allow_implicit_flow = false
 
+# private key is written in testutil/token.go
+request_key = """
+%s
+"""
+
 [client.implicit_client_id]
 secret = "$2a$10$iy8gnu3fTEi2Ge8ysOjBEOz2Or8.eBfQV3A7XaxCbZ7GaDlSTBDh2"  # hash of "secret for implicit-client"
 
@@ -87,7 +92,11 @@ redirect_uri = [
 ]
 
 allow_implicit_flow = true
-`, port, port)))
+
+request_key = """
+%s
+"""
+`, port, port, SomeClientPublicKey, ImplicitClientPublicKey)))
 
 	if err != nil {
 		panic(err.Error())

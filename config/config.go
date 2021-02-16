@@ -66,6 +66,7 @@ type ClientConfig struct {
 	Secret            string     `json:"secret"              yaml:"secret"              toml:"secret"`
 	RedirectURI       PatternSet `json:"redirect_uri"        yaml:"redirect_uri"        toml:"redirect_uri"`
 	AllowImplicitFlow bool       `json:"allow_implicit_flow" yaml:"allow_implicit_flow" toml:"allow_implicit_flow"`
+	RequestKey        string     `json:"request_key"         yaml:"request_key"         toml:"request_key"`
 }
 
 type ClientConfigSet map[string]ClientConfig
@@ -330,6 +331,7 @@ type OpenIDConfiguration struct {
 	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
 	DisplayValuesSupported            []string `json:"display_values_supported"`
 	ClaimsSupported                   []string `json:"claims_supported"`
+	RequestParameterSupported         bool     `json:"request_parameter_supported"`
 	RequestURIParameterSupported      bool     `json:"request_uri_parameter_supported"`
 }
 
@@ -372,6 +374,7 @@ func (c *Config) OpenIDConfiguration() OpenIDConfiguration {
 			"c_hash",
 			"at_hash",
 		),
+		RequestParameterSupported:    true,
 		RequestURIParameterSupported: false,
 	}
 }

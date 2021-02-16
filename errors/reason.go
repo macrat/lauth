@@ -6,6 +6,7 @@ var (
 	InvalidClient           Reason = "invalid_client"
 	InvalidGrant            Reason = "invalid_grant"
 	InvalidRequest          Reason = "invalid_request"
+	InvalidRequestObject    Reason = "invalid_request_object"
 	InvalidScope            Reason = "invalid_scope"
 	InvalidToken            Reason = "invalid_token"
 	RequestNotSupported     Reason = "request_not_supported"

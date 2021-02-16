@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +21,7 @@ type AuthzRequest struct {
 	State        string `form:"state"         json:"state"         xml:"state"`
 	Nonce        string `form:"nonce"         json:"nonce"         xml:"nonce"`
 	MaxAge       int64  `form:"max_age"       json:"max_age"       xml:"max_age"`
+	Request      string `form:"request"       json:"request"       xml:"request"`
 
 	// use only GET method
 	Prompt    string `form:"prompt"        json:"prompt"        xml:"prompt"`
@@ -30,7 +33,6 @@ type AuthzRequest struct {
 	SessionToken string `form:"session"  json:"session"  xml:"session"`
 
 	// not supported
-	Request    string `form:"request"       json:"request"       xml:"request"`
 	RequestURI string `form:"request_uri"   json:"request_uri"   xml:"request_uri"`
 }
 
@@ -97,13 +99,6 @@ func (req *AuthzRequest) Validate(config *config.Config) *errors.Error {
 		)
 	}
 
-	if req.Request != "" {
-		return req.makeRedirectError(
-			nil,
-			errors.RequestNotSupported,
-			"",
-		)
-	}
 	if req.RequestURI != "" {
 		return req.makeRedirectError(
 			nil,
@@ -175,21 +170,128 @@ func NewAuthzContext(api *LauthAPI, c *gin.Context) (*AuthzContext, *errors.Erro
 		return nil, err
 	}
 
+	ctx := &AuthzContext{
+		API:     api,
+		Gin:     c,
+		Request: req,
+		Report:  m,
+	}
+
+	err := ctx.processRequestObject()
+
 	m.Set("client_id", req.ClientID)
 	m.Set("response_type", req.ResponseType)
 	m.Set("scope", req.Scope)
 	m.Set("prompt", req.Prompt)
 
-	return &AuthzContext{
-		API:     api,
-		Gin:     c,
-		Request: req,
-		Report:  m,
-	}, nil
+	return ctx, err
 }
 
 func (ctx *AuthzContext) Close() error {
 	return ctx.Report.Close()
+}
+
+func (ctx *AuthzContext) processRequestObject() *errors.Error {
+	if ctx.Request.Request == "" {
+		return nil
+	}
+
+	signKey := ""
+	if c, ok := ctx.API.Config.Clients[ctx.Request.ClientID]; ok {
+		signKey = c.RequestKey
+	}
+	claims, err := ctx.API.TokenManager.ParseRequestObject(ctx.Request.Request, signKey)
+	if err != nil {
+		return ctx.Request.makeRedirectError(
+			err,
+			errors.InvalidRequestObject,
+			"failed to decode or validation request object",
+		)
+	}
+
+	if err = claims.Validate(ctx.API.Config.Issuer, ctx.Request.ClientID); err != nil {
+		return ctx.Request.makeRedirectError(
+			err,
+			errors.InvalidRequestObject,
+			"failed to decode or validation request object",
+		)
+	}
+
+	var mismatches []string
+
+	if claims.ResponseType != "" && claims.ResponseType != ctx.Request.ResponseType {
+		mismatches = append(mismatches, "response_type")
+	}
+
+	if claims.ClientID != "" && claims.ClientID != ctx.Request.ClientID {
+		mismatches = append(mismatches, "client_id")
+	}
+
+	if claims.RedirectURI != "" {
+		if ctx.Request.RedirectURI != "" && claims.RedirectURI != ctx.Request.RedirectURI {
+			mismatches = append(mismatches, "redirect_uri")
+		} else {
+			ctx.Request.RedirectURI = claims.RedirectURI
+		}
+	}
+
+	if claims.Scope != "" {
+		if ctx.Request.Scope != "" && claims.Scope != ctx.Request.Scope {
+			mismatches = append(mismatches, "scope")
+		} else {
+			ctx.Request.Scope = claims.Scope
+		}
+	}
+
+	if claims.State != "" {
+		if ctx.Request.State != "" && claims.State != ctx.Request.State {
+			mismatches = append(mismatches, "state")
+		} else {
+			ctx.Request.State = claims.State
+		}
+	}
+
+	if claims.Nonce != "" {
+		if ctx.Request.Nonce != "" && claims.Nonce != ctx.Request.Nonce {
+			mismatches = append(mismatches, "nonce")
+		} else {
+			ctx.Request.Nonce = claims.Nonce
+		}
+	}
+
+	if claims.MaxAge != 0 {
+		if ctx.Request.MaxAge != 0 && claims.MaxAge != ctx.Request.MaxAge {
+			mismatches = append(mismatches, "max_age")
+		} else {
+			ctx.Request.MaxAge = claims.MaxAge
+		}
+	}
+
+	if claims.Prompt != "" {
+		if ctx.Request.Prompt != "" && claims.Prompt != ctx.Request.Prompt {
+			mismatches = append(mismatches, "prompt")
+		} else {
+			ctx.Request.Prompt = claims.Prompt
+		}
+	}
+
+	if claims.LoginHint != "" {
+		if ctx.Request.LoginHint != "" && claims.LoginHint != ctx.Request.LoginHint {
+			mismatches = append(mismatches, "login_hint")
+		} else {
+			ctx.Request.LoginHint = claims.LoginHint
+		}
+	}
+
+	if len(mismatches) == 0 {
+		return nil
+	}
+
+	return ctx.Request.makeRedirectError(
+		nil,
+		errors.InvalidRequestObject,
+		fmt.Sprintf("mismatch query parameter and request object: %s", strings.Join(mismatches, ", ")),
+	)
 }
 
 func (ctx *AuthzContext) ErrorRedirect(err *errors.Error) {

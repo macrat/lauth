@@ -19,6 +19,10 @@ func TestLoginForm_value_passing(t *testing.T) {
 		"state":         {"this-is-state"},
 		"nonce":         {"noncenoncenonce"},
 		"max_age":       {"123"},
+		"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+			"iss": "some_client_id",
+			"aud": env.API.Config.Issuer.String(),
+		})},
 	}
 	resp := env.Get("/authz", "", params)
 
