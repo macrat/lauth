@@ -1,8 +1,11 @@
 package testutil
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 
 	"github.com/macrat/lauth/token"
@@ -44,7 +47,18 @@ func MakeTokenManager() (token.Manager, error) {
 	if err != nil {
 		return token.Manager{}, err
 	}
-	return token.NewManager(pri)
+
+	buf := bytes.NewBuffer([]byte{})
+
+	err = pem.Encode(buf, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(pri),
+	})
+	if err != nil {
+		return token.Manager{}, err
+	}
+
+	return token.NewManagerFromFile(buf)
 }
 
 func MakeRequestObject(t *testing.T, values map[string]interface{}, key string) string {
