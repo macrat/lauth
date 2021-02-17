@@ -3,9 +3,8 @@ package page
 import (
 	"embed"
 	"html/template"
-	"io"
+	"io/fs"
 	"os"
-	"path"
 
 	"github.com/macrat/lauth/config"
 )
@@ -14,28 +13,14 @@ import (
 var templates embed.FS
 
 func Load(conf config.TemplateConfig) (*template.Template, error) {
-	t := template.New("")
-
-	fis, err := templates.ReadDir("html")
+	fsys, err := fs.Sub(templates, "html")
 	if err != nil {
 		return nil, err
 	}
 
-	for _, fi := range fis {
-		file, err := templates.Open(path.Join("html", fi.Name()))
-		if err != nil {
-			return nil, err
-		}
-
-		raw, err := io.ReadAll(file)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = t.New(fi.Name()).Parse(string(raw))
-		if err != nil {
-			return nil, err
-		}
+	t, err := template.ParseFS(fsys, "*.tmpl")
+	if err != nil {
+		return nil, err
 	}
 
 	if conf.LoginPage != "" {
