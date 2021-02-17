@@ -1,50 +1,45 @@
 package page
 
-//go:generate statik -f -src html
-
 import (
+	"embed"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"os"
+	"path"
 
 	"github.com/macrat/lauth/config"
-	"github.com/rakyll/statik/fs"
-
-	_ "github.com/macrat/lauth/page/statik"
 )
 
+//go:embed html/*.tmpl
+var templates embed.FS
+
 func Load(conf config.TemplateConfig) (*template.Template, error) {
-	statikFs, err := fs.New()
+	t := template.New("")
+
+	fis, err := templates.ReadDir("html")
 	if err != nil {
 		return nil, err
 	}
 
-	t := template.New("")
-
-	err = fs.Walk(statikFs, "/", func(path string, info os.FileInfo, err error) error {
+	for _, fi := range fis {
+		file, err := templates.Open(path.Join("html", fi.Name()))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		file, err := statikFs.Open(path)
+		raw, err := io.ReadAll(file)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		raw, err := ioutil.ReadAll(file)
+		_, err = t.New(fi.Name()).Parse(string(raw))
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		_, err = t.New(path[1:]).Parse(string(raw))
-		return err
-	})
-	if err != nil {
-		return nil, err
 	}
 
 	if conf.LoginPage != "" {
-		raw, err := ioutil.ReadFile(conf.LoginPage)
+		raw, err := os.ReadFile(conf.LoginPage)
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +50,7 @@ func Load(conf config.TemplateConfig) (*template.Template, error) {
 	}
 
 	if conf.LogoutPage != "" {
-		raw, err := ioutil.ReadFile(conf.LogoutPage)
+		raw, err := os.ReadFile(conf.LogoutPage)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +61,7 @@ func Load(conf config.TemplateConfig) (*template.Template, error) {
 	}
 
 	if conf.ErrorPage != "" {
-		raw, err := ioutil.ReadFile(conf.ErrorPage)
+		raw, err := os.ReadFile(conf.ErrorPage)
 		if err != nil {
 			return nil, err
 		}
