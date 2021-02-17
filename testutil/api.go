@@ -1,7 +1,9 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -12,6 +14,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -47,56 +50,22 @@ func MakeTestRouter() *gin.Engine {
 	return router
 }
 
+//go:embed config.toml
+var configTemplate string
+
 func MakeConfig() *config.Config {
 	conf := &config.Config{}
 	port := FindAvailTCPPort()
-	err := conf.ReadReader(strings.NewReader(fmt.Sprintf(`
-issuer = "http://localhost:%d"
-listen = "127.0.0.1:%d"
 
-[expire]
-login = "30m"
-code = "1m"
-token = "1h"
-refresh = "6h"
-sso = "10m"
+	buf := bytes.NewBuffer([]byte{})
 
-[endpoint]
-authorization = "/authz"
-token = "/token"
-userinfo = "/userinfo"
-jwks = "/certs"
-logout = "/logout"
+	template.Must(template.New("config").Parse(configTemplate)).Execute(buf, map[string]interface{}{
+		"Port":                    port,
+		"SomeClientPublicKey":     SomeClientPublicKey,
+		"ImplicitClientPublicKey": ImplicitClientPublicKey,
+	})
 
-[client.some_client_id]
-secret = "$2a$10$gKOvDAJeJCtoMW8DeLdxuOH/tqd2FxsM6hmupzZTW0XsiQhe282Te"  # hash of "secret for some-client"
-
-redirect_uri = [
-  "http://some-client.example.com/callback",
-  "http://some-client.example.com/logout",
-]
-
-allow_implicit_flow = false
-
-# private key is written in testutil/token.go
-request_key = """
-%s
-"""
-
-[client.implicit_client_id]
-secret = "$2a$10$iy8gnu3fTEi2Ge8ysOjBEOz2Or8.eBfQV3A7XaxCbZ7GaDlSTBDh2"  # hash of "secret for implicit-client"
-
-redirect_uri = [
-  "http://implicit-client.example.com/callback",
-  "http://implicit-client.example.com/logout",
-]
-
-allow_implicit_flow = true
-
-request_key = """
-%s
-"""
-`, port, port, SomeClientPublicKey, ImplicitClientPublicKey)))
+	err := conf.ReadReader(buf)
 
 	if err != nil {
 		panic(err.Error())
