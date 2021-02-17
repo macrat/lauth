@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/macrat/lauth/testutil"
 	"github.com/rs/zerolog"
 )
