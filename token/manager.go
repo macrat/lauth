@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"io"
-	"io/ioutil"
 
 	"github.com/google/uuid"
 	"gopkg.in/dgrijalva/jwt-go.v3"
@@ -32,7 +31,7 @@ func GenerateManager() (Manager, error) {
 }
 
 func NewManagerFromFile(file io.Reader) (Manager, error) {
-	raw, err := ioutil.ReadAll(file)
+	raw, err := io.ReadAll(file)
 	if err != nil {
 		return Manager{}, err
 	}

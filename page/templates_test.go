@@ -3,7 +3,6 @@ package page_test
 import (
 	"bytes"
 	"html/template"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -30,7 +29,7 @@ func Render(t *testing.T, tmpl *template.Template, name string) string {
 func MakeTestFile(t *testing.T, content string) string {
 	t.Helper()
 
-	f, err := ioutil.TempFile("", "*")
+	f, err := os.CreateTemp("", "*.tmpl")
 	if err != nil {
 		t.Fatalf("failed to prepare test file: %s", err)
 	}
