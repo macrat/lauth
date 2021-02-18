@@ -10,7 +10,8 @@ import (
 type AccessTokenClaims struct {
 	OIDCClaims
 
-	Scope string `json:"scope,omitempty"`
+	AuthorizedParties []string `json:"azp,omitempty"`
+	Scope             string   `json:"scope,omitempty"`
 }
 
 func (claims AccessTokenClaims) Validate(issuer *config.URL) error {
@@ -25,7 +26,7 @@ func (claims AccessTokenClaims) Validate(issuer *config.URL) error {
 	return nil
 }
 
-func (m Manager) CreateAccessToken(issuer *config.URL, subject, scope string, authTime time.Time, expiresIn time.Duration) (string, error) {
+func (m Manager) CreateAccessToken(issuer *config.URL, subject, clientID, scope string, authTime time.Time, expiresIn time.Duration) (string, error) {
 	return m.create(AccessTokenClaims{
 		OIDCClaims: OIDCClaims{
 			StandardClaims: jwt.StandardClaims{
@@ -38,7 +39,8 @@ func (m Manager) CreateAccessToken(issuer *config.URL, subject, scope string, au
 			Type:     "ACCESS_TOKEN",
 			AuthTime: authTime.Unix(),
 		},
-		Scope: scope,
+		AuthorizedParties: []string{clientID},
+		Scope:             scope,
 	})
 }
 

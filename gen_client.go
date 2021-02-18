@@ -99,6 +99,10 @@ func GenClient(conf GenClientConfig) (string, error) {
 	fmt.Fprintf(buf, "# Allow use implicit and hybrid flow for this client.\n")
 	fmt.Fprintf(buf, "allow_implicit_flow = %t\n", conf.AllowImplicitFlow)
 	fmt.Fprintf(buf, "\n")
+	fmt.Fprintf(buf, "# The origin to set to Access-Control-Request-Method header.\n")
+	fmt.Fprintf(buf, "# Please set this if need access API by script that runs on browser.\n")
+	fmt.Fprintf(buf, "#cors_origin = \"https://example.com\"\n")
+	fmt.Fprintf(buf, "\n")
 	fmt.Fprintf(buf, "# URIs for redirect after login or logout.\n")
 	fmt.Fprintf(buf, "redirect_uri = [\n")
 	for _, u := range conf.URIs {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -57,12 +56,5 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 		return
 	}
 
-	result, err := api.userinfoByToken(rawToken, report)
-	if err != nil {
-		report.SetError(err)
-		errors.SendJSON(c, err)
-	} else {
-		report.Success()
-		c.JSON(http.StatusOK, result)
-	}
+	api.sendUserInfo(c, report, rawToken)
 }

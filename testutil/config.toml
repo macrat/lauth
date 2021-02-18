@@ -42,3 +42,5 @@ allow_implicit_flow = true
 request_key = """
 {{ .ImplicitClientPublicKey }}
 """
+
+cors_origin = "http://implicit-client.example.com"

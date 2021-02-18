@@ -17,7 +17,7 @@ func TestAccessToken(t *testing.T) {
 
 	issuer := &config.URL{Scheme: "http", Host: "localhost:8000"}
 
-	accessToken, err := tokenManager.CreateAccessToken(issuer, "someone", "openid profile", time.Now(), 10*time.Minute)
+	accessToken, err := tokenManager.CreateAccessToken(issuer, "someone", "something", "openid profile", time.Now(), 10*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate token: %s", err)
 	}

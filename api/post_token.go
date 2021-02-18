@@ -165,6 +165,7 @@ func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest, rep
 	accessToken, err := api.TokenManager.CreateAccessToken(
 		api.Config.Issuer,
 		code.Subject,
+		code.ClientID,
 		scope.String(),
 		time.Unix(code.AuthTime, 0),
 		time.Duration(api.Config.Expire.Token),
@@ -260,6 +261,7 @@ func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequ
 	accessToken, err := api.TokenManager.CreateAccessToken(
 		api.Config.Issuer,
 		refreshToken.Subject,
+		refreshToken.ClientID,
 		refreshToken.Scope,
 		time.Unix(refreshToken.AuthTime, 0),
 		time.Duration(api.Config.Expire.Token),
@@ -325,6 +327,10 @@ func (api *LauthAPI) PostToken(c *gin.Context) {
 		return
 	}
 
+	if client, ok := api.Config.Clients[req.ClientID]; ok && client.CORSOrigin != "" {
+		c.Header("Access-Control-Allow-Origin", client.CORSOrigin)
+	}
+
 	report.Set("grant_type", req.GrantType)
 	report.Set("client_id", req.ClientID)
 
@@ -338,7 +344,7 @@ func (api *LauthAPI) PostToken(c *gin.Context) {
 	if err != nil {
 		report.SetError(err)
 		errors.SendJSON(c, err)
-	} else if resp != nil {
+	} else {
 		report.Set("scope", resp.Scope)
 		report.Success()
 		c.JSON(http.StatusOK, resp)

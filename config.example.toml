@@ -139,7 +139,6 @@ groups = [
 #  "http://example.com/login/*",
 #  "http://*.example.com/**",
 #]
-#allow_implicit_flow = false
 
 
 [metrics]

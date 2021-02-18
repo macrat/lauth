@@ -21,6 +21,7 @@ func TestPostUserInfo_withBody(t *testing.T) {
 	token, err := env.API.TokenManager.CreateAccessToken(
 		env.API.Config.Issuer,
 		"macrat",
+		"some_client_id",
 		"openid email",
 		time.Now(),
 		10*time.Minute,

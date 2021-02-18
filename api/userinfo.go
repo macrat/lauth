@@ -1,6 +1,9 @@
 package api
 
 import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/config"
 	"github.com/macrat/lauth/errors"
 	"github.com/macrat/lauth/metrics"
@@ -38,7 +41,7 @@ func (api *LauthAPI) userinfo(subject string, scope *StringSet) (map[string]inte
 	return result, nil
 }
 
-func (api *LauthAPI) userinfoByToken(rawToken string, report *metrics.Context) (map[string]interface{}, *errors.Error) {
+func (api *LauthAPI) sendUserInfo(c *gin.Context, report *metrics.Context, rawToken string) {
 	token, err := api.TokenManager.ParseAccessToken(rawToken)
 	if err == nil {
 		report.Set("client_id", token.Audience)
@@ -47,13 +50,31 @@ func (api *LauthAPI) userinfoByToken(rawToken string, report *metrics.Context) (
 	}
 
 	if err != nil {
-		return nil, &errors.Error{
+		e := &errors.Error{
 			Err:         err,
 			Reason:      errors.InvalidToken,
 			Description: "token is invalid",
 		}
+		report.SetError(e)
+		errors.SendJSON(c, e)
+		return
+	}
+
+	if len(token.AuthorizedParties) > 0 {
+		client := api.Config.Clients[token.AuthorizedParties[0]]
+		if client.CORSOrigin != "" {
+			c.Header("Access-Control-Request-Origin", client.CORSOrigin)
+		}
 	}
 
 	scope := ParseStringSet(token.Scope)
-	return api.userinfo(token.Subject, scope)
+	info, e := api.userinfo(token.Subject, scope)
+	if e != nil {
+		report.SetError(e)
+		errors.SendJSON(c, e)
+		return
+	}
+
+	report.Success()
+	c.JSON(http.StatusOK, info)
 }

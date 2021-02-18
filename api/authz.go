@@ -490,6 +490,7 @@ func (ctx *AuthzContext) makeAccessToken(subject string, authTime time.Time) (st
 	token, err := ctx.API.TokenManager.CreateAccessToken(
 		ctx.API.Config.Issuer,
 		subject,
+		ctx.Request.ClientID,
 		ctx.Request.Scope,
 		authTime,
 		time.Duration(ctx.API.Config.Expire.Token),

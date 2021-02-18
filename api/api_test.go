@@ -66,7 +66,7 @@ func TestOpenIDConfiguration(t *testing.T) {
 func TestGetCerts(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
-	token, err := env.API.TokenManager.CreateAccessToken(env.API.Config.Issuer, "someone", "profile", time.Now(), 5*time.Minute)
+	token, err := env.API.TokenManager.CreateAccessToken(env.API.Config.Issuer, "someone", "something", "profile", time.Now(), 5*time.Minute)
 	if err != nil {
 		t.Fatalf("failed to generate test token: %s", err)
 	}

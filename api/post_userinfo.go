@@ -1,8 +1,6 @@
 package api
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/errors"
 	"github.com/macrat/lauth/metrics"
@@ -65,12 +63,5 @@ func (api *LauthAPI) PostUserInfo(c *gin.Context) {
 		return
 	}
 
-	result, e := api.userinfoByToken(rawToken, report)
-	if e != nil {
-		report.SetError(e)
-		errors.SendJSON(c, e)
-	} else {
-		report.Success()
-		c.JSON(http.StatusOK, result)
-	}
+	api.sendUserInfo(c, report, rawToken)
 }

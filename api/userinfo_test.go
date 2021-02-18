@@ -12,6 +12,7 @@ func UserInfoCommonTests(t *testing.T, env *testutil.APITestEnvironment) []testu
 	noScopeToken, err := env.API.TokenManager.CreateAccessToken(
 		env.API.Config.Issuer,
 		"macrat",
+		"some_client_id",
 		"openid",
 		time.Now(),
 		10*time.Minute,
@@ -23,6 +24,7 @@ func UserInfoCommonTests(t *testing.T, env *testutil.APITestEnvironment) []testu
 	multiScopeToken, err := env.API.TokenManager.CreateAccessToken(
 		env.API.Config.Issuer,
 		"macrat",
+		"some_client_id",
 		"openid profile email",
 		time.Now(),
 		10*time.Minute,
@@ -34,6 +36,7 @@ func UserInfoCommonTests(t *testing.T, env *testutil.APITestEnvironment) []testu
 	nobodyToken, err := env.API.TokenManager.CreateAccessToken(
 		env.API.Config.Issuer,
 		"nobody",
+		"some_client_id",
 		"openid profile",
 		time.Now(),
 		10*time.Minute,

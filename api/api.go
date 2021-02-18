@@ -66,12 +66,16 @@ func (api *LauthAPI) GetConfiguration(c *gin.Context) {
 	report := metrics.StartLogging(c)
 	defer report.Close()
 
+	c.Header("Access-Control-Allow-Origin", "*")
+
 	c.IndentedJSON(200, api.Config.OpenIDConfiguration())
 }
 
 func (api *LauthAPI) GetCerts(c *gin.Context) {
 	report := metrics.StartLogging(c)
 	defer report.Close()
+
+	c.Header("Access-Control-Allow-Origin", "*")
 
 	keys, err := api.TokenManager.JWKs()
 	if err != nil {
