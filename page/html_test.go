@@ -17,16 +17,17 @@ func TestLoginForm_value_passing(t *testing.T) {
 		"redirect_uri":  {"http://some-client.example.com/callback"},
 		"scope":         {"openid profile"},
 		"state":         {"this-is-state"},
-		"nonce":         {"noncenoncenonce"},
-		"max_age":       {"123"},
 		"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
-			"iss": "some_client_id",
-			"aud": env.API.Config.Issuer.String(),
+			"iss":     "some_client_id",
+			"aud":     env.API.Config.Issuer.String(),
+			"max_age": 123,
+			"nonce":   "noncenoncenonce",
 		})},
 	}
 	resp := env.Get("/authz", "", params)
 
 	if resp.Code != http.StatusOK {
+		t.Log(string(resp.Body.Bytes()))
 		t.Fatalf("failed to render login page (status code = %d)", resp.Code)
 	}
 
@@ -35,11 +36,42 @@ func TestLoginForm_value_passing(t *testing.T) {
 		t.Fatalf("failed to parse login page: %s", err)
 	}
 
-	for key := range params {
-		if v, ok := inputs[key]; !ok {
-			t.Errorf("parameter %s is missing in form", key)
-		} else if params.Get(key) != v {
-			t.Errorf("parameter %s is expected %s but got %s", key, params.Get(key), v)
+	if responseType, ok := inputs["response_type"]; !ok {
+		t.Errorf("response_type is missing in form")
+	} else if responseType != "code" {
+		t.Errorf("unexpected response_type in form: %#v", responseType)
+	}
+
+	if clientID, ok := inputs["client_id"]; !ok {
+		t.Errorf("client_id is missing in form")
+	} else if clientID != "some_client_id" {
+		t.Errorf("unexpected client_id in form: %#v", clientID)
+	}
+
+	if request, ok := inputs["request"]; !ok {
+		t.Errorf("request is missing in form")
+	} else if claims, err := env.API.TokenManager.ParseRequestObject(request, "some_client_id", testutil.SomeClientPublicKey); err != nil {
+		t.Errorf("failed to parse request object: %s", err)
+	} else if err = claims.Validate(env.API.Config.Issuer.String(), env.API.Config.Issuer); err != nil {
+		t.Errorf("failed to validate request object: %s", err)
+	} else {
+		if claims.ResponseType != "code" {
+			t.Errorf("unexpected response_type in request object: %#v", claims.RedirectURI)
+		}
+		if claims.RedirectURI != "http://some-client.example.com/callback" {
+			t.Errorf("unexpected redirect_uri in request object: %#v", claims.RedirectURI)
+		}
+		if claims.Scope != "openid profile" {
+			t.Errorf("unexpected scope in request object: %#v", claims.Scope)
+		}
+		if claims.State != "this-is-state" {
+			t.Errorf("unexpected state in request object: %#v", claims.State)
+		}
+		if claims.MaxAge != 123 {
+			t.Errorf("unexpected max_age in request object: %#v", claims.MaxAge)
+		}
+		if claims.Nonce != "noncenoncenonce" {
+			t.Errorf("unexpected nonce in request object: %#v", claims.Nonce)
 		}
 	}
 
@@ -49,9 +81,5 @@ func TestLoginForm_value_passing(t *testing.T) {
 
 	if _, ok := inputs["password"]; !ok {
 		t.Errorf("password is missing in form")
-	}
-
-	if _, ok := inputs["session"]; !ok {
-		t.Errorf("session is missing in form")
 	}
 }

@@ -156,6 +156,42 @@ func authzEndpointCommonTests(t *testing.T, c *config.Config) []testutil.Redirec
 			Fragment: url.Values{},
 		},
 		{
+			Name: "request object / missing issuer",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"aud": c.Issuer.String(),
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request_object"},
+				"error_description": {"failed to decode or validation request object"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "request object / missing audience",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss": "some_client_id",
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request_object"},
+				"error_description": {"failed to decode or validation request object"},
+			},
+			Fragment: url.Values{},
+		},
+		{
 			Name: "request object / mismatch some values",
 			Request: url.Values{
 				"redirect_uri":  {"http://some-client.example.com/callback"},
@@ -344,18 +380,26 @@ func authzEndpointCommonTests(t *testing.T, c *config.Config) []testutil.Redirec
 func TestSSOLogin(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
-	session, err := env.API.MakeLoginSession("::1", "some_client_id")
-	if err != nil {
-		t.Fatalf("failed to create session token: %s", err)
-	}
-
 	t.Log("---------- first login ----------")
 
-	resp := env.Post("/authz", "", url.Values{
+	resp := env.Get("/authz", "", url.Values{
 		"redirect_uri":  {"http://some-client.example.com/callback"},
 		"client_id":     {"some_client_id"},
 		"response_type": {"code"},
-		"session":       {session},
+	})
+	if resp.Code != http.StatusOK {
+		t.Fatalf("unexpected status code on first login: %d", resp.Code)
+	}
+
+	request, err := testutil.FindRequestObjectByHTML(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to parse first login page: %s", err)
+	}
+
+	resp = env.Post("/authz", "", url.Values{
+		"client_id":     {"some_client_id"},
+		"response_type": {"code"},
+		"request":       {request},
 		"username":      {"macrat"},
 		"password":      {"foobar"},
 	})
@@ -562,43 +606,5 @@ func TestSSOLogin(t *testing.T) {
 		t.Errorf("auth_time is not match: sso_token=%d != code=%d", ssoToken.AuthTime, code.AuthTime)
 	} else if code.Subject != ssoToken.Subject {
 		t.Errorf("auth_time is not match: sso_token=%s != code=%s", ssoToken.Subject, code.Subject)
-	}
-}
-
-func TestUseLoginSession(t *testing.T) {
-	env := testutil.NewAPITestEnvironment(t)
-
-	params := url.Values{
-		"redirect_uri":  {"http://some-client.example.com/callback"},
-		"client_id":     {"some_client_id"},
-		"response_type": {"code"},
-	}
-
-	resp := env.Get("/authz", "", params)
-	if resp.Code != http.StatusOK {
-		t.Fatalf("failed to get login form (status code = %d)", resp.Code)
-	}
-
-	inputs, err := testutil.FindInputsByHTML(resp.Body)
-	if err != nil {
-		t.Fatalf("failed to parse login form: %s", err)
-	}
-	t.Logf("session token is %#v", inputs["session"])
-
-	params.Set("username", "macrat")
-	params.Set("password", "foobar")
-	params.Set("session", inputs["session"])
-
-	resp = env.Post("/authz", "", params)
-	if resp.Code != http.StatusFound {
-		t.Fatalf("failed to get login form (status code = %d)", resp.Code)
-	}
-
-	location, err := url.Parse(resp.Header().Get("Location"))
-	if err != nil {
-		t.Errorf("failed to parse location: %s", err)
-	}
-	if errMsg := location.Query().Get("error"); errMsg != "" {
-		t.Errorf("redirect location includes error message: %s", errMsg)
 	}
 }

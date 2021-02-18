@@ -11,6 +11,7 @@ import (
 	"github.com/macrat/lauth/config"
 	"github.com/macrat/lauth/errors"
 	"github.com/macrat/lauth/metrics"
+	"github.com/macrat/lauth/token"
 )
 
 type AuthzRequest struct {
@@ -30,10 +31,13 @@ type AuthzRequest struct {
 	// use only POST method
 	User         string `form:"username" json:"username" xml:"username"`
 	Password     string `form:"password" json:"password" xml:"password"`
-	SessionToken string `form:"session"  json:"session"  xml:"session"`
 
 	// not supported
 	RequestURI string `form:"request_uri"   json:"request_uri"   xml:"request_uri"`
+
+	requestExpiresAt int64  // exp value in Request object
+	requestIssuer    string // issuer name in Request object
+	requestSubject   string // subject name in Request object
 }
 
 func (req *AuthzRequest) Bind(c *gin.Context) *errors.Error {
@@ -46,6 +50,14 @@ func (req *AuthzRequest) Bind(c *gin.Context) *errors.Error {
 		}
 	}
 	return nil
+}
+
+func (req *AuthzRequest) RequestIssuer() string {
+	return req.requestIssuer
+}
+
+func (req *AuthzRequest) RequestSubject() string {
+	return req.requestSubject
 }
 
 func (req *AuthzRequest) makeRedirectError(err error, reason errors.Reason, description string) *errors.Error {
@@ -150,6 +162,18 @@ func (req *AuthzRequest) Validate(config *config.Config) *errors.Error {
 	return nil
 }
 
+func (req *AuthzRequest) RequestObjectClaims() token.RequestObjectClaims {
+	return token.RequestObjectClaims{
+		ResponseType: req.ResponseType,
+		ClientID:     req.ClientID,
+		RedirectURI:  req.RedirectURI,
+		Scope:        req.Scope,
+		State:        req.State,
+		Nonce:        req.Nonce,
+		MaxAge:       req.MaxAge,
+	}
+}
+
 type AuthzContext struct {
 	API     *LauthAPI
 	Gin     *gin.Context
@@ -200,7 +224,7 @@ func (ctx *AuthzContext) processRequestObject() *errors.Error {
 	if c, ok := ctx.API.Config.Clients[ctx.Request.ClientID]; ok {
 		signKey = c.RequestKey
 	}
-	claims, err := ctx.API.TokenManager.ParseRequestObject(ctx.Request.Request, signKey)
+	claims, err := ctx.API.TokenManager.ParseRequestObject(ctx.Request.Request, ctx.Request.ClientID, signKey)
 	if err != nil {
 		return ctx.Request.makeRedirectError(
 			err,
@@ -208,8 +232,11 @@ func (ctx *AuthzContext) processRequestObject() *errors.Error {
 			"failed to decode or validation request object",
 		)
 	}
+	ctx.Request.requestExpiresAt = claims.ExpiresAt
+	ctx.Request.requestIssuer = claims.Issuer
+	ctx.Request.requestSubject = claims.Subject
 
-	if err = claims.Validate(ctx.API.Config.Issuer, ctx.Request.ClientID); err != nil {
+	if err = claims.Validate(ctx.Request.ClientID, ctx.API.Config.Issuer); err != nil {
 		return ctx.Request.makeRedirectError(
 			err,
 			errors.InvalidRequestObject,
@@ -294,6 +321,21 @@ func (ctx *AuthzContext) processRequestObject() *errors.Error {
 	)
 }
 
+func (ctx *AuthzContext) MakeRequestObject() (string, error) {
+	expiresAt := time.Now().Add(time.Duration(ctx.API.Config.Expire.Login))
+
+	if 0 < ctx.Request.requestExpiresAt && ctx.Request.requestExpiresAt < expiresAt.Unix() {
+		expiresAt = time.Unix(ctx.Request.requestExpiresAt, 0)
+	}
+
+	return ctx.API.TokenManager.CreateRequestObject(
+		ctx.API.Config.Issuer,
+		ctx.Gin.ClientIP(),
+		ctx.Request.RequestObjectClaims(),
+		expiresAt,
+	)
+}
+
 func (ctx *AuthzContext) ErrorRedirect(err *errors.Error) {
 	ctx.Report.SetError(err)
 	errors.SendRedirect(ctx.Gin, err)
@@ -337,9 +379,9 @@ func (ctx *AuthzContext) TrySSO(authorized bool) (proceed bool) {
 }
 
 func (ctx *AuthzContext) showPage(code int, authzOnly bool, initialUser, errorDescription string) {
-	sessionToken, err := ctx.API.MakeLoginSession(ctx.Gin.ClientIP(), ctx.Request.ClientID)
+	requestObject, err := ctx.MakeRequestObject()
 	if err != nil {
-		ctx.ErrorRedirect(ctx.Request.makeRedirectError(err, "server_error", "failed to create session"))
+		ctx.ErrorRedirect(ctx.Request.makeRedirectError(err, "server_error", "failed to create login session"))
 		return
 	}
 
@@ -347,12 +389,13 @@ func (ctx *AuthzContext) showPage(code int, authzOnly bool, initialUser, errorDe
 
 	data := map[string]interface{}{
 		"client": map[string]interface{}{
+			"ID":      ctx.Request.ClientID,
 			"Name":    client.Name,
 			"IconURL": client.IconURL,
 		},
-		"request":          ctx.Request,
+		"response_type":    ctx.Request.ResponseType,
+		"request":          requestObject,
 		"initial_username": initialUser,
-		"session_token":    sessionToken,
 		"error":            errorDescription,
 		"authz_only":       authzOnly,
 	}

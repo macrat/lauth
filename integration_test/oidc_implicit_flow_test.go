@@ -16,20 +16,28 @@ func TestOIDCImplicitFlow(t *testing.T) {
 	clientID := "implicit_client_id"
 	nonce := "This Is Nonce"
 
-	session, err := env.API.MakeLoginSession("::1", clientID)
-	if err != nil {
-		t.Fatalf("failed to create login session: %s", err)
-	}
-
-	resp := env.Post("/authz", "", url.Values{
+	resp := env.Get("/authz", "", url.Values{
 		"response_type": {"token id_token"},
 		"redirect_uri":  {"http://implicit-client.example.com/callback"},
 		"client_id":     {clientID},
 		"nonce":         {nonce},
 		"scope":         {"phone"},
+	})
+	if resp.Code != http.StatusOK {
+		t.Fatalf("unexpected status code: %d", resp.Code)
+	}
+
+	request, err := testutil.FindRequestObjectByHTML(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to get request object: %s", err)
+	}
+
+	resp = env.Post("/authz", "", url.Values{
+		"client_id":     {clientID},
+		"response_type": {"token id_token"},
+		"request":       {request},
 		"username":      {"macrat"},
 		"password":      {"foobar"},
-		"session":       {session},
 	})
 	if resp.Code != http.StatusFound {
 		t.Fatalf("unexpected status code: %d", resp.Code)

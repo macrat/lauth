@@ -1,28 +1,7 @@
 {{ define "formContext" }}
-    <input type="hidden" name="session" value="{{ .session_token }}" />
-    <input type="hidden" name="response_type" value="{{ .request.ResponseType }}" />
-    <input type="hidden" name="client_id" value="{{ .request.ClientID }}" />
-    <input type="hidden" name="redirect_uri" value="{{ .request.RedirectURI }}" />
-
-    {{ if .request.Scope }}
-        <input type="hidden" name="scope" value="{{ .request.Scope }}" />
-    {{ end }}
-
-    {{ if .request.State }}
-        <input type="hidden" name="state" value="{{ .request.State }}" />
-    {{ end }}
-
-    {{ if .request.Nonce }}
-        <input type="hidden" name="nonce" value="{{ .request.Nonce }}" />
-    {{ end }}
-
-    {{ if .request.MaxAge }}
-        <input type="hidden" name="max_age" value="{{ .request.MaxAge }}" />
-    {{ end }}
-
-    {{ if .request.Request }}
-        <input type="hidden" name="request" value="{{ .request.Request }}" />
-    {{ end }}
+    <input type="hidden" name="client_id" value="{{ .client.ID }}" />
+    <input type="hidden" name="response_type" value="{{ .response_type }}" />
+    <input type="hidden" name="request" value="{{ .request }}" />
 {{ end }}
 
 

@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/macrat/lauth/testutil"
 	"github.com/macrat/lauth/token"
@@ -15,81 +16,114 @@ func TestPostAuthz(t *testing.T) {
 
 	env.RedirectTest(t, "POST", "/authz", authzEndpointCommonTests(t, env.API.Config))
 
-	someSession, err := env.API.MakeLoginSession("::1", "some_client_id")
+	expiresAt := time.Now().Add(10 * time.Minute)
+
+	someRequest, err := env.API.TokenManager.CreateRequestObject(
+		env.API.Config.Issuer,
+		"::1",
+		token.RequestObjectClaims{
+			ClientID:    "some_client_id",
+			RedirectURI: "http://some-client.example.com/callback",
+		},
+		expiresAt,
+	)
 	if err != nil {
-		t.Fatalf("faield to make login session: %s", err)
+		t.Fatalf("faield to make request: %s", err)
 	}
 
-	implicitSession, err := env.API.MakeLoginSession("::1", "implicit_client_id")
+	implicitRequest, err := env.API.TokenManager.CreateRequestObject(
+		env.API.Config.Issuer,
+		"::1",
+		token.RequestObjectClaims{
+			ClientID:    "implicit_client_id",
+			RedirectURI: "http://implicit-client.example.com/callback",
+		},
+		expiresAt,
+	)
 	if err != nil {
-		t.Fatalf("faield to make login session: %s", err)
+		t.Fatalf("faield to make request: %s", err)
 	}
 
-	anotherBrowserSession, err := env.API.MakeLoginSession("10.2.3.4", "some_client_id")
+	anotherBrowserRequest, err := env.API.TokenManager.CreateRequestObject(
+		env.API.Config.Issuer,
+		"10.2.3.4",
+		token.RequestObjectClaims{
+			ClientID:    "some_client_id",
+			RedirectURI: "http://some-client.example.com/callback",
+		},
+		expiresAt,
+	)
 	if err != nil {
-		t.Fatalf("faield to make login session: %s", err)
+		t.Fatalf("faield to make request: %s", err)
 	}
 
-	anotherClientSession, err := env.API.MakeLoginSession("::1", "another_client_id")
-	if err != nil {
-		t.Fatalf("faield to make login session: %s", err)
-	}
+	anotherIssuerRequest := testutil.SomeClientRequestObject(t, map[string]interface{}{
+		"iss":          "some_client_id",
+		"client_id":    "some_client_id",
+		"redirect_uri": "http://some-client.example.com/callback",
+	})
 
 	env.RedirectTest(t, "POST", "/authz", []testutil.RedirectTest{
 		{
 			Name: "missing username and password",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
-				"session":       {someSession},
+				"request":       {someRequest},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "missing password",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
-				"session":       {someSession},
+				"request":       {someRequest},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "missing username",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"password":      {"foobar"},
-				"session":       {someSession},
+				"request":       {someRequest},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "invalid password",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"invalid"},
-				"session":       {someSession},
+				"request":       {someRequest},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
-			Name: "missing session",
+			Name: "missing request object",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
 			},
-			Code: http.StatusForbidden,
+			Code: http.StatusBadRequest,
+		},
+		{
+			Name: "request object that signed by client",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"username":      {"macrat"},
+				"password":      {"foobar"},
+				"request":       {anotherIssuerRequest},
+			},
+			Code: http.StatusBadRequest,
 		},
 		{
 			Name: "another browser session",
@@ -99,31 +133,18 @@ func TestPostAuthz(t *testing.T) {
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {anotherBrowserSession},
-			},
-			Code: http.StatusForbidden,
-		},
-		{
-			Name: "another client session",
-			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"session":       {anotherClientSession},
+				"request":       {anotherBrowserRequest},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "success / code",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
 				"client_id":     {"some_client_id"},
 				"response_type": {"code"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {someSession},
+				"request":       {someRequest},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -149,12 +170,11 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / token",
 			Request: url.Values{
-				"redirect_uri":  {"http://implicit-client.example.com/callback"},
 				"client_id":     {"implicit_client_id"},
 				"response_type": {"token"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {implicitSession},
+				"request":       {implicitRequest},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -189,14 +209,13 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / id_token",
 			Request: url.Values{
-				"redirect_uri":  {"http://implicit-client.example.com/callback"},
 				"client_id":     {"implicit_client_id"},
 				"response_type": {"id_token"},
 				"state":         {"this-is-state"},
 				"nonce":         {"this-is-nonce"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {implicitSession},
+				"request":       {implicitRequest},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -234,7 +253,6 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / id_token with profile scope",
 			Request: url.Values{
-				"redirect_uri":  {"http://implicit-client.example.com/callback"},
 				"client_id":     {"implicit_client_id"},
 				"response_type": {"id_token"},
 				"scope":         {"profile"},
@@ -242,7 +260,7 @@ func TestPostAuthz(t *testing.T) {
 				"nonce":         {"this-is-nonce"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {implicitSession},
+				"request":       {implicitRequest},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -286,13 +304,12 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / token id_token",
 			Request: url.Values{
-				"redirect_uri":  {"http://implicit-client.example.com/callback"},
 				"client_id":     {"implicit_client_id"},
 				"response_type": {"token id_token"},
 				"nonce":         {"this-is-nonce"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {implicitSession},
+				"request":       {implicitRequest},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -320,13 +337,12 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / code id_token",
 			Request: url.Values{
-				"redirect_uri":  {"http://implicit-client.example.com/callback"},
 				"client_id":     {"implicit_client_id"},
 				"response_type": {"code id_token"},
 				"nonce":         {"this-is-nonce"},
 				"username":      {"macrat"},
 				"password":      {"foobar"},
-				"session":       {implicitSession},
+				"request":       {implicitRequest},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -348,62 +364,6 @@ func TestPostAuthz(t *testing.T) {
 					t.Errorf("failed to parse id_token: %s", err)
 				} else if idToken.CodeHash != token.TokenHash(fragment.Get("code")) {
 					t.Errorf("c_hash is not match\nfrom id_token: %s\ncalculated: %s", idToken.CodeHash, token.TokenHash(fragment.Get("code")))
-				}
-			},
-		},
-		{
-			Name: "success / id_token with profile scope via request object",
-			Request: url.Values{
-				"client_id":     {"implicit_client_id"},
-				"response_type": {"id_token"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"session":       {implicitSession},
-				"request": {testutil.ImplicitClientRequestObject(t, map[string]interface{}{
-					"iss":          "implicit_client_id",
-					"aud":          env.API.Config.Issuer.String(),
-					"redirect_uri": "http://implicit-client.example.com/callback",
-					"scope":        "profile",
-					"state":        "this-is-state",
-					"nonce":        "this-is-nonce",
-				})},
-			},
-			Code:        http.StatusFound,
-			HasLocation: true,
-			CheckParams: func(t *testing.T, query, fragment url.Values) {
-				if !reflect.DeepEqual(query, url.Values{}) {
-					t.Errorf("expected query is not set but set %#v", query.Encode())
-				}
-				if fragment.Get("id_token") == "" {
-					t.Errorf("expected returns id_token but not set")
-				} else if code, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
-					t.Errorf("failed to parse access_token: %s", err)
-				} else if err := code.Validate(env.API.Config.Issuer, "implicit_client_id"); err != nil {
-					t.Errorf("failed to validate access_token: %s", err)
-				}
-				if fragment.Get("code") != "" {
-					t.Errorf("expected code is not set but set %#v", fragment.Get("code"))
-				}
-				if fragment.Get("access_token") != "" {
-					t.Errorf("expected access_token is not set but set %#v", fragment.Get("access_token"))
-				}
-				if fragment.Get("expires_in") != "3600" {
-					t.Errorf("expected token_type is \"3600\" but got %#v", fragment.Get("expires_in"))
-				}
-				if fragment.Get("state") != "this-is-state" {
-					t.Errorf("expected state is \"this-is-state\" but got %#v", fragment.Get("state"))
-				}
-
-				expectedClaims := token.ExtraClaims{
-					"name":        "SHIDA Yuuma",
-					"given_name":  "yuuma",
-					"family_name": "shida",
-				}
-
-				if idToken, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
-					t.Errorf("failed to parse id_token: %s", err)
-				} else if !reflect.DeepEqual(idToken.ExtraClaims, expectedClaims) {
-					t.Errorf("unexpected extra claims: %#v", idToken.ExtraClaims)
 				}
 			},
 		},

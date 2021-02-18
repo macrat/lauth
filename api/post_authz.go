@@ -29,8 +29,8 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 		ctx.ShowLoginPage(http.StatusForbidden, ctx.Request.User, description)
 	}
 
-	if err := api.ValidateLoginSession(ctx.Request.SessionToken, ctx.Gin.ClientIP(), ctx.Request.ClientID); err != nil {
-		showLoginForm(err, "invalid session")
+	if ctx.Request.RequestIssuer() != api.Config.Issuer.String() || ctx.Request.RequestSubject() != ctx.Gin.ClientIP() {
+		showLoginForm(nil, "invalid session")
 		return
 	}
 

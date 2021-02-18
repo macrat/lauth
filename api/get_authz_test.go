@@ -272,4 +272,41 @@ func TestGetAuthz_SSO(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("can't use self issued request object for GET method", func(t *testing.T) {
+		resp := env.Get("/authz", "", url.Values{
+			"redirect_uri":  {"http://some-client.example.com/callback"},
+			"client_id":     {"some_client_id"},
+			"response_type": {"code"},
+		})
+		if resp.Code != http.StatusOK {
+			t.Fatalf("failed to get request object: status code=%d", resp.Code)
+		}
+
+		request, err := testutil.FindRequestObjectByHTML(resp.Body)
+		if err != nil {
+			t.Fatalf("failed to get request object: %s", err)
+		}
+
+		resp = env.Get("/authz", "", url.Values{
+			"client_id":     {"some_client_id"},
+			"response_type": {"code"},
+			"request":       {request},
+		})
+		if resp.Code != http.StatusFound {
+			t.Fatalf("unexpected status code: %d", resp.Code)
+		}
+
+		location, err := url.Parse(resp.Header().Get("Location"))
+		if err != nil {
+			t.Errorf("failed to parse location: %s", err)
+		}
+
+		if errMsg := location.Query().Get("error"); errMsg != "invalid_request_object" {
+			t.Errorf("unexpected error message: %#v", errMsg)
+		}
+		if desc := location.Query().Get("error_description"); desc != "invalid request object for GET method" {
+			t.Errorf("unexpected error description: %#v", desc)
+		}
+	})
 }

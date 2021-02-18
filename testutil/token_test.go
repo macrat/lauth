@@ -18,12 +18,12 @@ func TestMakeRequestObject(t *testing.T) {
 		"aud": "https://example.com",
 	})
 
-	claims, err := m.ParseRequestObject(req, testutil.SomeClientPublicKey)
+	claims, err := m.ParseRequestObject(req, "some_client_id", testutil.SomeClientPublicKey)
 	if err != nil {
 		t.Fatalf("failed to parse request object: %s", err)
 	}
 
-	err = claims.Validate(&config.URL{Scheme: "https", Host: "example.com"}, "some_client_id")
+	err = claims.Validate("some_client_id", &config.URL{Scheme: "https", Host: "example.com"})
 	if err != nil {
 		t.Fatalf("failed to parse validate request object: %s", err)
 	}

@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"errors"
 	"io"
 
 	"golang.org/x/net/html"
@@ -41,4 +42,17 @@ func FindInputsByHTML(body io.Reader) (map[string]string, error) {
 	findInputs(nodes, inputs)
 
 	return inputs, nil
+}
+
+func FindRequestObjectByHTML(body io.Reader) (string, error) {
+	inputs, err := FindInputsByHTML(body)
+	if err != nil {
+		return "", err
+	}
+
+	if req := inputs["request"]; req == "" {
+		return "", errors.New("request is not in the form")
+	} else {
+		return req, nil
+	}
 }

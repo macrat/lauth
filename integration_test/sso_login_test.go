@@ -48,24 +48,37 @@ func TestSSOLoginTest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to make auth code URL: %s", err)
 	}
-
 	authQuery := authURL.Query()
-	authURL.RawQuery = ""
-
 	authQuery.Set("response_type", "id_token")
 	authQuery.Set("nonce", "this is nonce")
-	authQuery.Set("username", "macrat")
-	authQuery.Set("password", "foobar")
+	authURL.RawQuery = authQuery.Encode()
 
-	session, err := env.API.MakeLoginSession("127.0.0.1", "implicit_client_id")
+	resp, err := client.Get(authURL.String())
 	if err != nil {
-		t.Fatalf("failed to create login session: %s", err)
+		t.Fatalf("failed to get authorization URL: %s", err)
 	}
-	authQuery.Set("session", session)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("unexpected status code: %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
 
-	resp, err := client.Post(authURL.String(), "application/x-www-form-urlencoded", strings.NewReader(authQuery.Encode()))
+	request, err := testutil.FindRequestObjectByHTML(resp.Body)
 	if err != nil {
-		t.Fatalf("failed to fetch authorization URL: %s", err)
+		t.Fatalf("failed to get request object: %s", err)
+	}
+
+	authQuery = url.Values{
+		"response_type": {"id_token"},
+		"client_id":     {"implicit_client_id"},
+		"request":       {request},
+		"username":      {"macrat"},
+		"password":      {"foobar"},
+	}
+	authURL.RawQuery = ""
+
+	resp, err = client.Post(authURL.String(), "application/x-www-form-urlencoded", strings.NewReader(authQuery.Encode()))
+	if err != nil {
+		t.Fatalf("failed to post to authorization URL: %s", err)
 	}
 	if resp.StatusCode != http.StatusFound {
 		t.Fatalf("unexpected response code: %d", resp.StatusCode)

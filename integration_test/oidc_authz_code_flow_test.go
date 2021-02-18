@@ -40,18 +40,24 @@ func TestOIDCAuthzCodeFlow(t *testing.T) {
 		t.Fatalf("failed to mage auth code URL: %s", err)
 	}
 
-	authQuery := authURL.Query()
-	authQuery.Set("username", "macrat")
-	authQuery.Set("password", "foobar")
-
-	session, err := env.API.MakeLoginSession("::1", "some_client_id")
-	if err != nil {
-		t.Fatalf("failed to create login session: %s", err)
+	resp := env.Get(authURL.Path+"?"+authURL.Query().Encode(), "", nil)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("unexpected status code: %d", resp.Code)
 	}
-	authQuery.Set("session", session)
 
-	resp := env.Post("/authz", "", authQuery)
+	request, err := testutil.FindRequestObjectByHTML(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to get request object: %s", err)
+	}
 
+	authQuery := url.Values{
+		"client_id":     {clientID},
+		"response_type": {"code"},
+		"request":       {request},
+		"username":      {"macrat"},
+		"password":      {"foobar"},
+	}
+	resp = env.Post("/authz", "", authQuery)
 	if resp.Code != http.StatusFound {
 		t.Fatalf("unexpected status code: %d", resp.Code)
 	}
