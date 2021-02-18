@@ -18,7 +18,7 @@ func TestMakeRequestObject(t *testing.T) {
 		"aud": "https://example.com",
 	})
 
-	claims, err := m.ParseRequestObject(req, "some_client_id", testutil.SomeClientPublicKey)
+	claims, err := m.ParseRequestObject(req, testutil.SomeClientPublicKey)
 	if err != nil {
 		t.Fatalf("failed to parse request object: %s", err)
 	}

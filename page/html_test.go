@@ -36,21 +36,9 @@ func TestLoginForm_value_passing(t *testing.T) {
 		t.Fatalf("failed to parse login page: %s", err)
 	}
 
-	if responseType, ok := inputs["response_type"]; !ok {
-		t.Errorf("response_type is missing in form")
-	} else if responseType != "code" {
-		t.Errorf("unexpected response_type in form: %#v", responseType)
-	}
-
-	if clientID, ok := inputs["client_id"]; !ok {
-		t.Errorf("client_id is missing in form")
-	} else if clientID != "some_client_id" {
-		t.Errorf("unexpected client_id in form: %#v", clientID)
-	}
-
 	if request, ok := inputs["request"]; !ok {
 		t.Errorf("request is missing in form")
-	} else if claims, err := env.API.TokenManager.ParseRequestObject(request, "some_client_id", testutil.SomeClientPublicKey); err != nil {
+	} else if claims, err := env.API.TokenManager.ParseRequestObject(request, ""); err != nil {
 		t.Errorf("failed to parse request object: %s", err)
 	} else if err = claims.Validate(env.API.Config.Issuer.String(), env.API.Config.Issuer); err != nil {
 		t.Errorf("failed to validate request object: %s", err)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,6 +51,289 @@ func TestGetAuthz(t *testing.T) {
 				})},
 			},
 			Code: http.StatusOK,
+		},
+		{
+			Name: "missing client_id",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+		},
+		{
+			Name: "missing response_type",
+			Request: url.Values{
+				"redirect_uri": {"http://some-client.example.com/callback"},
+				"client_id":    {"some_client_id"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"unsupported_response_type"},
+				"error_description": {"response_type is required"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "unknown response_type",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code hogefuga"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query:       url.Values{},
+			Fragment: url.Values{
+				"error":             {"unsupported_response_type"},
+				"error_description": {"response_type \"hogefuga\" is not supported"},
+			},
+		},
+		{
+			Name: "relative redirect_uri",
+			Request: url.Values{
+				"redirect_uri":  {"/invalid/relative/url"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+		},
+		{
+			Name: "not registered client_id",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"another_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+		},
+		{
+			Name: "invalid code (can't parse)",
+			Request: url.Values{
+				"redirect_uri":  {"http://other-site.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+		},
+		{
+			Name: "missing redirect_uri",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+		},
+		{
+			Name: "invalid redirect_uri",
+			Request: url.Values{
+				"redirect_uri":  {"this is invalid url::"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+		},
+		{
+			Name: "disallowed hybrid flow",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code token"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query:       url.Values{},
+			Fragment: url.Values{
+				"error":             {"unsupported_response_type"},
+				"error_description": {"implicit/hybrid flow is disallowed"},
+			},
+		},
+		{
+			Name: "request object / mismatch some values",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"scope":         {"openid profile"},
+				"state":         {"this is state"},
+				"nonce":         {"this is nonce"},
+				"max_age":       {"123"},
+				"prompt":        {"login"},
+				"login_hint":    {"macrat"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":           "some_client_id",
+					"aud":           env.API.Config.Issuer.String(),
+					"client_id":     "another_client_id",
+					"response_type": "token",
+					"redirect_uri":  "http://another-client.example.com/callback",
+					"scope":         "openid profile email",
+					"state":         "this is another state",
+					"nonce":         "this is nonce",
+					"max_age":       123,
+					"prompt":        "login",
+					"login_hint":    "macrat",
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request_object"},
+				"error_description": {"mismatch query parameter and request object: response_type, client_id, redirect_uri, scope, state"},
+				"state":             {"this is state"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "request object / mismatch another some values",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"scope":         {"openid profile"},
+				"state":         {"this is state"},
+				"nonce":         {"this is nonce"},
+				"max_age":       {"123"},
+				"prompt":        {"login"},
+				"login_hint":    {"macrat"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":           "some_client_id",
+					"aud":           env.API.Config.Issuer.String(),
+					"client_id":     "some_client_id",
+					"response_type": "code",
+					"redirect_uri":  "http://some-client.example.com/callback",
+					"scope":         "openid profile",
+					"state":         "this is state",
+					"nonce":         "this is anothernonce",
+					"max_age":       42,
+					"prompt":        "consent",
+					"login_hint":    "j.smith",
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request_object"},
+				"error_description": {"mismatch query parameter and request object: nonce, max_age, prompt, login_hint"},
+				"state":             {"this is state"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "request object / invalid redirect_uri",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":          "some_client_id",
+					"aud":          env.API.Config.Issuer.String(),
+					"redirect_uri": "this is invalid url::",
+				})},
+			},
+			Code:        http.StatusBadRequest,
+			HasLocation: false,
+		},
+		{
+			Name: "request object / set both of prompt=none and prompt=login",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":          "some_client_id",
+					"aud":          env.API.Config.Issuer.String(),
+					"redirect_uri": "http://some-client.example.com/callback",
+					"prompt":       "none login",
+				})},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"prompt=none can't use same time with login, select_account, or consent"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "request_uri is not supported",
+			Request: url.Values{
+				"redirect_uri": {"http://some-client.example.com/callback"},
+				"client_id":    {"some_client_id"},
+				"request_uri":  {"http://some-client.example.com/request.jwt"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error": {"request_uri_not_supported"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "missing nonce in implicit flow",
+			Request: url.Values{
+				"redirect_uri":  {"http://implicit-client.example.com/callback"},
+				"client_id":     {"implicit_client_id"},
+				"response_type": {"token id_token"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query:       url.Values{},
+			Fragment: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"nonce is required in the implicit/hybrid flow of OpenID Connect"},
+			},
+		},
+		{
+			Name: "can't use both prompt of none and login",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"prompt":        {"none login"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"prompt=none can't use same time with login, select_account, or consent"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "can't use both prompt of none and consent",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"prompt":        {"consent none"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"prompt=none can't use same time with login, select_account, or consent"},
+			},
+			Fragment: url.Values{},
+		},
+		{
+			Name: "can't use both prompt of none and select_account",
+			Request: url.Values{
+				"redirect_uri":  {"http://some-client.example.com/callback"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"prompt":        {"none select_account"},
+			},
+			Code:        http.StatusFound,
+			HasLocation: true,
+			Query: url.Values{
+				"error":             {"invalid_request"},
+				"error_description": {"prompt=none can't use same time with login, select_account, or consent"},
+			},
+			Fragment: url.Values{},
 		},
 		{
 			Name: "prompt=none but not logged in",
@@ -289,24 +573,18 @@ func TestGetAuthz_SSO(t *testing.T) {
 		}
 
 		resp = env.Get("/authz", "", url.Values{
+			"redirect_uri":  {"http://some-client.example.com/callback"},
 			"client_id":     {"some_client_id"},
 			"response_type": {"code"},
 			"request":       {request},
 		})
-		if resp.Code != http.StatusFound {
+		if resp.Code != http.StatusBadRequest {
 			t.Fatalf("unexpected status code: %d", resp.Code)
 		}
 
-		location, err := url.Parse(resp.Header().Get("Location"))
-		if err != nil {
-			t.Errorf("failed to parse location: %s", err)
-		}
-
-		if errMsg := location.Query().Get("error"); errMsg != "invalid_request_object" {
-			t.Errorf("unexpected error message: %#v", errMsg)
-		}
-		if desc := location.Query().Get("error_description"); desc != "invalid request object for GET method" {
-			t.Errorf("unexpected error description: %#v", desc)
+		if !strings.Contains(string(resp.Body.Bytes()), "invalid_request_object") {
+			t.Log(string(resp.Body.Bytes()))
+			t.Errorf("expected error message \"invalid_request_object\" was not included in response body")
 		}
 	})
 }

@@ -15,16 +15,6 @@ func (api *LauthAPI) GetAuthz(c *gin.Context) {
 	}
 	defer ctx.Close()
 
-	if err := ctx.Request.Validate(api.Config); err != nil {
-		ctx.ErrorRedirect(err)
-		return
-	}
-
-	if ctx.Request.RequestIssuer() != "" && ctx.Request.RequestIssuer() == api.Config.Issuer.String() {
-		ctx.ErrorRedirect(ctx.Request.makeRedirectError(nil, errors.InvalidRequestObject, "invalid request object for GET method"))
-		return
-	}
-
 	if ctx.Request.User != "" || ctx.Request.Password != "" {
 		ctx.ErrorRedirect(ctx.Request.makeRedirectError(nil, errors.InvalidRequest, "can't set username or password in GET method"))
 		return

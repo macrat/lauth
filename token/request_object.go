@@ -1,7 +1,6 @@
 package token
 
 import (
-	"errors"
 	"time"
 
 	"github.com/macrat/lauth/config"
@@ -22,16 +21,16 @@ type RequestObjectClaims struct {
 	LoginHint    string `json:"login_hint,omitempty"`
 }
 
-func (claims RequestObjectClaims) Validate(clientID string, provider *config.URL) error {
+func (claims RequestObjectClaims) Validate(issuer string, audience *config.URL) error {
 	if err := claims.StandardClaims.Valid(); err != nil {
 		return err
 	}
 
-	if claims.Issuer != clientID && claims.Issuer != provider.String() {
+	if claims.Issuer != issuer {
 		return UnexpectedIssuerError
 	}
 
-	if claims.Audience != provider.String() {
+	if claims.Audience != audience.String() {
 		return UnexpectedAudienceError
 	}
 
@@ -48,17 +47,14 @@ func (m Manager) CreateRequestObject(issuer *config.URL, subject string, request
 	return m.create(request)
 }
 
-func (m Manager) ParseRequestObject(token string, clientID, signKey string) (RequestObjectClaims, error) {
+func (m Manager) ParseRequestObject(token string, signKey string) (RequestObjectClaims, error) {
 	var claims RequestObjectClaims
 
 	parsed, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
-		if t.Claims.(*RequestObjectClaims).Issuer == clientID {
+		if signKey != "" {
 			return jwt.ParseRSAPublicKeyFromPEM([]byte(signKey))
 		}
-		if kid, ok := t.Header["kid"].(string); ok && kid == m.KeyID().String() {
-			return m.public, nil
-		}
-		return nil, errors.New("matching key was not found")
+		return m.public, nil
 	})
 	if err != nil {
 		return RequestObjectClaims{}, err

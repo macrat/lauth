@@ -24,17 +24,11 @@ func TestRequestToken(t *testing.T) {
 		"state":        "hello world",
 	})
 
-	if _, err := tokenManager.ParseRequestObject(request, "implicit_client_id", testutil.ImplicitClientPublicKey); err == nil {
-		t.Errorf("expected failure if parse request as another client but success")
-	}
-	if _, err := tokenManager.ParseRequestObject(request, "implicit_client_id", testutil.SomeClientPublicKey); err == nil {
-		t.Errorf("expected failure if parse request with another client ID")
-	}
-	if _, err := tokenManager.ParseRequestObject(request, "some_client_id", testutil.ImplicitClientPublicKey); err == nil {
-		t.Errorf("expected failure if parse request with another cilent key")
+	if _, err := tokenManager.ParseRequestObject(request, testutil.ImplicitClientPublicKey); err == nil {
+		t.Errorf("expected failure if parse request with another client key but success")
 	}
 
-	claims, err := tokenManager.ParseRequestObject(request, "some_client_id", testutil.SomeClientPublicKey)
+	claims, err := tokenManager.ParseRequestObject(request, testutil.SomeClientPublicKey)
 	if err != nil {
 		t.Fatalf("failed to parse request object: %s", err)
 	}
@@ -80,12 +74,16 @@ func TestRequestToken_SelfIssue(t *testing.T) {
 		t.Fatalf("failed to generate request object: %s", err)
 	}
 
-	claims, err := tokenManager.ParseRequestObject(request, "", "")
+	if _, err := tokenManager.ParseRequestObject(request, testutil.SomeClientPublicKey); err == nil {
+		t.Errorf("expected failure if parse request with another client key but success")
+	}
+
+	claims, err := tokenManager.ParseRequestObject(request, "")
 	if err != nil {
 		t.Fatalf("failed to parse request object: %s", err)
 	}
 
-	if err = claims.Validate("some_client_id", issuer); err != nil {
+	if err = claims.Validate(issuer.String(), issuer); err != nil {
 		t.Errorf("failed to validate request object: %s", err)
 	}
 

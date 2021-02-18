@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/macrat/lauth/config"
 	"github.com/macrat/lauth/testutil"
 	"github.com/macrat/lauth/token"
 )
@@ -22,8 +23,9 @@ func TestPostAuthz(t *testing.T) {
 		env.API.Config.Issuer,
 		"::1",
 		token.RequestObjectClaims{
-			ClientID:    "some_client_id",
-			RedirectURI: "http://some-client.example.com/callback",
+			ClientID:     "some_client_id",
+			RedirectURI:  "http://some-client.example.com/callback",
+			ResponseType: "code",
 		},
 		expiresAt,
 	)
@@ -31,25 +33,32 @@ func TestPostAuthz(t *testing.T) {
 		t.Fatalf("faield to make request: %s", err)
 	}
 
-	implicitRequest, err := env.API.TokenManager.CreateRequestObject(
-		env.API.Config.Issuer,
-		"::1",
-		token.RequestObjectClaims{
-			ClientID:    "implicit_client_id",
-			RedirectURI: "http://implicit-client.example.com/callback",
-		},
-		expiresAt,
-	)
-	if err != nil {
-		t.Fatalf("faield to make request: %s", err)
+	implicitRequest := func(responseType, scope, state string) string {
+		request, err := env.API.TokenManager.CreateRequestObject(
+			env.API.Config.Issuer,
+			"::1",
+			token.RequestObjectClaims{
+				ClientID:     "implicit_client_id",
+				RedirectURI:  "http://implicit-client.example.com/callback",
+				ResponseType: responseType,
+				Scope:        scope,
+				State:        state,
+			},
+			expiresAt,
+		)
+		if err != nil {
+			t.Fatalf("faield to make request: %s", err)
+		}
+		return request
 	}
 
 	anotherBrowserRequest, err := env.API.TokenManager.CreateRequestObject(
 		env.API.Config.Issuer,
 		"10.2.3.4",
 		token.RequestObjectClaims{
-			ClientID:    "some_client_id",
-			RedirectURI: "http://some-client.example.com/callback",
+			ClientID:     "some_client_id",
+			RedirectURI:  "http://some-client.example.com/callback",
+			ResponseType: "code",
 		},
 		expiresAt,
 	)
@@ -57,94 +66,103 @@ func TestPostAuthz(t *testing.T) {
 		t.Fatalf("faield to make request: %s", err)
 	}
 
-	anotherIssuerRequest := testutil.SomeClientRequestObject(t, map[string]interface{}{
-		"iss":          "some_client_id",
-		"client_id":    "some_client_id",
-		"redirect_uri": "http://some-client.example.com/callback",
+	anotherIssuerRequest, err := env.API.TokenManager.CreateRequestObject(
+		&config.URL{Scheme: "https", Host: "invalid-issuer.example.com"},
+		"::1",
+		token.RequestObjectClaims{
+			ClientID:     "some_client_id",
+			RedirectURI:  "http://some-client.example.com/callback",
+			ResponseType: "code",
+		},
+		expiresAt,
+	)
+	if err != nil {
+		t.Fatalf("faield to make request: %s", err)
+	}
+
+	anotherSignKeyRequest := testutil.SomeClientRequestObject(t, map[string]interface{}{
+		"iss":           env.API.Config.Issuer.String(),
+		"sub":           "::1",
+		"aud":           env.API.Config.Issuer.String(),
+		"client_id":     "some_client_id",
+		"redirect_uri":  "http://some-client.example.com/callback",
+		"response_type": "code",
 	})
 
 	env.RedirectTest(t, "POST", "/authz", []testutil.RedirectTest{
 		{
 			Name: "missing username and password",
 			Request: url.Values{
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"request":       {someRequest},
+				"request": {someRequest},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "missing password",
 			Request: url.Values{
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"username":      {"macrat"},
-				"request":       {someRequest},
+				"request":  {someRequest},
+				"username": {"macrat"},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "missing username",
 			Request: url.Values{
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"password":      {"foobar"},
-				"request":       {someRequest},
+				"request":  {someRequest},
+				"password": {"foobar"},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "invalid password",
 			Request: url.Values{
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"username":      {"macrat"},
-				"password":      {"invalid"},
-				"request":       {someRequest},
+				"request":  {someRequest},
+				"username": {"macrat"},
+				"password": {"invalid"},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "missing request object",
 			Request: url.Values{
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code: http.StatusBadRequest,
 		},
 		{
-			Name: "request object that signed by client",
+			Name: "request object of another issuer",
 			Request: url.Values{
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"request":       {anotherIssuerRequest},
+				"request":  {anotherIssuerRequest},
+				"username": {"macrat"},
+				"password": {"foobar"},
+			},
+			Code: http.StatusBadRequest,
+		},
+		{
+			Name: "request object of client",
+			Request: url.Values{
+				"request":  {anotherSignKeyRequest},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code: http.StatusBadRequest,
 		},
 		{
 			Name: "another browser session",
 			Request: url.Values{
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"request":       {anotherBrowserRequest},
+				"request":  {anotherBrowserRequest},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code: http.StatusForbidden,
 		},
 		{
 			Name: "success / code",
 			Request: url.Values{
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"request":       {someRequest},
+				"request":  {someRequest},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -170,11 +188,9 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / token",
 			Request: url.Values{
-				"client_id":     {"implicit_client_id"},
-				"response_type": {"token"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"request":       {implicitRequest},
+				"request":  {implicitRequest("token", "", "")},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -209,13 +225,9 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / id_token",
 			Request: url.Values{
-				"client_id":     {"implicit_client_id"},
-				"response_type": {"id_token"},
-				"state":         {"this-is-state"},
-				"nonce":         {"this-is-nonce"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"request":       {implicitRequest},
+				"request":  {implicitRequest("id_token", "openid", "this is state")},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -239,8 +251,8 @@ func TestPostAuthz(t *testing.T) {
 				if fragment.Get("expires_in") != "3600" {
 					t.Errorf("expected expires_in is \"3600\" but got %#v", fragment.Get("expires_in"))
 				}
-				if fragment.Get("state") != "this-is-state" {
-					t.Errorf("expected state is \"this-is-state\" but got %#v", fragment.Get("state"))
+				if fragment.Get("state") != "this is state" {
+					t.Errorf("expected state is \"this is state\" but got %#v", fragment.Get("state"))
 				}
 
 				if idToken, err := env.API.TokenManager.ParseIDToken(fragment.Get("id_token")); err != nil {
@@ -253,14 +265,9 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / id_token with profile scope",
 			Request: url.Values{
-				"client_id":     {"implicit_client_id"},
-				"response_type": {"id_token"},
-				"scope":         {"profile"},
-				"state":         {"this-is-state"},
-				"nonce":         {"this-is-nonce"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"request":       {implicitRequest},
+				"request":  {implicitRequest("id_token", "openid profile", "hello world")},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -284,8 +291,8 @@ func TestPostAuthz(t *testing.T) {
 				if fragment.Get("expires_in") != "3600" {
 					t.Errorf("expected token_type is \"3600\" but got %#v", fragment.Get("expires_in"))
 				}
-				if fragment.Get("state") != "this-is-state" {
-					t.Errorf("expected state is \"this-is-state\" but got %#v", fragment.Get("state"))
+				if fragment.Get("state") != "hello world" {
+					t.Errorf("expected state is \"hello world\" but got %#v", fragment.Get("state"))
 				}
 
 				expectedClaims := token.ExtraClaims{
@@ -304,12 +311,9 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / token id_token",
 			Request: url.Values{
-				"client_id":     {"implicit_client_id"},
-				"response_type": {"token id_token"},
-				"nonce":         {"this-is-nonce"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"request":       {implicitRequest},
+				"request":  {implicitRequest("token id_token", "openid", "")},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,
@@ -337,12 +341,9 @@ func TestPostAuthz(t *testing.T) {
 		{
 			Name: "success / code id_token",
 			Request: url.Values{
-				"client_id":     {"implicit_client_id"},
-				"response_type": {"code id_token"},
-				"nonce":         {"this-is-nonce"},
-				"username":      {"macrat"},
-				"password":      {"foobar"},
-				"request":       {implicitRequest},
+				"request":  {implicitRequest("code id_token", "openid", "")},
+				"username": {"macrat"},
+				"password": {"foobar"},
 			},
 			Code:        http.StatusFound,
 			HasLocation: true,

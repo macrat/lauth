@@ -19,17 +19,12 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 
 	ctx.Report.Set("username", ctx.Request.User)
 
-	if e = ctx.Request.Validate(api.Config); e != nil {
-		errors.SendRedirect(c, e)
-		return
-	}
-
 	showLoginForm := func(err error, description string) {
 		ctx.Report.SetError(ctx.Request.makeRedirectError(err, errors.InvalidRequest, description))
 		ctx.ShowLoginPage(http.StatusForbidden, ctx.Request.User, description)
 	}
 
-	if ctx.Request.RequestIssuer() != api.Config.Issuer.String() || ctx.Request.RequestSubject() != ctx.Gin.ClientIP() {
+	if ctx.Request.RequestSubject != ctx.Gin.ClientIP() {
 		showLoginForm(nil, "invalid session")
 		return
 	}
