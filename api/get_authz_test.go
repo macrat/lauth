@@ -408,7 +408,7 @@ func TestGetAuthz_LoginExpires(t *testing.T) {
 		{
 			Name:       "long expire",
 			RequestTTL: 24 * time.Hour,
-			ExpectTTL:  time.Duration(env.API.Config.Expire.Login),
+			ExpectTTL:  env.API.Config.Expire.Login.Duration(),
 		},
 	}
 

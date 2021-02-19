@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"path"
 	"reflect"
@@ -242,7 +241,7 @@ func (c *Config) Validate() error {
 
 	if c.Issuer.String() == "" {
 		es = append(es, errors.New("--issuer: Issuer URL is required."))
-	} else if !(*url.URL)(c.Issuer).IsAbs() {
+	} else if !c.Issuer.URL().IsAbs() {
 		es = append(es, errors.New("--issuer: Issuer URL must be absolute URL."))
 	}
 

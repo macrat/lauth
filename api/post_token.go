@@ -168,7 +168,7 @@ func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest, rep
 		code.ClientID,
 		scope.String(),
 		time.Unix(code.AuthTime, 0),
-		time.Duration(api.Config.Expire.Token),
+		api.Config.Expire.Token.Duration(),
 	)
 	if err != nil {
 		return nil, &errors.Error{
@@ -194,7 +194,7 @@ func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest, rep
 			accessToken,
 			userinfo,
 			time.Unix(code.AuthTime, 0),
-			time.Duration(api.Config.Expire.Token),
+			api.Config.Expire.Token.Duration(),
 		)
 		if err != nil {
 			return nil, &errors.Error{
@@ -214,7 +214,7 @@ func (api *LauthAPI) postTokenWithCode(c *gin.Context, req PostTokenRequest, rep
 			code.Scope,
 			code.Nonce,
 			time.Unix(code.AuthTime, 0),
-			time.Duration(api.Config.Expire.Refresh),
+			api.Config.Expire.Refresh.Duration(),
 		)
 		if err != nil {
 			return nil, &errors.Error{
@@ -264,7 +264,7 @@ func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequ
 		refreshToken.ClientID,
 		refreshToken.Scope,
 		time.Unix(refreshToken.AuthTime, 0),
-		time.Duration(api.Config.Expire.Token),
+		api.Config.Expire.Token.Duration(),
 	)
 	if err != nil {
 		return nil, &errors.Error{
@@ -291,7 +291,7 @@ func (api *LauthAPI) postTokenWithRefreshToken(c *gin.Context, req PostTokenRequ
 			accessToken,
 			userinfo,
 			time.Unix(refreshToken.AuthTime, 0),
-			time.Duration(api.Config.Expire.Token),
+			api.Config.Expire.Token.Duration(),
 		)
 		if err != nil {
 			return nil, &errors.Error{

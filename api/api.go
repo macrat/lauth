@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/macrat/lauth/config"
@@ -78,7 +77,7 @@ func (api *LauthAPI) GetCerts(c *gin.Context) {
 
 	c.Header("Access-Control-Allow-Origin", "*")
 
-	keys, err := api.TokenManager.JWKs((*url.URL)(api.Config.Issuer).Hostname())
+	keys, err := api.TokenManager.JWKs(api.Config.Issuer.Hostname())
 	if err != nil {
 		e := &errors.Error{
 			Err:         err,

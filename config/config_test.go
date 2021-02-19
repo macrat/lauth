@@ -63,11 +63,11 @@ secret = "$2a$10$fU1PBoQ6V4a3Mbg4BI5yJemdSU4bE5LogDMFG55n5C761X0/tzAkW"
 		t.Errorf("unexpected listen address: %s", conf.Listen)
 	}
 
-	if time.Duration(conf.Expire.Code) != 5*time.Minute {
+	if conf.Expire.Code.Duration() != 5*time.Minute {
 		t.Errorf("unexpected code Expire: %d", conf.Expire.Code)
 	}
 
-	if time.Duration(conf.Expire.Token) != 42*24*time.Hour {
+	if conf.Expire.Token.Duration() != 42*24*time.Hour {
 		t.Errorf("unexpected token Expire: %d", conf.Expire.Token)
 	}
 

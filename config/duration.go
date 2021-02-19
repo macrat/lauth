@@ -10,13 +10,13 @@ import (
 
 type Duration time.Duration
 
-func NewDuration(t time.Duration) *Duration {
-	return (*Duration)(&t)
+func ParseDuration(text string) (Duration, error) {
+	d, err := str2duration.ParseDuration(text)
+	return Duration(d), err
 }
 
-func ParseDuration(text string) (*Duration, error) {
-	d, err := str2duration.ParseDuration(text)
-	return NewDuration(d), err
+func (d Duration) Duration() time.Duration {
+	return time.Duration(d)
 }
 
 func (d Duration) String() string {
@@ -47,7 +47,7 @@ func (d Duration) String() string {
 }
 
 func (d Duration) IntSeconds() int64 {
-	return int64(time.Duration(d).Seconds())
+	return int64(d.Duration().Seconds())
 }
 
 func (d Duration) StrSeconds() string {
@@ -59,8 +59,8 @@ func (d Duration) MarshalText() ([]byte, error) {
 }
 
 func (d *Duration) UnmarshalText(text []byte) error {
-	d2, err := ParseDuration(string(text))
-	*d = *d2
+	var err error
+	*d, err = ParseDuration(string(text))
 	return err
 }
 

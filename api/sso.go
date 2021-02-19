@@ -1,7 +1,6 @@
 package api
 
 import (
-	"net/url"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +13,7 @@ const (
 
 func (api *LauthAPI) SetSSOToken(c *gin.Context, subject, client string, authenticated bool) error {
 	authTime := time.Now()
-	expiresAt := time.Now().Add(time.Duration(api.Config.Expire.SSO))
+	expiresAt := time.Now().Add(api.Config.Expire.SSO.Duration())
 	azp := token.AuthorizedParties{client}
 
 	if current, err := api.GetSSOToken(c); err == nil {
@@ -42,7 +41,7 @@ func (api *LauthAPI) SetSSOToken(c *gin.Context, subject, client string, authent
 		token,
 		int(api.Config.Expire.SSO.IntSeconds()),
 		"/",
-		(*url.URL)(api.Config.Issuer).Hostname(),
+		api.Config.Issuer.Hostname(),
 		secure,
 		true,
 	)
@@ -71,5 +70,5 @@ func (api *LauthAPI) GetSSOToken(c *gin.Context) (token.SSOTokenClaims, error) {
 
 func (api *LauthAPI) DeleteSSOToken(c *gin.Context) {
 	secure := api.Config.Issuer.Scheme == "https"
-	c.SetCookie(SSO_TOKEN_COOKIE, "", 0, "/", (*url.URL)(api.Config.Issuer).Hostname(), secure, true)
+	c.SetCookie(SSO_TOKEN_COOKIE, "", 0, "/", api.Config.Issuer.Hostname(), secure, true)
 }

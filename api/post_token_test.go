@@ -98,7 +98,7 @@ func TestPostToken_Code(t *testing.T) {
 		"openid profile",
 		"something-nonce",
 		time.Now(),
-		time.Duration(env.API.Config.Expire.Code),
+		env.API.Config.Expire.Code.Duration(),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)
@@ -112,7 +112,7 @@ func TestPostToken_Code(t *testing.T) {
 		"profile",
 		"something-nonce",
 		time.Now(),
-		time.Duration(env.API.Config.Expire.Code),
+		env.API.Config.Expire.Code.Duration(),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)
@@ -126,7 +126,7 @@ func TestPostToken_Code(t *testing.T) {
 		"openid profile",
 		"",
 		time.Now(),
-		time.Duration(env.API.Config.Expire.Code),
+		env.API.Config.Expire.Code.Duration(),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test code: %s", err)
@@ -394,7 +394,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 		"openid profile",
 		"something-nonce",
 		time.Now(),
-		time.Duration(env.API.Config.Expire.Refresh),
+		env.API.Config.Expire.Refresh.Duration(),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test refresh_token: %s", err)
@@ -407,7 +407,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 		"profile",
 		"something-nonce",
 		time.Now(),
-		time.Duration(env.API.Config.Expire.Refresh),
+		env.API.Config.Expire.Refresh.Duration(),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test refresh_token: %s", err)
@@ -420,7 +420,7 @@ func TestPostToken_RefreshToken(t *testing.T) {
 		"openid profile",
 		"",
 		time.Now(),
-		time.Duration(env.API.Config.Expire.Code),
+		env.API.Config.Expire.Code.Duration(),
 	)
 	if err != nil {
 		t.Fatalf("failed to generate test refresh_token: %s", err)

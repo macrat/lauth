@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -137,7 +136,7 @@ func serve(conf *config.Config) {
 		Handler: handler,
 	}
 	if conf.TLS.Auto {
-		err = autotls.Run(handler, (*url.URL)(conf.Issuer).Hostname())
+		err = autotls.Run(handler, conf.Issuer.Hostname())
 	} else if conf.TLS.Cert != "" {
 		err = server.ListenAndServeTLS(conf.TLS.Cert, conf.TLS.Key)
 	} else {

@@ -393,7 +393,7 @@ func (ctx *AuthzContext) Close() error {
 }
 
 func (ctx *AuthzContext) MakeRequestObject() (string, error) {
-	expiresAt := time.Now().Add(time.Duration(ctx.API.Config.Expire.Login))
+	expiresAt := time.Now().Add(ctx.API.Config.Expire.Login.Duration())
 
 	if 0 < ctx.Request.RequestExpiresAt && ctx.Request.RequestExpiresAt < expiresAt.Unix() {
 		expiresAt = time.Unix(ctx.Request.RequestExpiresAt, 0)
@@ -492,7 +492,7 @@ func (ctx *AuthzContext) makeCodeToken(subject string, authTime time.Time) (stri
 		ctx.Request.Scope,
 		ctx.Request.Nonce,
 		authTime,
-		time.Duration(ctx.API.Config.Expire.Code),
+		ctx.API.Config.Expire.Code.Duration(),
 	)
 	if err != nil {
 		return "", ctx.Request.makeRedirectError(err, errors.ServerError, "failed to generate code")
@@ -507,7 +507,7 @@ func (ctx *AuthzContext) makeAccessToken(subject string, authTime time.Time) (st
 		ctx.Request.ClientID,
 		ctx.Request.Scope,
 		authTime,
-		time.Duration(ctx.API.Config.Expire.Token),
+		ctx.API.Config.Expire.Token.Duration(),
 	)
 	if err != nil {
 		return "", ctx.Request.makeRedirectError(err, errors.ServerError, "failed to generate access_token")
@@ -532,7 +532,7 @@ func (ctx *AuthzContext) makeIDToken(subject string, authTime time.Time, code, a
 		accessToken,
 		userinfo,
 		authTime,
-		time.Duration(ctx.API.Config.Expire.Token),
+		ctx.API.Config.Expire.Token.Duration(),
 	)
 	if err != nil {
 		return "", ctx.Request.makeRedirectError(err, errors.ServerError, "failed to generate id_token")

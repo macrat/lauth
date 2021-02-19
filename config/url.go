@@ -6,11 +6,19 @@ import (
 
 type URL url.URL
 
+func (u *URL) URL() *url.URL {
+	return (*url.URL)(u)
+}
+
 func (u *URL) String() string {
 	if u == nil {
 		return ""
 	}
-	return (*url.URL)(u).String()
+	return u.URL().String()
+}
+
+func (u *URL) Hostname() string {
+	return u.URL().Hostname()
 }
 
 func (u *URL) UnmarshalText(text []byte) error {
