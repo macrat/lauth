@@ -2,6 +2,8 @@ package token_test
 
 import (
 	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -25,10 +27,13 @@ func TestTokenManager_JWKs(t *testing.T) {
 		t.Fatalf("failed to load test key: %s", err)
 	}
 
-	jwks, err := manager.JWKs()
+	jwks, err := manager.JWKs("lauth.example.com")
 	if err != nil {
 		t.Errorf("failed to generate JWKs: %s", err)
 	}
+	rawCert := jwks[0].X509[0]
+	jwks[0].X509 = nil
+
 	expected := []token.JWK{
 		{KeyID: keyID, Use: "sig", Algorithm: "RS256", KeyType: "RSA", E: "AQAB", N: "rJXfsn14r_G2hX23sYzd4hM57l3dhebASzUQKc6nV3ozrcICRUr4gPIZ-OnzsoFlMBpaf9Lxwwm8TByrfdXHzw"},
 	}
@@ -47,6 +52,14 @@ func TestTokenManager_JWKs(t *testing.T) {
 		} else if !decJwks.Key.(*rsa.PublicKey).Equal(manager.PublicKey()) {
 			t.Errorf("unmarshalled public key is not equals original key")
 		}
+	}
+
+	if bytesCert, err := base64.StdEncoding.Strict().DecodeString(rawCert); err != nil {
+		t.Errorf("failed to decode certificate as base64: %s", err)
+	} else if cert, err := x509.ParseCertificate(bytesCert); err != nil {
+		t.Errorf("failed to parse certificate: %s", err)
+	} else if !cert.PublicKey.(*rsa.PublicKey).Equal(manager.PublicKey()) {
+		t.Errorf("public key that got by certificate is not equals original key\noriginal key: %#v\ncert key: %#v", manager.PublicKey(), cert.PublicKey)
 	}
 
 	idToken, err := manager.CreateIDToken(&config.URL{Scheme: "https", Host: "localhost"}, "someone", "something", "", "code", "token", nil, time.Now(), 10*time.Minute)
