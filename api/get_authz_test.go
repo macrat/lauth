@@ -259,6 +259,22 @@ func TestGetAuthz(t *testing.T) {
 			Fragment: url.Values{},
 		},
 		{
+			Name: "request object / expired",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":          "some_client_id",
+					"aud":          env.API.Config.Issuer.String(),
+					"exp":          time.Now().Add(-10 * time.Minute).Unix(),
+					"redirect_uri": "http://some-client.example.com/callback",
+				})},
+			},
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_object", "failed to decode or validation request object"},
+		},
+		{
 			Name: "request_uri is not supported",
 			Request: url.Values{
 				"redirect_uri": {"http://some-client.example.com/callback"},

@@ -146,13 +146,14 @@ func (env *APITestEnvironment) Do(method, path, token string, values url.Values)
 type ParamsTester func(t *testing.T, query, fragment url.Values)
 
 type RedirectTest struct {
-	Name        string
-	Request     url.Values
-	Code        int
-	HasLocation bool
-	CheckParams ParamsTester
-	Query       url.Values
-	Fragment    url.Values
+	Name         string
+	Request      url.Values
+	Code         int
+	HasLocation  bool
+	CheckParams  ParamsTester
+	Query        url.Values
+	Fragment     url.Values
+	BodyIncludes []string
 }
 
 func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint string, tests []RedirectTest) {
@@ -164,6 +165,14 @@ func (env *APITestEnvironment) RedirectTest(t *testing.T, method, endpoint strin
 
 			if resp.Code != tt.Code {
 				t.Errorf("expected status code %d but got %d", tt.Code, resp.Code)
+			}
+
+			body := string(resp.Body.Bytes())
+			for _, expected := range tt.BodyIncludes {
+				if !strings.Contains(body, expected) {
+					t.Log(body)
+					t.Errorf("expected %#v includes in response body but not included", expected)
+				}
 			}
 
 			location := resp.Header().Get("Location")

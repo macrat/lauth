@@ -25,7 +25,8 @@ func (api *LauthAPI) PostAuthz(c *gin.Context) {
 	}
 
 	if ctx.Request.RequestSubject != ctx.Gin.ClientIP() {
-		showLoginForm(nil, "invalid session")
+		e := ctx.Request.makeNonRedirectError(nil, errors.InvalidRequest, "incorrect login session")
+		ctx.ErrorRedirect(e)
 		return
 	}
 

@@ -304,7 +304,13 @@ func (req *PostAuthzRequestUnmarshaller) GetRequest() *AuthzRequest {
 func (req *PostAuthzRequestUnmarshaller) PreProcess(api *LauthAPI) *errors.Error {
 	var err error
 	req.claims, err = api.TokenManager.ParseRequestObject(req.Request, "")
-	if err != nil {
+	if err == token.TokenExpiredError {
+		return req.GetRequest().makeNonRedirectError(
+			err,
+			errors.AccessDenied,
+			"login session is timed out",
+		)
+	} else if err != nil {
 		return req.GetRequest().makeNonRedirectError(
 			err,
 			errors.InvalidRequestObject,

@@ -89,6 +89,20 @@ func TestPostAuthz(t *testing.T) {
 		"response_type": "code",
 	})
 
+	expiredRequest, err := env.API.TokenManager.CreateRequestObject(
+		env.API.Config.Issuer,
+		"::1",
+		token.RequestObjectClaims{
+			ClientID:     "some_client_id",
+			RedirectURI:  "http://some-client.example.com/callback",
+			ResponseType: "code",
+		},
+		time.Now().Add(-10*time.Minute),
+	)
+	if err != nil {
+		t.Fatalf("faield to make request: %s", err)
+	}
+
 	env.RedirectTest(t, "POST", "/authz", []testutil.RedirectTest{
 		{
 			Name: "missing username and password",
@@ -155,7 +169,17 @@ func TestPostAuthz(t *testing.T) {
 				"username": {"macrat"},
 				"password": {"foobar"},
 			},
-			Code: http.StatusForbidden,
+			Code: http.StatusBadRequest,
+		},
+		{
+			Name: "request object has expired",
+			Request: url.Values{
+				"request":  {expiredRequest},
+				"username": {"macrat"},
+				"password": {"foobar"},
+			},
+			Code:         http.StatusBadRequest,
+			BodyIncludes: []string{"access_denied", "login session is timed out"},
 		},
 		{
 			Name: "success / code",
