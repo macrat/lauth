@@ -14,10 +14,11 @@ import (
 func authzEndpointCommonTests(t *testing.T, c *config.Config) []testutil.RedirectTest {
 	return []testutil.RedirectTest{
 		{
-			Name:        "without any query",
-			Request:     url.Values{},
-			Code:        http.StatusBadRequest,
-			HasLocation: false,
+			Name:         "without any query",
+			Request:      url.Values{},
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request"},
 		},
 		{
 			Name: "request object / can't parse",
@@ -27,8 +28,9 @@ func authzEndpointCommonTests(t *testing.T, c *config.Config) []testutil.Redirec
 				"response_type": {"code"},
 				"request":       {"invalid request"},
 			},
-			Code:        http.StatusBadRequest,
-			HasLocation: false,
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_object"},
 		},
 		{
 			Name: "request object / empty request",
@@ -38,8 +40,9 @@ func authzEndpointCommonTests(t *testing.T, c *config.Config) []testutil.Redirec
 				"response_type": {"code"},
 				"request":       {testutil.SomeClientRequestObject(t, map[string]interface{}{})},
 			},
-			Code:        http.StatusBadRequest,
-			HasLocation: false,
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_object"},
 		},
 		{
 			Name: "request object / missing issuer",
@@ -51,8 +54,9 @@ func authzEndpointCommonTests(t *testing.T, c *config.Config) []testutil.Redirec
 					"aud": c.Issuer.String(),
 				})},
 			},
-			Code:        http.StatusBadRequest,
-			HasLocation: false,
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_object"},
 		},
 		{
 			Name: "request object / missing audience",
@@ -64,23 +68,9 @@ func authzEndpointCommonTests(t *testing.T, c *config.Config) []testutil.Redirec
 					"iss": "some_client_id",
 				})},
 			},
-			Code:        http.StatusBadRequest,
-			HasLocation: false,
-		},
-		{
-			Name: "request object / expired already",
-			Request: url.Values{
-				"client_id":     {"some_client_id"},
-				"response_type": {"code"},
-				"redirect_uri":  {"http://some-client.example.com/callback"},
-				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
-					"iss": "some_client_id",
-					"aud": c.Issuer.String(),
-					"exp": 100,
-				})},
-			},
-			Code:        http.StatusBadRequest,
-			HasLocation: false,
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_object"},
 		},
 	}
 }

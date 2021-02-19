@@ -201,7 +201,7 @@ func (req *GetAuthzRequestUnmarshaller) validate(api *LauthAPI) *errors.Error {
 	}
 
 	if req.ClientID == "" {
-		return req.GetRequest().makeNonRedirectError(nil, errors.InvalidClient, "client_id is required")
+		return req.GetRequest().makeNonRedirectError(nil, errors.InvalidRequest, "client_id is required")
 	}
 	if client, ok := api.Config.Clients[req.ClientID]; !ok {
 		return req.GetRequest().makeNonRedirectError(
@@ -302,6 +302,14 @@ func (req *PostAuthzRequestUnmarshaller) GetRequest() *AuthzRequest {
 }
 
 func (req *PostAuthzRequestUnmarshaller) PreProcess(api *LauthAPI) *errors.Error {
+	if req.Request == "" {
+		return req.GetRequest().makeNonRedirectError(
+			nil,
+			errors.InvalidRequest,
+			"request object is required",
+		)
+	}
+
 	var err error
 	req.claims, err = api.TokenManager.ParseRequestObject(req.Request, "")
 	if err == token.TokenExpiredError {

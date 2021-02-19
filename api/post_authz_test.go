@@ -109,7 +109,8 @@ func TestPostAuthz(t *testing.T) {
 			Request: url.Values{
 				"request": {someRequest},
 			},
-			Code: http.StatusForbidden,
+			Code:         http.StatusForbidden,
+			BodyIncludes: []string{"Invalid username or password."},
 		},
 		{
 			Name: "missing password",
@@ -117,7 +118,8 @@ func TestPostAuthz(t *testing.T) {
 				"request":  {someRequest},
 				"username": {"macrat"},
 			},
-			Code: http.StatusForbidden,
+			Code:         http.StatusForbidden,
+			BodyIncludes: []string{"Invalid username or password."},
 		},
 		{
 			Name: "missing username",
@@ -125,7 +127,8 @@ func TestPostAuthz(t *testing.T) {
 				"request":  {someRequest},
 				"password": {"foobar"},
 			},
-			Code: http.StatusForbidden,
+			Code:         http.StatusForbidden,
+			BodyIncludes: []string{"Invalid username or password."},
 		},
 		{
 			Name: "invalid password",
@@ -134,7 +137,8 @@ func TestPostAuthz(t *testing.T) {
 				"username": {"macrat"},
 				"password": {"invalid"},
 			},
-			Code: http.StatusForbidden,
+			Code:         http.StatusForbidden,
+			BodyIncludes: []string{"Invalid username or password."},
 		},
 		{
 			Name: "missing request object",
@@ -142,7 +146,8 @@ func TestPostAuthz(t *testing.T) {
 				"username": {"macrat"},
 				"password": {"foobar"},
 			},
-			Code: http.StatusBadRequest,
+			Code:         http.StatusBadRequest,
+			BodyIncludes: []string{"invalid_request", "request object is required"},
 		},
 		{
 			Name: "request object of another issuer",
@@ -151,7 +156,8 @@ func TestPostAuthz(t *testing.T) {
 				"username": {"macrat"},
 				"password": {"foobar"},
 			},
-			Code: http.StatusBadRequest,
+			Code:         http.StatusBadRequest,
+			BodyIncludes: []string{"invalid_request_object", "failed to decode or validation request object"},
 		},
 		{
 			Name: "request object of client",
@@ -160,7 +166,8 @@ func TestPostAuthz(t *testing.T) {
 				"username": {"macrat"},
 				"password": {"foobar"},
 			},
-			Code: http.StatusBadRequest,
+			Code:         http.StatusBadRequest,
+			BodyIncludes: []string{"invalid_request_object", "failed to decode or validation request object"},
 		},
 		{
 			Name: "another browser session",
@@ -169,7 +176,8 @@ func TestPostAuthz(t *testing.T) {
 				"username": {"macrat"},
 				"password": {"foobar"},
 			},
-			Code: http.StatusBadRequest,
+			Code:         http.StatusBadRequest,
+			BodyIncludes: []string{"access_denied", "incorrect login session"},
 		},
 		{
 			Name: "request object has expired",
