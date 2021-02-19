@@ -370,6 +370,64 @@ func TestGetAuthz(t *testing.T) {
 	})
 }
 
+func TestGetAuthz_LoginExpires(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+
+	tests := []struct {
+		Name       string
+		RequestTTL time.Duration
+		ExpectTTL  time.Duration
+	}{
+		{
+			Name:       "short expire",
+			RequestTTL: 1 * time.Minute,
+			ExpectTTL:  1 * time.Minute,
+		},
+		{
+			Name:       "long expire",
+			RequestTTL: 24 * time.Hour,
+			ExpectTTL:  time.Duration(env.API.Config.Expire.Login),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			requestExpires := time.Now().Add(tt.RequestTTL).Unix()
+			expectedExpires := time.Now().Add(tt.ExpectTTL).Unix()
+
+			resp := env.Get("/authz", "", url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":           "some_client_id",
+					"aud":           env.API.Config.Issuer.String(),
+					"exp":           requestExpires,
+					"client_id":     "some_client_id",
+					"response_type": "code",
+					"redirect_uri":  "http://some-client.example.com/callback",
+				})},
+			})
+			if resp.Code != http.StatusOK {
+				t.Fatalf("unexpected status code: %d", resp.Code)
+			}
+
+			inputs, err := testutil.FindInputsByHTML(resp.Body)
+			if err != nil {
+				t.Fatalf("failed to get inputs: %s", err)
+			}
+
+			claims, err := env.API.TokenManager.ParseRequestObject(inputs["request"], "")
+			if err != nil {
+				t.Fatalf("failed to parse request object: %s", err)
+			}
+
+			if claims.ExpiresAt != expectedExpires {
+				t.Errorf("unexpected request object duration: %s", time.Unix(claims.ExpiresAt, 0))
+			}
+		})
+	}
+}
+
 func TestGetAuthz_SSO(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
