@@ -33,6 +33,7 @@ func int2bytes(i int) []byte {
 
 func makeCert(hostname string, public *rsa.PublicKey, private *rsa.PrivateKey) ([]byte, error) {
 	template := &x509.Certificate{
+		Issuer:       pkix.Name{CommonName: hostname},
 		Subject:      pkix.Name{CommonName: hostname},
 		SerialNumber: big.NewInt(0),
 		NotBefore:    time.Now(),
