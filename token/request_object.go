@@ -49,20 +49,8 @@ func (m Manager) CreateRequestObject(issuer *config.URL, subject string, request
 
 func (m Manager) ParseRequestObject(token string, signKey string) (RequestObjectClaims, error) {
 	var claims RequestObjectClaims
-
-	parsed, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
-		if signKey != "" {
-			return jwt.ParseRSAPublicKeyFromPEM([]byte(signKey))
-		}
-		return m.public, nil
-	})
-	if err != nil {
+	if _, err := m.parse(token, signKey, &claims); err != nil {
 		return RequestObjectClaims{}, err
 	}
-
-	if !parsed.Valid {
-		return RequestObjectClaims{}, InvalidTokenError
-	}
-
 	return claims, nil
 }

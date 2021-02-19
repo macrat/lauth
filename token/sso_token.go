@@ -62,7 +62,7 @@ func (m Manager) CreateSSOToken(issuer *config.URL, subject string, authorized A
 
 func (m Manager) ParseSSOToken(token string) (SSOTokenClaims, error) {
 	var claims SSOTokenClaims
-	if _, err := m.parse(token, &claims); err != nil {
+	if _, err := m.parse(token, "", &claims); err != nil {
 		return SSOTokenClaims{}, err
 	}
 	return claims, nil

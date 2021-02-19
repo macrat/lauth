@@ -46,7 +46,7 @@ func (m Manager) CreateAccessToken(issuer *config.URL, subject, clientID, scope 
 
 func (m Manager) ParseAccessToken(token string) (AccessTokenClaims, error) {
 	var claims AccessTokenClaims
-	if _, err := m.parse(token, &claims); err != nil {
+	if _, err := m.parse(token, "", &claims); err != nil {
 		return AccessTokenClaims{}, err
 	}
 	return claims, nil

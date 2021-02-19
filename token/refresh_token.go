@@ -52,7 +52,7 @@ func (m Manager) CreateRefreshToken(issuer *config.URL, subject, clientID, scope
 
 func (m Manager) ParseRefreshToken(token string) (RefreshTokenClaims, error) {
 	var claims RefreshTokenClaims
-	if _, err := m.parse(token, &claims); err != nil {
+	if _, err := m.parse(token, "", &claims); err != nil {
 		return RefreshTokenClaims{}, err
 	}
 	return claims, nil

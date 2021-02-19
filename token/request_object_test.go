@@ -101,3 +101,28 @@ func TestRequestToken_SelfIssue(t *testing.T) {
 		t.Errorf("unexpected nonce value: %#v", claims.Nonce)
 	}
 }
+
+func TestRequestToken_TimedOut(t *testing.T) {
+	tokenManager, err := testutil.MakeTokenManager()
+	if err != nil {
+		t.Fatalf("failed to generate TokenManager: %s", err)
+	}
+
+	issuer := &config.URL{Scheme: "http", Host: "localhost:8000"}
+
+	request, err := tokenManager.CreateRequestObject(issuer, "::1", token.RequestObjectClaims{
+		ClientID: "something",
+		Nonce:    "hello world",
+	}, time.Now().Add(-5*time.Minute))
+	if err != nil {
+		t.Fatalf("failed to generate request object: %s", err)
+	}
+
+	_, err = tokenManager.ParseRequestObject(request, "")
+	if err == nil {
+		t.Errorf("expected error if expired request object but got nil")
+	}
+	if err != token.TokenExpiredError {
+		t.Errorf("unexpeted error: %s", err)
+	}
+}

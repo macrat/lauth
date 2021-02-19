@@ -1,13 +1,14 @@
 package token
 
 import (
-	"fmt"
+	"errors"
 )
 
 var (
-	InvalidTokenError        = fmt.Errorf("invalid token")
-	UnexpectedIssuerError    = fmt.Errorf("unexpected issuer")
-	UnexpectedAudienceError  = fmt.Errorf("unexpected audience")
-	UnexpectedTokenTypeError = fmt.Errorf("unexpected token type")
-	UnexpectedClientIDError  = fmt.Errorf("unexpected client_id")
+	InvalidTokenError        = errors.New("invalid token")
+	TokenExpiredError        = errors.New("token has already expired")
+	UnexpectedIssuerError    = errors.New("unexpected issuer")
+	UnexpectedAudienceError  = errors.New("unexpected audience")
+	UnexpectedTokenTypeError = errors.New("unexpected token type")
+	UnexpectedClientIDError  = errors.New("unexpected client_id")
 )

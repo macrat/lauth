@@ -58,16 +58,23 @@ func (m Manager) create(claims jwt.Claims) (string, error) {
 	return token.SignedString(m.private)
 }
 
-func (m Manager) parse(token string, claims jwt.Claims) (*jwt.Token, error) {
+func (m Manager) parse(token string, signKey string, claims jwt.Claims) (*jwt.Token, error) {
 	parsed, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+		if signKey != "" {
+			return jwt.ParseRSAPublicKeyFromPEM([]byte(signKey))
+		}
 		return m.public, nil
 	})
-
+	if e, ok := err.(*jwt.ValidationError); ok && e.Errors == jwt.ValidationErrorExpired {
+		return nil, TokenExpiredError
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	if !parsed.Valid {
 		return nil, InvalidTokenError
 	}
+
 	return parsed, nil
 }
