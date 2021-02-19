@@ -1,7 +1,6 @@
 package token
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -22,25 +21,17 @@ type JWK struct {
 	X509      []string `json:"x5c"`
 }
 
-func bytes2base64(b []byte) string {
-	buf := bytes.NewBuffer([]byte{})
-	enc := base64.NewEncoder(base64.RawURLEncoding, buf)
-	enc.Write(b)
-	enc.Close()
-	return string(buf.Bytes())
-}
-
-func int2base64(i int) string {
+func int2bytes(i int) []byte {
 	bs := make([]byte, 8)
 	binary.BigEndian.PutUint64(bs, uint64(i))
 	skip := 0
 	for skip < 8 && bs[skip] == 0x00 {
 		skip++
 	}
-	return bytes2base64(bs[skip:])
+	return bs[skip:]
 }
 
-func makeCert(hostname string, public *rsa.PublicKey, private *rsa.PrivateKey) (string, error) {
+func makeCert(hostname string, public *rsa.PublicKey, private *rsa.PrivateKey) ([]byte, error) {
 	template := &x509.Certificate{
 		Subject:      pkix.Name{CommonName: hostname},
 		SerialNumber: big.NewInt(0),
@@ -50,10 +41,10 @@ func makeCert(hostname string, public *rsa.PublicKey, private *rsa.PrivateKey) (
 
 	b, err := x509.CreateCertificate(rand.Reader, template, template, public, private)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return base64.StdEncoding.EncodeToString(b), nil
+	return b, nil
 }
 
 func (m Manager) JWKs(hostname string) ([]JWK, error) {
@@ -68,9 +59,11 @@ func (m Manager) JWKs(hostname string) ([]JWK, error) {
 			Use:       "sig",
 			Algorithm: "RS256",
 			KeyType:   "RSA",
-			E:         int2base64(m.public.E),
-			N:         bytes2base64(m.public.N.Bytes()),
-			X509:      []string{cert},
+			E:         base64.RawURLEncoding.EncodeToString(int2bytes(m.public.E)),
+			N:         base64.RawURLEncoding.EncodeToString(m.public.N.Bytes()),
+			X509: []string{
+				base64.StdEncoding.EncodeToString(cert),
+			},
 		},
 	}, nil
 }

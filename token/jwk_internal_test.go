@@ -1,31 +1,25 @@
 package token
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/base64"
 	"testing"
 )
 
-func TestBytes2base64(t *testing.T) {
-	if enc := bytes2base64([]byte("hello world")); enc != "aGVsbG8gd29ybGQ" {
-		t.Errorf("unexpected base64: %s", enc)
-	}
-}
-
-func TestInt2base64(t *testing.T) {
+func TestInt2bytes(t *testing.T) {
 	tests := []struct {
 		Input  int
-		Expect string
+		Expect []byte
 	}{
-		{0, ""},
-		{1234, "BNI"},
-		{65537, "AQAB"},
+		{0, []byte{}},
+		{0x1234, []byte{0x12, 0x34}},
+		{0x10203, []byte{0x1, 0x2, 0x3}},
 	}
 
 	for _, tt := range tests {
-		if enc := int2base64(tt.Input); enc != tt.Expect {
+		if enc := int2bytes(tt.Input); bytes.Compare(enc, tt.Expect) != 0 {
 			t.Errorf("unexpected base64: expected=%#v but got=%#v", tt.Expect, enc)
 		}
 	}
@@ -38,17 +32,12 @@ func TestMakeCert(t *testing.T) {
 	}
 	pub := pri.Public().(*rsa.PublicKey)
 
-	certStr, err := makeCert("lauth.example.com", pub, pri)
+	cert, err := makeCert("lauth.example.com", pub, pri)
 	if err != nil {
 		t.Fatalf("failed to generate certificate: %s", err)
 	}
 
-	b, err := base64.StdEncoding.Strict().DecodeString(certStr)
-	if err != nil {
-		t.Fatalf("failed to decode certificate as base64: %s", err)
-	}
-
-	_, err = x509.ParseCertificate(b)
+	_, err = x509.ParseCertificate(cert)
 	if err != nil {
 		t.Fatalf("failed to parse certificate: %s", err)
 	}
