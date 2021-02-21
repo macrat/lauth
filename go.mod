@@ -17,6 +17,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/common v0.17.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/afero v1.5.1 // indirect
@@ -26,12 +27,13 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/tdewolff/minify/v2 v2.9.13
+	github.com/tdewolff/parse/v2 v2.5.11 // indirect
 	github.com/ugorji/go v1.2.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.0.0
-	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/net v0.0.0-20210220033124-5f55cee0dc0d
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
-	golang.org/x/sys v0.0.0-20210217090653-ed5674b6da4a // indirect
+	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43 // indirect
 	golang.org/x/text v0.3.5 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
