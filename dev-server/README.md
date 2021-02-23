@@ -7,7 +7,7 @@
 ### 1. Start LDAP server
 
 ``` shell
-$ cd test-ldap-server
+$ cd dev-server
 $ docker-compose up -d
 ```
 
@@ -20,7 +20,7 @@ $ docker-compose up -d
 ### 3. Start Lauth
 
 ``` shell
-$ lauth -c test-ldap-server/config.toml
+$ lauth -c dev-server/config.toml
 ```
 
 ## Default accounts
@@ -30,7 +30,6 @@ $ lauth -c test-ldap-server/config.toml
 |ID                        |Password|
 |--------------------------|--------|
 |CN=admin,DC=lauth,DC=local|asdfg   |
-|CN=lauth,DC=lauth,DC=local|zxcvb   |
 
 **User accounts:**
 
@@ -38,3 +37,10 @@ $ lauth -c test-ldap-server/config.toml
 |-------|--------|
 |macrat |foobar  |
 |j.smith|hello   |
+
+### 4. Start test client
+
+``` shell
+$ cd dev-server
+$ go run client.go
+```

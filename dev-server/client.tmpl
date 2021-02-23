@@ -1,0 +1,212 @@
+<style>
+section {
+    display: block;
+    border: 1px solid black;
+    margin: 1em 0;
+    padding: .5em 1em;
+}
+label {
+    display: block;
+}
+pre {
+    display: inline;
+    border: 1px solid lightgray;
+    padding: 0 .2em;
+}
+button {
+    margin-top: 1em;
+}
+</style>
+
+<script>
+var response = {};
+</script>
+
+{{ if .isCallback }}
+<section>
+    <h1>Response values</h1>
+    <script>
+    const values = [
+        ...new URLSearchParams(location.search).entries(),
+        ...new URLSearchParams(location.hash.slice(1)).entries(),
+    ];
+    values.forEach(([k, v]) => {
+        response[k] = v;
+        document.write(`<label>${decodeURIComponent(k)}: <input value="${v}" readonly /></label>`);
+    });
+
+    if (values.length === 0) {
+        document.write('<span style="color: #666">response without values</span>');
+    }
+    </script>
+</section>
+{{ end }}
+
+{{ if .response }}
+<section>
+    <h1>Response values</h1>
+    {{ range $k, $v := .response }}
+        <label>{{ $k }}: <input value="{{ $v }}" readonly /></label>
+        <script>response[{{ $k }}] = {{ $v }}</script>
+    {{ end }}
+</section>
+{{ end }}
+
+<section>
+    <h1>Login</h1>
+    <form action="http://localhost:8000/login" method="GET">
+        <label>
+            response_type:
+            <select name="response_type">
+                <option value="">(empty)</option>
+                <option value="code" selected>code (code flow)</option>
+                <option value="token">token (implicit flow)</option>
+                <option value="id_token">id_token (implicit flow)</option>
+                <option value="token id_token">token id_token (implicit flow)</option>
+                <option value="code token">code token (hybrid flow)</option>
+                <option value="code id_token">code id_token (hybrid flow)</option>
+                <option value="code token id_token">code token id_token (hybrid flow)</option>
+            </select>
+        </label>
+
+        <label>
+            client_id:
+            <select name="client_id">
+                <option value="">(empty)</option>
+                <option value="some_client_id" selected>some_client_id (only for code flow)</option>
+                <option value="implicit_client_id">implicit_client_id (allow implicit and hybrid flow)</option>
+                <option value="another_client_id">another_client_id (not registered)</option>
+            </select>
+        </label>
+
+        <label>
+            redirect_uri:
+            <select name="redirect_uri">
+                <option value="">(empty)</option>
+                <option value="http://localhost:3000/callback" selected>http://localhost:3000/callback (registered)</option>
+                <option value="http://example.com">http://example.com (not registered)</option>
+            </select>
+        </label>
+
+        <label>
+            scope:
+            <input name="scope" value="openid" />
+        </label>
+
+        <label>
+            state:
+            <input name="state" />
+        </label>
+
+        <label>
+            nonce:
+            <input name="nonce" />
+        </label>
+
+        <label>
+            max_age:
+            <input type="number" name="max_age" />
+        </label>
+
+        <label>
+            prompt:
+            <select name="prompt">
+                <option value="" selected>(empty)</option>
+                <option value="none">none</option>
+                <option value="login">login</option>
+                <option value="consent">consent</option>
+                <option value="select_account">select_account</option>
+            </select>
+        </label>
+
+        <button type="submit">LOGIN</button>
+    </form>
+</section>
+
+<section>
+    <h1>Exchange code</h1>
+    <form action="/exchange" method="GET">
+        <label>
+            grant_type:
+            <select name="grant_type">
+                <option value="">(empty)</option>
+                <option value="authorization_code" selected>authorization_code</option>
+                <option value="refresh_token">refresh_token</option>
+            </select>
+        </label>
+
+        <label>
+            client_id:
+            <select name="client_id">
+                <option value="">(empty)</option>
+                <option value="some_client_id" selected>some_client_id (only for code flow)</option>
+                <option value="implicit_client_id">implicit_client_id (allow implicit and hybrid flow)</option>
+                <option value="another_client_id">another_client_id (not registered)</option>
+            </select>
+        </label>
+
+        <label>
+            client_secret:
+            <select name="client_secret">
+                <option value="">(empty)</option>
+                <option value="secret for some-client" selected>secret for some-client</option>
+                <option value="secret for implicit-client">secret for implicit-client</option>
+                <option value="invalid secret">invalid secret</option>
+            </select>
+        </label>
+
+        <label>
+            redirect_uri:
+            <select name="redirect_uri">
+                <option value="">(empty)</option>
+                <option value="http://localhost:3000/callback" selected>http://localhost:3000/callback (correct)</option>
+                <option value="http://localhost:3000/incorrect">http://localhost:3000/incorrect (incorrect)</option>
+            </select>
+        </label>
+
+        <label>
+            code:
+            <input id="code" name="code" />
+            <script>
+                document.getElementById("code").value = response.code || '';
+            </script>
+        </label>
+
+        <label>
+            refresh_token:
+            <input name="refresh_token" />
+        </label>
+
+        <button type="submit">EXCHANGE</button>
+    </form>
+</section>
+
+
+<section>
+    <h1>Logout</h1>
+    <form action="http://localhost:8000/logout" method="GET">
+        <label>
+            id_token_hint:
+            <input id="id_token_hint" name="id_token_hint" />
+            <script>
+                document.getElementById("id_token_hint").value = response.id_token || '';
+            </script>
+        </label>
+
+        <label>
+            post_logout_redirect_uri:
+            <select name="post_logout_redirect_uri">
+                <option value="">(empty)</option>
+                <option value="http://localhost:3000/callback" selected>http://localhost:3000/callback (registered)</option>
+                <option value="http://example.com">http://example.com (not registered)</option>
+            </select>
+        </label>
+
+        <label>
+            state:
+            <input name="state" />
+        </label>
+
+        <button type="submit">LOGOUT</button>
+    </form>
+</section>
