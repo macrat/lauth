@@ -3,12 +3,14 @@ package errors
 var (
 	// OpenID errors
 	AccessDenied            Reason = "access_denied"
+	InteractionRequired     Reason = "interaction_required"
 	InvalidClient           Reason = "invalid_client"
 	InvalidGrant            Reason = "invalid_grant"
 	InvalidRequest          Reason = "invalid_request"
 	InvalidRequestObject    Reason = "invalid_request_object"
 	InvalidScope            Reason = "invalid_scope"
 	InvalidToken            Reason = "invalid_token"
+	LoginRequired           Reason = "login_required"
 	RequestNotSupported     Reason = "request_not_supported"
 	RequestURINotSupported  Reason = "request_uri_not_supported"
 	ServerError             Reason = "server_error"

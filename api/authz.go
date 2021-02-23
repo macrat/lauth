@@ -428,7 +428,12 @@ func (ctx *AuthzContext) TrySSO(authorized bool) (proceed bool) {
 			ctx.Report.Set("username", token.Subject)
 
 			if !authorized && (prompt.Has("consent") || !token.Authorized.Includes(ctx.Request.ClientID)) {
-				ctx.ShowConfirmPage(http.StatusOK, token.Subject)
+				if prompt.Has("none") {
+					ctx.ErrorRedirect(ctx.Request.makeRedirectError(nil, errors.InteractionRequired, ""))
+				} else {
+					ctx.ShowConfirmPage(http.StatusOK, token.Subject)
+				}
+
 				return true
 			}
 
@@ -442,7 +447,7 @@ func (ctx *AuthzContext) TrySSO(authorized bool) (proceed bool) {
 
 	if prompt.Has("none") {
 		ctx.Report.Set("authn_by", "sso_token")
-		ctx.ErrorRedirect(ctx.Request.makeRedirectError(nil, "login_required", ""))
+		ctx.ErrorRedirect(ctx.Request.makeRedirectError(nil, errors.LoginRequired, ""))
 		return true
 	}
 

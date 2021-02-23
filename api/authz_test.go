@@ -213,6 +213,31 @@ func TestSSOLogin(t *testing.T) {
 		t.Errorf("auth_time is not match: sso_token=%s != code=%s", ssoToken.Subject, code.Subject)
 	}
 
+	t.Log("---------- try login without prompt by another client with SSO token ----------")
+
+	params = url.Values{
+		"redirect_uri":  {"http://implicit-client.example.com/callback"},
+		"client_id":     {"implicit_client_id"},
+		"response_type": {"code"},
+		"prompt":        {"none"},
+	}
+	req, _ = http.NewRequest("GET", "/authz?"+params.Encode(), nil)
+	for _, c := range rawCookie {
+		req.Header.Add("Cookie", c)
+	}
+
+	resp = env.DoRequest(req)
+	if resp.Code != http.StatusFound {
+		t.Fatalf("unexpected status code on another client with SSO token: %d", resp.Code)
+	}
+
+	location, err = url.Parse(resp.Header().Get("Location"))
+	if err != nil {
+		t.Errorf("failed to parse location: %s", err)
+	} else if errMsg := location.Query().Get("error"); errMsg != "interaction_required" {
+		t.Errorf("unexpected error message: %#v", errMsg)
+	}
+
 	t.Log("---------- try login by another client with SSO token ----------")
 
 	params = url.Values{
