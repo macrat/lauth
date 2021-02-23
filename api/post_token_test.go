@@ -1,8 +1,11 @@
 package api_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -580,4 +583,59 @@ func TestPostToken_RefreshToken(t *testing.T) {
 			CheckBody: ResponseValidation(env, "profile", ""),
 		},
 	})
+}
+
+func TestPostToken_CORS(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+
+	code, err := env.API.TokenManager.CreateCode(
+		env.API.Config.Issuer,
+		"macrat",
+		"implicit_client_id",
+		"http://implicit-client.example.com/callback",
+		"openid profile",
+		"something-nonce",
+		time.Now(),
+		env.API.Config.Expire.Code.Duration(),
+	)
+	if err != nil {
+		t.Fatalf("failed to generate test code: %s", err)
+	}
+
+	req, err := http.NewRequest("POST", "/token", strings.NewReader(url.Values{
+		"grant_type":    {"authorization_code"},
+		"code":          {code},
+		"client_id":     {"implicit_client_id"},
+		"client_secret": {"secret for implicit-client"},
+		"redirect_uri":  {"http://implicit-client.example.com/callback"},
+	}.Encode()))
+	if err != nil {
+		t.Fatalf("failed to generate request: %s", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp := env.DoRequest(req)
+	if resp.Code != http.StatusOK {
+		t.Log(string(resp.Body.Bytes()))
+		t.Fatalf("unexpected status code: %d", resp.Code)
+	}
+
+	req.Header.Set("Origin", "http://implicit-client.example.com")
+
+	resp = env.DoRequest(req)
+	if resp.Code != http.StatusForbidden {
+		t.Errorf("unexpected status code: %d", resp.Code)
+	}
+
+	expected := map[string]string{
+		"error":             "access_denied",
+		"error_description": "Origin header was set. You can't use token endpoint via browser.",
+	}
+
+	var body map[string]string
+	if err = json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
+		t.Errorf("failed to parse response body: %s", err)
+	} else if !reflect.DeepEqual(body, expected) {
+		t.Errorf("unexpected response: %#v", string(resp.Body.Bytes()))
+	}
 }

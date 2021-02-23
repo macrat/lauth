@@ -327,6 +327,16 @@ func (api *LauthAPI) PostToken(c *gin.Context) {
 		return
 	}
 
+	if getOriginHeader(c) != "" {
+		e := &errors.Error{
+			Reason:      errors.AccessDenied,
+			Description: "Origin header was set. You can't use token endpoint via browser.",
+		}
+		report.SetError(e)
+		c.JSON(http.StatusForbidden, e)
+		return
+	}
+
 	report.Set("grant_type", req.GrantType)
 	report.Set("client_id", req.ClientID)
 

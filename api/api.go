@@ -25,6 +25,7 @@ func (api *LauthAPI) SetRoutes(r gin.IRoutes) {
 	r.GET(endpoints.Authz, api.GetAuthz)
 	r.POST(endpoints.Authz, api.PostAuthz)
 	r.POST(endpoints.Token, api.PostToken)
+	r.OPTIONS(endpoints.Token, api.OptionsToken)
 	r.GET(endpoints.Userinfo, api.GetUserInfo)
 	r.POST(endpoints.Userinfo, api.PostUserInfo)
 	r.OPTIONS(endpoints.Userinfo, api.OptionsUserInfo)
