@@ -118,15 +118,15 @@ func TestUserinfoCORS(t *testing.T) {
 
 	for _, method := range []string{"GET", "POST"} {
 		tests := []struct {
-			ClientID string
+			ClientID   string
 			CORSHeader string
-		} {
+		}{
 			{"some_client_id", ""},
 			{"implicit_client_id", "http://implicit-client.example.com"},
 		}
 
 		for _, tt := range tests {
-			t.Run(method + "/" + tt.ClientID, func(t *testing.T) {
+			t.Run(method+"/"+tt.ClientID, func(t *testing.T) {
 				token, err := env.API.TokenManager.CreateAccessToken(
 					env.API.Config.Issuer,
 					"macrat",
@@ -139,7 +139,7 @@ func TestUserinfoCORS(t *testing.T) {
 					t.Fatalf("failed to generate access_token: %s", err)
 				}
 
-				resp := env.Do(method, "/userinfo", "Bearer " + token, nil)
+				resp := env.Do(method, "/userinfo", "Bearer "+token, nil)
 				if resp.Code != 200 {
 					t.Fatalf("failed to fetch userinfo endpoint: %d", resp.Code)
 				}
