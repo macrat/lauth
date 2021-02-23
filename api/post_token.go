@@ -327,10 +327,6 @@ func (api *LauthAPI) PostToken(c *gin.Context) {
 		return
 	}
 
-	if client, ok := api.Config.Clients[req.ClientID]; ok && client.CORSOrigin != "" {
-		c.Header("Access-Control-Allow-Origin", client.CORSOrigin)
-	}
-
 	report.Set("grant_type", req.GrantType)
 	report.Set("client_id", req.ClientID)
 
