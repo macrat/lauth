@@ -63,7 +63,7 @@ func (api *LauthAPI) sendUserInfo(c *gin.Context, report *metrics.Context, rawTo
 	if len(token.AuthorizedParties) > 0 {
 		client := api.Config.Clients[token.AuthorizedParties[0]]
 		if client.CORSOrigin != "" {
-			c.Header("Access-Control-Request-Origin", client.CORSOrigin)
+			c.Header("Access-Control-Allow-Origin", client.CORSOrigin)
 		}
 	}
 

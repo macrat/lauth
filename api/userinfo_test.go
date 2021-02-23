@@ -112,3 +112,42 @@ func UserInfoCommonTests(t *testing.T, env *testutil.APITestEnvironment) []testu
 		},
 	}
 }
+
+func TestUserinfoCORS(t *testing.T) {
+	env := testutil.NewAPITestEnvironment(t)
+
+	for _, method := range []string{"GET", "POST"} {
+		tests := []struct {
+			ClientID string
+			CORSHeader string
+		} {
+			{"some_client_id", ""},
+			{"implicit_client_id", "http://implicit-client.example.com"},
+		}
+
+		for _, tt := range tests {
+			t.Run(method + "/" + tt.ClientID, func(t *testing.T) {
+				token, err := env.API.TokenManager.CreateAccessToken(
+					env.API.Config.Issuer,
+					"macrat",
+					tt.ClientID,
+					"openid",
+					time.Now(),
+					10*time.Minute,
+				)
+				if err != nil {
+					t.Fatalf("failed to generate access_token: %s", err)
+				}
+
+				resp := env.Do(method, "/userinfo", "Bearer " + token, nil)
+				if resp.Code != 200 {
+					t.Fatalf("failed to fetch userinfo endpoint: %d", resp.Code)
+				}
+
+				if cors := resp.Header().Get("Access-Control-Allow-Origin"); cors != tt.CORSHeader {
+					t.Fatalf("unexpected cors header: %#v", cors)
+				}
+			})
+		}
+	}
+}
