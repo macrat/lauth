@@ -33,4 +33,8 @@ redirect_uri = [
   "http://localhost:*/**",
 ]
 
+cors_origin = [
+  "http://localhost:*",
+]
+
 allow_implicit_flow = true

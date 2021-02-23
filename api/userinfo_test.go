@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"bytes"
 	"net/http"
 	"testing"
 	"time"
@@ -117,37 +118,93 @@ func TestUserinfoCORS(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
 	for _, method := range []string{"GET", "POST"} {
-		tests := []struct {
-			ClientID   string
-			CORSHeader string
-		}{
-			{"some_client_id", ""},
-			{"implicit_client_id", "http://implicit-client.example.com"},
-		}
+		t.Run(method, func(t *testing.T) {
+			tests := []struct {
+				Name     string
+				ClientID string
+				Origin   string
+				Code     int
+				CORS     string
+			}{
+				{
+					Name:     "some_client without origin",
+					ClientID: "some_client_id",
+					Origin:   "",
+					Code:     http.StatusOK,
+					CORS:     "",
+				},
+				{
+					Name:     " some_client with origin",
+					ClientID: "some_client_id",
+					Origin:   "http://some-client.example.com",
+					Code:     http.StatusForbidden,
+					CORS:     "",
+				},
+				{
+					Name:     "implicit_client without origin",
+					ClientID: "implicit_client_id",
+					Origin:   "",
+					Code:     http.StatusOK,
+					CORS:     "",
+				},
+				{
+					Name:     "implicit_client with origin that root domain",
+					ClientID: "implicit_client_id",
+					Origin:   "http://implicit-client.example.com",
+					Code:     http.StatusOK,
+					CORS:     "http://implicit-client.example.com",
+				},
+				{
+					Name:     "implicit_client with origin that sub domain",
+					ClientID: "implicit_client_id",
+					Origin:   "http://subdomain.implicit-client.example.com",
+					Code:     http.StatusOK,
+					CORS:     "http://subdomain.implicit-client.example.com",
+				},
+				{
+					Name:     "implicit_client with invalid origin",
+					ClientID: "implicit_client_id",
+					Origin:   "http://another-client.example.com",
+					Code:     http.StatusForbidden,
+					CORS:     "",
+				},
+			}
 
-		for _, tt := range tests {
-			t.Run(method+"/"+tt.ClientID, func(t *testing.T) {
-				token, err := env.API.TokenManager.CreateAccessToken(
-					env.API.Config.Issuer,
-					"macrat",
-					tt.ClientID,
-					"openid",
-					time.Now(),
-					10*time.Minute,
-				)
-				if err != nil {
-					t.Fatalf("failed to generate access_token: %s", err)
-				}
+			for _, tt := range tests {
+				t.Run(tt.Name, func(t *testing.T) {
+					token, err := env.API.TokenManager.CreateAccessToken(
+						env.API.Config.Issuer,
+						"macrat",
+						tt.ClientID,
+						"openid",
+						time.Now(),
+						10*time.Minute,
+					)
+					if err != nil {
+						t.Fatalf("failed to generate access_token: %s", err)
+					}
 
-				resp := env.Do(method, "/userinfo", "Bearer "+token, nil)
-				if resp.Code != 200 {
-					t.Fatalf("failed to fetch userinfo endpoint: %d", resp.Code)
-				}
+					req, err := http.NewRequest(method, "/userinfo", bytes.NewReader([]byte{}))
+					if err != nil {
+						t.Fatalf("failed to generate request: %s", err)
+					}
 
-				if cors := resp.Header().Get("Access-Control-Allow-Origin"); cors != tt.CORSHeader {
-					t.Fatalf("unexpected cors header: %#v", cors)
-				}
-			})
-		}
+					req.Header.Set("Authorization", "Bearer "+token)
+					if tt.Origin != "" {
+						req.Header.Set("Origin", tt.Origin)
+					}
+
+					resp := env.DoRequest(req)
+					t.Log(string(resp.Body.Bytes()))
+					if resp.Code != tt.Code {
+						t.Fatalf("status code: expected %d but got %d", tt.Code, resp.Code)
+					}
+
+					if cors := resp.Header().Get("Access-Control-Allow-Origin"); cors != tt.CORS {
+						t.Fatalf("unexpected cors header: %#v", cors)
+					}
+				})
+			}
+		})
 	}
 }

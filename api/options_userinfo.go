@@ -22,7 +22,7 @@ func (api *LauthAPI) OptionsUserInfo(c *gin.Context) {
 	req := new(OptionsUserInfoRequest)
 	if err := c.ShouldBindHeader(req); err == nil && req.Origin != "" {
 		for clientID, settings := range api.Config.Clients {
-			if req.Origin == settings.CORSOrigin {
+			if settings.CORSOrigin.Match(req.Origin) {
 				report.Set("client_id", clientID)
 				c.Header("Access-Control-Allow-Origin", req.Origin)
 				return

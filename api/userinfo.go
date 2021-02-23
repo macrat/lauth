@@ -41,12 +41,17 @@ func (api *LauthAPI) userinfo(subject string, scope *StringSet) (map[string]inte
 	return result, nil
 }
 
-func (api *LauthAPI) sendUserInfo(c *gin.Context, report *metrics.Context, rawToken string) {
+func (api *LauthAPI) sendUserInfo(c *gin.Context, report *metrics.Context, origin, rawToken string) {
 	token, err := api.TokenManager.ParseAccessToken(rawToken)
 	if err == nil {
-		report.Set("client_id", token.Audience)
 		report.Set("username", token.Subject)
 		err = token.Validate(api.Config.Issuer)
+	}
+
+	clientID := ""
+	if len(token.AuthorizedParties) > 0 {
+		clientID = token.AuthorizedParties[0]
+		report.Set("client_id", clientID)
 	}
 
 	if err != nil {
@@ -60,10 +65,18 @@ func (api *LauthAPI) sendUserInfo(c *gin.Context, report *metrics.Context, rawTo
 		return
 	}
 
-	if len(token.AuthorizedParties) > 0 {
-		client := api.Config.Clients[token.AuthorizedParties[0]]
-		if client.CORSOrigin != "" {
-			c.Header("Access-Control-Allow-Origin", client.CORSOrigin)
+	if origin != "" {
+		client := api.Config.Clients[clientID]
+		if client.CORSOrigin.Match(origin) {
+			c.Header("Access-Control-Allow-Origin", origin)
+		} else {
+			e := &errors.Error{
+				Reason:      errors.AccessDenied,
+				Description: "Origin is not registered as a valid client",
+			}
+			report.SetError(e)
+			c.JSON(http.StatusForbidden, e)
+			return
 		}
 	}
 

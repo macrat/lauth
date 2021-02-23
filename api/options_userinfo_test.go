@@ -23,10 +23,16 @@ func TestOptionsUserInfo(t *testing.T) {
 			CORS:   "",
 		},
 		{
-			Name:   "with valid origin",
+			Name:   "with valid origin that root domain",
 			Origin: "http://implicit-client.example.com",
 			Code:   http.StatusOK,
 			CORS:   "http://implicit-client.example.com",
+		},
+		{
+			Name:   "with valid origin that subdomain",
+			Origin: "http://subdomain.implicit-client.example.com",
+			Code:   http.StatusOK,
+			CORS:   "http://subdomain.implicit-client.example.com",
 		},
 		{
 			Name:   "with invalid origin",

@@ -10,6 +10,7 @@ import (
 
 type GetUserInfoRequest struct {
 	Authorization string `form:"-" header:"Authorization"`
+	Origin        string `form:"-" header:"Origin"`
 }
 
 func (req *GetUserInfoRequest) Bind(c *gin.Context) *errors.Error {
@@ -17,7 +18,7 @@ func (req *GetUserInfoRequest) Bind(c *gin.Context) *errors.Error {
 		return &errors.Error{
 			Err:         err,
 			Reason:      errors.InvalidToken,
-			Description: "access token is required",
+			Description: "failed to parse request headers",
 		}
 	}
 
@@ -56,5 +57,5 @@ func (api *LauthAPI) GetUserInfo(c *gin.Context) {
 		return
 	}
 
-	api.sendUserInfo(c, report, rawToken)
+	api.sendUserInfo(c, report, req.Origin, rawToken)
 }

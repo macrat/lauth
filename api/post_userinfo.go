@@ -20,7 +20,7 @@ func (req *PostUserInfoRequest) Bind(c *gin.Context) *errors.Error {
 		return &errors.Error{
 			Err:         err,
 			Reason:      errors.InvalidToken,
-			Description: "access token is required",
+			Description: "failed to parse request body",
 		}
 	}
 	return nil
@@ -63,5 +63,5 @@ func (api *LauthAPI) PostUserInfo(c *gin.Context) {
 		return
 	}
 
-	api.sendUserInfo(c, report, rawToken)
+	api.sendUserInfo(c, report, req.Origin, rawToken)
 }

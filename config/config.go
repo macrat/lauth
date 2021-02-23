@@ -64,7 +64,7 @@ type ClientConfig struct {
 	IconURL           string     `json:"icon_url"            yaml:"icon_url"            toml:"icon_url"`
 	Secret            string     `json:"secret"              yaml:"secret"              toml:"secret"`
 	RedirectURI       PatternSet `json:"redirect_uri"        yaml:"redirect_uri"        toml:"redirect_uri"`
-	CORSOrigin        string     `json:"cors_origin"         yaml:"cors_origin"         toml:"cors_origin"`
+	CORSOrigin        PatternSet `json:"cors_origin"         yaml:"cors_origin"         toml:"cors_origin"`
 	AllowImplicitFlow bool       `json:"allow_implicit_flow" yaml:"allow_implicit_flow" toml:"allow_implicit_flow"`
 	RequestKey        string     `json:"request_key"         yaml:"request_key"         toml:"request_key"`
 }

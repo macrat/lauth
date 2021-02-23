@@ -101,7 +101,7 @@ func GenClient(conf GenClientConfig) (string, error) {
 	fmt.Fprintf(buf, "\n")
 	fmt.Fprintf(buf, "# The origin to set to Access-Control-Allow-Origin header.\n")
 	fmt.Fprintf(buf, "# Please set this if need access userinfo endpoint by script that runs on browser.\n")
-	fmt.Fprintf(buf, "#cors_origin = \"https://example.com\"\n")
+	fmt.Fprintf(buf, "#cors_origin = [\"https://example.com\"]\n")
 	fmt.Fprintf(buf, "\n")
 	fmt.Fprintf(buf, "# URIs for redirect after login or logout.\n")
 	fmt.Fprintf(buf, "redirect_uri = [\n")
