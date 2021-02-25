@@ -211,7 +211,7 @@ func init() {
 
 	loginExpire := config.Duration(1 * time.Hour)
 	flags.Var(&loginExpire, "login-expire", "Time limit to input username and password on the login page.")
-	codeExpire := config.Duration(5 * time.Minute)
+	codeExpire := config.Duration(1 * time.Minute)
 	flags.Var(&codeExpire, "code-expire", "Time limit to exchange code to access_token or id_token.")
 	tokenExpire := config.Duration(24 * time.Hour)
 	flags.Var(&tokenExpire, "token-expire", "Expiration duration of access_token and id_token.")

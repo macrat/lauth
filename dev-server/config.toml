@@ -6,6 +6,10 @@ disable_tls = true
 id_attribute = "uid"
 
 
+[expire]
+code = "10m"
+
+
 [client.some_client_id]
 name = "Some Client"
 icon_url = "http://placehold.it/100x100"

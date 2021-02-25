@@ -66,7 +66,7 @@ login = "1h"
 
 # Time limit to exchange code to access_token or id_token.
 # Same as --code-expire and LAUTH_EXPIRE_CODE.
-code = "5m"
+code = "1m"
 
 # Expiration duration of access_token and id_token.
 # Same as --token-expire and LAUTH_EXPIRE_TOKEN.
