@@ -80,6 +80,7 @@ func GenClient(conf GenClientConfig) (string, error) {
 
 	buf := bytes.NewBuffer([]byte{})
 
+	fmt.Fprintf(buf, "\n")
 	fmt.Fprintf(buf, "# Client registration of \"%s\".\n", conf.ID)
 	fmt.Fprintf(buf, "[client.%s]\n", quoteString(conf.ID))
 	fmt.Fprintf(buf, "\n")
