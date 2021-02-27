@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -24,15 +25,13 @@ type AuthzRequest struct {
 	Prompt       string `form:"prompt"        json:"prompt"        xml:"prompt"`
 
 	// use only GET method
-	LoginHint string `form:"login_hint" json:"login_hint" xml:"login_hint"`
-	Request   string `form:"request"    json:"request"    xml:"request"`
+	LoginHint  string `form:"login_hint"  json:"login_hint"  xml:"login_hint"`
+	Request    string `form:"request"     json:"request"     xml:"request"`
+	RequestURI string `form:"request_uri" json:"request_uri" xml:"request_uri"`
 
 	// use only POST method
 	User     string `form:"username" json:"username" xml:"username"`
 	Password string `form:"password" json:"password" xml:"password"`
-
-	// not supported
-	RequestURI string `form:"request_uri" json:"request_uri" xml:"request_uri"`
 
 	RequestExpiresAt int64  `form:"-" json:"-" xml:"-"`
 	RequestSubject   string `form:"-" json:"-" xml:"-"`
@@ -85,7 +84,41 @@ func (req *GetAuthzRequestUnmarshaller) GetRequest() *AuthzRequest {
 }
 
 func (req *GetAuthzRequestUnmarshaller) processRequestObject(api *LauthAPI) *errors.Error {
-	if req.Request == "" {
+	errorReason := errors.InvalidRequestObject
+
+	request := req.Request
+	if req.RequestURI != "" {
+		errorReason = errors.InvalidRequestURI
+		resp, err := http.Get(req.RequestURI)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			return req.GetRequest().makeNonRedirectError(
+				err,
+				errorReason,
+				"failed to fetch request object from request_uri",
+			)
+		}
+		defer resp.Body.Close()
+
+		bs, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return req.GetRequest().makeNonRedirectError(
+				err,
+				errorReason,
+				"failed to fetch request object from request_uri",
+			)
+		}
+
+		request = string(bs)
+		if request == "" {
+			return req.GetRequest().makeNonRedirectError(
+				err,
+				errorReason,
+				"failed to fetch request object from request_uri",
+			)
+		}
+	}
+
+	if request == "" {
 		return nil
 	}
 
@@ -93,11 +126,11 @@ func (req *GetAuthzRequestUnmarshaller) processRequestObject(api *LauthAPI) *err
 	if c, ok := api.Config.Clients[req.ClientID]; ok {
 		signKey = c.RequestKey
 	}
-	claims, err := api.TokenManager.ParseRequestObject(req.Request, signKey)
+	claims, err := api.TokenManager.ParseRequestObject(request, signKey)
 	if err != nil {
 		return req.GetRequest().makeNonRedirectError(
 			err,
-			errors.InvalidRequestObject,
+			errorReason,
 			"failed to decode or validation request object",
 		)
 	}
@@ -107,7 +140,7 @@ func (req *GetAuthzRequestUnmarshaller) processRequestObject(api *LauthAPI) *err
 	if err = claims.Validate(req.ClientID, api.Config.Issuer); err != nil {
 		return req.GetRequest().makeNonRedirectError(
 			err,
-			errors.InvalidRequestObject,
+			errorReason,
 			"failed to decode or validation request object",
 		)
 	}
@@ -184,7 +217,7 @@ func (req *GetAuthzRequestUnmarshaller) processRequestObject(api *LauthAPI) *err
 
 	return req.GetRequest().makeRedirectError(
 		nil,
-		errors.InvalidRequestObject,
+		errorReason,
 		fmt.Sprintf("mismatch query parameter and request object: %s", strings.Join(mismatches, ", ")),
 	)
 }
@@ -217,11 +250,11 @@ func (req *GetAuthzRequestUnmarshaller) validate(api *LauthAPI) *errors.Error {
 		)
 	}
 
-	if req.RequestURI != "" {
-		return req.GetRequest().makeRedirectError(
+	if req.Request != "" && req.RequestURI != "" {
+		return req.GetRequest().makeNonRedirectError(
 			nil,
-			errors.RequestURINotSupported,
-			"",
+			errors.InvalidRequest,
+			"can't use both of request and request_uri in same time",
 		)
 	}
 

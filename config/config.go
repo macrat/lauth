@@ -375,7 +375,7 @@ func (c *Config) OpenIDConfiguration() OpenIDConfiguration {
 			"at_hash",
 		),
 		RequestParameterSupported:    true,
-		RequestURIParameterSupported: false,
+		RequestURIParameterSupported: true,
 	}
 }
 

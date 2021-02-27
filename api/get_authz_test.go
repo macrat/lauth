@@ -16,6 +16,9 @@ import (
 func TestGetAuthz(t *testing.T) {
 	env := testutil.NewAPITestEnvironment(t)
 
+	requestURI := env.ServeRequestURI(t)
+	defer requestURI.Close()
+
 	env.RedirectTest(t, "GET", "/authz", authzEndpointCommonTests(t, env.API.Config))
 
 	env.RedirectTest(t, "GET", "/authz", []testutil.RedirectTest{
@@ -49,6 +52,15 @@ func TestGetAuthz(t *testing.T) {
 					"response_type": "code",
 					"redirect_uri":  "http://some-client.example.com/callback",
 				})},
+			},
+			Code: http.StatusOK,
+		},
+		{
+			Name: "success / request_uri",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request_uri":   {requestURI.URL + "/some-client/correct"},
 			},
 			Code: http.StatusOK,
 		},
@@ -281,18 +293,64 @@ func TestGetAuthz(t *testing.T) {
 			BodyIncludes: []string{"invalid_request_object", "failed to decode or validation request object"},
 		},
 		{
-			Name: "request_uri is not supported",
+			Name: "request_uri / not found",
 			Request: url.Values{
-				"redirect_uri": {"http://some-client.example.com/callback"},
-				"client_id":    {"some_client_id"},
-				"request_uri":  {"http://some-client.example.com/request.jwt"},
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request_uri":   {requestURI.URL + "/not-found"},
 			},
-			Code:        http.StatusFound,
-			HasLocation: true,
-			Query: url.Values{
-				"error": {"request_uri_not_supported"},
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_uri", "failed to fetch request object from request_uri"},
+		},
+		{
+			Name: "request_uri / empty response",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request_uri":   {requestURI.URL + "/empty"},
 			},
-			Fragment: url.Values{},
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_uri", "failed to fetch request object from request_uri"},
+		},
+		{
+			Name: "request_uri / server error",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request_uri":   {requestURI.URL + "/server-error"},
+			},
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_uri", "failed to fetch request object from request_uri"},
+		},
+		{
+			Name: "request_uri / response is not jwt",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request_uri":   {requestURI.URL + "/not-jwt"},
+			},
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request_uri", "failed to decode or validation request object"},
+		},
+		{
+			Name: "both of request and request_uri",
+			Request: url.Values{
+				"client_id":     {"some_client_id"},
+				"response_type": {"code"},
+				"request_uri":   {requestURI.URL + "/some-client/correct"},
+				"request": {testutil.SomeClientRequestObject(t, map[string]interface{}{
+					"iss":          "some_client_id",
+					"aud":          env.API.Config.Issuer.String(),
+					"redirect_uri": "http://some-client.example.com/callback",
+				})},
+			},
+			Code:         http.StatusBadRequest,
+			HasLocation:  false,
+			BodyIncludes: []string{"invalid_request", "can&#39;t use both of request and request_uri in same time"},
 		},
 		{
 			Name: "missing nonce in implicit flow",
