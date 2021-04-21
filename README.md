@@ -6,6 +6,7 @@ Lauth
 [![Container in Docker Hub](https://img.shields.io/badge/container-Docker%20Hub-blue.svg?logo=docker&logoColor=white)](https://hub.docker.com/r/macrat/lauth)
 [![Container in GitHub Container Registry](https://img.shields.io/badge/container-ghcr.io-blue.svg?logo=docker&logoColor=white)](https://github.com/users/macrat/packages/container/package/lauth)
 [![MIT License](https://img.shields.io/github/license/macrat/lauth)](https://github.com/macrat/lauth/blob/master/LICENSE)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmacrat%2Flauth.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmacrat%2Flauth?ref=badge_shield)
 
 The simple OpenID Provider for LDAP like a Microsoft ActiveDirectory(AD).
 
@@ -206,3 +207,7 @@ $ lauth gen-client CLIENT_ID [OPTIONS]
 |----------------|------------------------------------------------------------------------------------------|
 |`--redirect-uri`|URIs to accept redirect to.                                                               |
 |`--secret`      |Client secret value. Generate random secret if omitted. *Not recommend using this option.*|
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmacrat%2Flauth.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmacrat%2Flauth?ref=badge_large)
